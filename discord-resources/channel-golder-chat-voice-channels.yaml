@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-voice-channels
+  annotations:
+    discord.golder.tech/id: "596248212994654231"
+spec:
+  forProvider:
+    name: "Voice Channels"
+    type: 4
+    guildId: "596248212994654225"
+    position: 3
+  providerConfigRef:
+    name: discord-provider-config

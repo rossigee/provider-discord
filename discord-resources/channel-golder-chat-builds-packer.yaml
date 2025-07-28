@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-builds-packer
+  annotations:
+    discord.golder.tech/id: "1218769812168118322"
+spec:
+  forProvider:
+    name: "builds-packer"
+    type: 0
+    guildId: "596248212994654225"
+    position: 27
+  providerConfigRef:
+    name: discord-provider-config

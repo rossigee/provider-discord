@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-pastebin
+  annotations:
+    discord.golder.tech/id: "1122316049824616520"
+spec:
+  forProvider:
+    name: "pastebin"
+    type: 0
+    guildId: "596248212994654225"
+    position: 1
+  providerConfigRef:
+    name: discord-provider-config

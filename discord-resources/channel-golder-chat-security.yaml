@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-security
+  annotations:
+    discord.golder.tech/id: "1085231711098523718"
+spec:
+  forProvider:
+    name: "Security"
+    type: 4
+    guildId: "596248212994654225"
+    position: 4
+  providerConfigRef:
+    name: discord-provider-config

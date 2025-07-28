@@ -1,0 +1,17 @@
+apiVersion: role.discord.golder.tech/v1alpha1
+kind: Role
+metadata:
+  name: golder-chat-technical
+  annotations:
+    discord.golder.tech/id: "996357449156132945"
+spec:
+  forProvider:
+    name: "Technical"
+    guildId: "596248212994654225"
+    color: 15105570
+    hoist: false
+    mentionable: false
+    permissions: "1071698665025"
+    position: 3
+  providerConfigRef:
+    name: discord-provider-config

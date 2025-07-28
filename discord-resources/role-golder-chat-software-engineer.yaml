@@ -1,0 +1,17 @@
+apiVersion: role.discord.golder.tech/v1alpha1
+kind: Role
+metadata:
+  name: golder-chat-software-engineer
+  annotations:
+    discord.golder.tech/id: "1133646438082035712"
+spec:
+  forProvider:
+    name: "Software Engineer"
+    guildId: "596248212994654225"
+    color: 2067276
+    hoist: false
+    mentionable: false
+    permissions: "0"
+    position: 1
+  providerConfigRef:
+    name: discord-provider-config

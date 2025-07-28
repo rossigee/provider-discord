@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-builds-containers
+  annotations:
+    discord.golder.tech/id: "1268199287297409024"
+spec:
+  forProvider:
+    name: "builds-containers"
+    type: 0
+    guildId: "596248212994654225"
+    position: 33
+  providerConfigRef:
+    name: discord-provider-config

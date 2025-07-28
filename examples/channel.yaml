@@ -1,0 +1,49 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: example-text-channel
+  annotations:
+    kubernetes.io/description: "Example text channel managed by Crossplane"
+spec:
+  forProvider:
+    name: "crossplane-general"
+    type: 0  # Text channel
+    guildId: "GUILD_ID_HERE"  # Replace with actual guild ID
+    topic: "General discussion about Crossplane and Discord integration"
+    position: 1
+    nsfw: false
+    rateLimitPerUser: 5  # 5 second cooldown
+  providerConfigRef:
+    name: default
+---
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: example-voice-channel
+  annotations:
+    kubernetes.io/description: "Example voice channel managed by Crossplane"
+spec:
+  forProvider:
+    name: "Crossplane Voice"
+    type: 2  # Voice channel
+    guildId: "GUILD_ID_HERE"  # Replace with actual guild ID
+    position: 2
+    bitrate: 64000  # 64kbps
+    userLimit: 10  # Max 10 users
+  providerConfigRef:
+    name: default
+---
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: example-category
+  annotations:
+    kubernetes.io/description: "Example category channel managed by Crossplane"
+spec:
+  forProvider:
+    name: "CROSSPLANE CATEGORY"
+    type: 4  # Category
+    guildId: "GUILD_ID_HERE"  # Replace with actual guild ID
+    position: 0
+  providerConfigRef:
+    name: default

@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-การแปลงสัญชาติ
+  annotations:
+    discord.golder.tech/id: "1044437380863639703"
+spec:
+  forProvider:
+    name: "การแปลงสัญชาติ"
+    type: "text"
+    guildId: "596248212994654225"
+    position: 5
+  providerConfigRef:
+    name: discord-provider-config

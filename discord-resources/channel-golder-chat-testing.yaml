@@ -1,0 +1,15 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-testing
+  annotations:
+    discord.golder.tech/id: "927205485793390632"
+spec:
+  forProvider:
+    name: "testing"
+    type: 0
+    guildId: "596248212994654225"
+    position: 2
+    topic: "Notifications from automated test suites"
+  providerConfigRef:
+    name: discord-provider-config

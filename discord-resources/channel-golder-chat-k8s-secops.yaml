@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-k8s-secops
+  annotations:
+    discord.golder.tech/id: "1214911858688008252"
+spec:
+  forProvider:
+    name: "k8s-secops"
+    type: 0
+    guildId: "596248212994654225"
+    position: 19
+  providerConfigRef:
+    name: discord-provider-config

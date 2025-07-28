@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-engineering
+  annotations:
+    discord.golder.tech/id: "1183729068806512682"
+spec:
+  forProvider:
+    name: "engineering"
+    type: 0
+    guildId: "596248212994654225"
+    position: 32
+  providerConfigRef:
+    name: discord-provider-config

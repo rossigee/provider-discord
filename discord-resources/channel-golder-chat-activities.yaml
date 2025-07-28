@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-activities
+  annotations:
+    discord.golder.tech/id: "1084686955029217331"
+spec:
+  forProvider:
+    name: "Activities"
+    type: 4
+    guildId: "596248212994654225"
+    position: 7
+  providerConfigRef:
+    name: discord-provider-config

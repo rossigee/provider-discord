@@ -1,0 +1,15 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-security-logins
+  annotations:
+    discord.golder.tech/id: "925283553107914814"
+spec:
+  forProvider:
+    name: "security-logins"
+    type: 0
+    guildId: "596248212994654225"
+    position: 12
+    topic: "Notifications of Keycloak and other login attempts"
+  providerConfigRef:
+    name: discord-provider-config

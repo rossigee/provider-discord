@@ -1,0 +1,15 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-dev-hugo-internal
+  annotations:
+    discord.golder.tech/id: "1149146650271551508"
+spec:
+  forProvider:
+    name: "dev-hugo-internal"
+    type: 0
+    guildId: "596248212994654225"
+    position: 31
+    topic: "Notifications of internal test/documentation sites"
+  providerConfigRef:
+    name: discord-provider-config

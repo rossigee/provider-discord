@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-document-scans
+  annotations:
+    discord.golder.tech/id: "1266590066990518302"
+spec:
+  forProvider:
+    name: "document-scans"
+    type: 0
+    guildId: "596248212994654225"
+    position: 4
+  providerConfigRef:
+    name: discord-provider-config

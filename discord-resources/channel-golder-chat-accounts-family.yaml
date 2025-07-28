@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-accounts-family
+  annotations:
+    discord.golder.tech/id: "977576308462714890"
+spec:
+  forProvider:
+    name: "accounts-family"
+    type: 0
+    guildId: "596248212994654225"
+    position: 7
+  providerConfigRef:
+    name: discord-provider-config

@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-dynamic-ip-updates
+  annotations:
+    discord.golder.tech/id: "1265175664387035176"
+spec:
+  forProvider:
+    name: "dynamic-ip-updates"
+    type: 0
+    guildId: "596248212994654225"
+    position: 17
+  providerConfigRef:
+    name: discord-provider-config

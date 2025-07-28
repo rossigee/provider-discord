@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-infra-builds
+  annotations:
+    discord.golder.tech/id: "924855674758905926"
+spec:
+  forProvider:
+    name: "infra-builds"
+    type: 0
+    guildId: "596248212994654225"
+    position: 22
+  providerConfigRef:
+    name: discord-provider-config

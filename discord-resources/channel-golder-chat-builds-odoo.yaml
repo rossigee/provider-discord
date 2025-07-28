@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-builds-odoo
+  annotations:
+    discord.golder.tech/id: "1155862461212274759"
+spec:
+  forProvider:
+    name: "builds-odoo"
+    type: 0
+    guildId: "596248212994654225"
+    position: 25
+  providerConfigRef:
+    name: discord-provider-config

@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-backups
+  annotations:
+    discord.golder.tech/id: "919101976967524362"
+spec:
+  forProvider:
+    name: "backups"
+    type: 0
+    guildId: "596248212994654225"
+    position: 15
+  providerConfigRef:
+    name: discord-provider-config

@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-security-events
+  annotations:
+    discord.golder.tech/id: "1394518537854390332"
+spec:
+  forProvider:
+    name: "security-events"
+    type: 0
+    guildId: "596248212994654225"
+    position: 14
+  providerConfigRef:
+    name: discord-provider-config

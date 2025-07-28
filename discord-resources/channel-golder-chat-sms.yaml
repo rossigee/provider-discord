@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-sms
+  annotations:
+    discord.golder.tech/id: "1085427853002289192"
+spec:
+  forProvider:
+    name: "sms"
+    type: 0
+    guildId: "596248212994654225"
+    position: 10
+  providerConfigRef:
+    name: discord-provider-config

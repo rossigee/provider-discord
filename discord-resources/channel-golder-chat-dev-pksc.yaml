@@ -1,0 +1,15 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-dev-pksc
+  annotations:
+    discord.golder.tech/id: "1141535934937055364"
+spec:
+  forProvider:
+    name: "dev-pksc"
+    type: 0
+    guildId: "596248212994654225"
+    position: 30
+    topic: "https://gogs.golder.org/pksc/hugo-pksc || https://staging.prachuab-sailing.club"
+  providerConfigRef:
+    name: discord-provider-config

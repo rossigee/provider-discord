@@ -1,0 +1,15 @@
+apiVersion: role.discord.golder.tech/v1alpha1
+kind: Role
+metadata:
+  name: test-role-crossplane
+spec:
+  forProvider:
+    name: "Crossplane Test Role"
+    guildId: "596248212994654225"
+    color: 65280
+    hoist: true
+    mentionable: true
+    permissions: "0"
+    position: 2
+  providerConfigRef:
+    name: discord-provider-config

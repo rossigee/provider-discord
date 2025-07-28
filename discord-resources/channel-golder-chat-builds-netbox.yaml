@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-builds-netbox
+  annotations:
+    discord.golder.tech/id: "1190264226149842944"
+spec:
+  forProvider:
+    name: "builds-netbox"
+    type: 0
+    guildId: "596248212994654225"
+    position: 26
+  providerConfigRef:
+    name: discord-provider-config

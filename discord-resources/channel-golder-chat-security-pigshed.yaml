@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-security-pigshed
+  annotations:
+    discord.golder.tech/id: "1085231945207791726"
+spec:
+  forProvider:
+    name: "security-pigshed"
+    type: 0
+    guildId: "596248212994654225"
+    position: 13
+  providerConfigRef:
+    name: discord-provider-config

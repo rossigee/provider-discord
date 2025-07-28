@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-kiting
+  annotations:
+    discord.golder.tech/id: "1084686995185487872"
+spec:
+  forProvider:
+    name: "kiting"
+    type: 0
+    guildId: "596248212994654225"
+    position: 34
+  providerConfigRef:
+    name: discord-provider-config

@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-commits
+  annotations:
+    discord.golder.tech/id: "944870895313379328"
+spec:
+  forProvider:
+    name: "commits"
+    type: 0
+    guildId: "596248212994654225"
+    position: 16
+  providerConfigRef:
+    name: discord-provider-config

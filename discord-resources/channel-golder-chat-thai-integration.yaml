@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-thai-integration
+  annotations:
+    discord.golder.tech/id: "1084686661557944441"
+spec:
+  forProvider:
+    name: "Thai Integration"
+    type: 4
+    guildId: "596248212994654225"
+    position: 1
+  providerConfigRef:
+    name: discord-provider-config

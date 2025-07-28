@@ -1,0 +1,17 @@
+apiVersion: role.discord.golder.tech/v1alpha1
+kind: Role
+metadata:
+  name: golder-chat-new-role
+  annotations:
+    discord.golder.tech/id: "1229272270870941706"
+spec:
+  forProvider:
+    name: "new role"
+    guildId: "596248212994654225"
+    color: 0
+    hoist: false
+    mentionable: false
+    permissions: "0"
+    position: 1
+  providerConfigRef:
+    name: discord-provider-config

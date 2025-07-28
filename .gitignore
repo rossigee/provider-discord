@@ -1,0 +1,85 @@
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+# Dependency directories (remove the comment below to include it)
+# vendor/
+
+# Go workspace file
+go.work
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Crossplane build artifacts
+bin/
+.work/
+_output/
+output/
+*.xpkg
+
+# Provider binaries (prevent accidental commits)
+/provider
+/provider-discord
+/discord-introspect
+/get-bot-invite
+
+# Generated files
+zz_generated.*
+*.pb.go
+
+# Coverage reports
+coverage.out
+coverage.html
+
+# Temporary files
+*.tmp
+*.temp
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Docker
+.docker/
+
+# Kubernetes test files
+*.kubeconfig
+
+# Logs
+*.log
+logs/
+
+# Node modules (if any JS tooling is used)
+node_modules/
+
+# Python cache (if any Python tooling is used)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Local development
+local/

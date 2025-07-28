@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-learning
+  annotations:
+    discord.golder.tech/id: "1123755942761205811"
+spec:
+  forProvider:
+    name: "learning"
+    type: 0
+    guildId: "596248212994654225"
+    position: 35
+  providerConfigRef:
+    name: discord-provider-config

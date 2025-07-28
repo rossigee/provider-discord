@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-crypto-news
+  annotations:
+    discord.golder.tech/id: "1183621664253149255"
+spec:
+  forProvider:
+    name: "crypto-news"
+    type: 0
+    guildId: "596248212994654225"
+    position: 11
+  providerConfigRef:
+    name: discord-provider-config

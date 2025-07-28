@@ -1,0 +1,14 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-text-channels
+  annotations:
+    discord.golder.tech/id: "596248212994654227"
+spec:
+  forProvider:
+    name: "Text Channels"
+    type: 4
+    guildId: "596248212994654225"
+    position: 0
+  providerConfigRef:
+    name: discord-provider-config

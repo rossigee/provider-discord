@@ -1,0 +1,15 @@
+apiVersion: channel.discord.golder.tech/v1alpha1
+kind: Channel
+metadata:
+  name: golder-chat-k8s-production
+  annotations:
+    discord.golder.tech/id: "1078144735539114065"
+spec:
+  forProvider:
+    name: "k8s-production"
+    type: 0
+    guildId: "596248212994654225"
+    position: 20
+    topic: "Alerts, notifications and comments about the in-house K8S production cluster"
+  providerConfigRef:
+    name: discord-provider-config
