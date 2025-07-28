@@ -25,10 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
-	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
 	"github.com/crossplane-contrib/provider-discord/apis/role/v1alpha1"
 	guildv1alpha1 "github.com/crossplane-contrib/provider-discord/apis/guild/v1alpha1"
@@ -42,6 +39,9 @@ type MockDiscordClient struct {
 	ModifyRoleFunc func(ctx context.Context, guildID, roleID string, req discordclient.ModifyRoleRequest) (*discordclient.Role, error)
 	DeleteRoleFunc func(ctx context.Context, guildID, roleID string) error
 }
+
+// Ensure MockDiscordClient implements RoleClient interface
+var _ discordclient.RoleClient = (*MockDiscordClient)(nil)
 
 func (m *MockDiscordClient) CreateRole(ctx context.Context, guildID string, req discordclient.CreateRoleRequest) (*discordclient.Role, error) {
 	if m.CreateRoleFunc != nil {

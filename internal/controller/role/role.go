@@ -102,7 +102,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 // An ExternalClient observes, then either creates, updates, or deletes an
 // external resource to ensure it reflects the managed resource's desired state.
 type external struct {
-	discord *discordclient.DiscordClient
+	discord discordclient.RoleClient
 }
 
 func (e *external) Disconnect(_ context.Context) error {
@@ -134,7 +134,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// Get the role from Discord
 	role, err := e.discord.GetRole(ctx, cr.Spec.ForProvider.GuildID, roleID)
 	if err != nil {
-		if errors.Is(err, errors.New("role not found")) {
+		if err.Error() == "role not found" {
 			return managed.ExternalObservation{
 				ResourceExists: false,
 			}, nil
@@ -260,7 +260,7 @@ func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	err := e.discord.DeleteRole(ctx, cr.Spec.ForProvider.GuildID, roleID)
 	if err != nil {
 		// If role is already gone, don't error
-		if errors.Is(err, errors.New("role not found")) {
+		if err.Error() == "role not found" {
 			return managed.ExternalDelete{}, nil
 		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete role")
