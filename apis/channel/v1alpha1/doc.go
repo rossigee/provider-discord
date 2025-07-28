@@ -16,6 +16,6 @@ limitations under the License.
 
 // Package v1alpha1 contains the v1alpha1 API definitions for channel resources.
 // +kubebuilder:object:generate=true
-// +groupName=channel.discord.golder.tech
+// +groupName=channel.discord.crossplane.io
 // +versionName=v1alpha1
 package v1alpha1

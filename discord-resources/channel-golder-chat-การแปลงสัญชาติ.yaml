@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-การแปลงสัญชาติ
   annotations:
-    discord.golder.tech/id: "1044437380863639703"
+    discord.crossplane.io/id: "1044437380863639703"
 spec:
   forProvider:
     name: "การแปลงสัญชาติ"

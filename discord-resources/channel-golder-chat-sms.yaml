@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-sms
   annotations:
-    discord.golder.tech/id: "1085427853002289192"
+    discord.crossplane.io/id: "1085427853002289192"
 spec:
   forProvider:
     name: "sms"

@@ -16,6 +16,6 @@ limitations under the License.
 
 // Package v1beta1 contains the core resources of the Discord provider.
 // +kubebuilder:object:generate=true
-// +groupName=discord.golder.tech
+// +groupName=discord.crossplane.io
 // +versionName=v1beta1
 package v1beta1

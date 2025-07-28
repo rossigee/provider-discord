@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-dev-pksc
   annotations:
-    discord.golder.tech/id: "1141535934937055364"
+    discord.crossplane.io/id: "1141535934937055364"
 spec:
   forProvider:
     name: "dev-pksc"

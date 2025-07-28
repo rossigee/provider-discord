@@ -25,7 +25,7 @@ import (
 
 // Package type metadata.
 const (
-	Group   = "guild.discord.golder.tech"
+	Group   = "guild.discord.crossplane.io"
 	Version = "v1alpha1"
 )
 

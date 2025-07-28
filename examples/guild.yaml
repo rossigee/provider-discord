@@ -1,4 +1,4 @@
-apiVersion: guild.discord.golder.tech/v1alpha1
+apiVersion: guild.discord.crossplane.io/v1alpha1
 kind: Guild
 metadata:
   name: example-guild

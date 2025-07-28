@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-k8s-staging
   annotations:
-    discord.golder.tech/id: "1078135239890718751"
+    discord.crossplane.io/id: "1078135239890718751"
 spec:
   forProvider:
     name: "k8s-staging"

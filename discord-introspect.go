@@ -125,12 +125,12 @@ func makeRequest(method, url, token string) *http.Response {
 }
 
 func generateGuildCR(guild Guild) string {
-	return fmt.Sprintf(`apiVersion: guild.discord.golder.tech/v1alpha1
+	return fmt.Sprintf(`apiVersion: guild.discord.crossplane.io/v1alpha1
 kind: Guild
 metadata:
   name: %s
   annotations:
-    discord.golder.tech/id: "%s"
+    discord.crossplane.io/id: "%s"
 spec:
   forProvider:
     name: "%s"
@@ -140,12 +140,12 @@ spec:
 }
 
 func generateChannelCR(channel Channel, guildName string) string {
-	cr := fmt.Sprintf(`apiVersion: channel.discord.golder.tech/v1alpha1
+	cr := fmt.Sprintf(`apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: %s-%s
   annotations:
-    discord.golder.tech/id: "%s"
+    discord.crossplane.io/id: "%s"
 spec:
   forProvider:
     name: "%s"
@@ -169,12 +169,12 @@ spec:
 }
 
 func generateRoleCR(role Role, guildName string, guildID string) string {
-	return fmt.Sprintf(`apiVersion: role.discord.golder.tech/v1alpha1
+	return fmt.Sprintf(`apiVersion: role.discord.crossplane.io/v1alpha1
 kind: Role
 metadata:
   name: %s-%s
   annotations:
-    discord.golder.tech/id: "%s"
+    discord.crossplane.io/id: "%s"
 spec:
   forProvider:
     name: "%s"

@@ -1,9 +1,9 @@
-apiVersion: role.discord.golder.tech/v1alpha1
+apiVersion: role.discord.crossplane.io/v1alpha1
 kind: Role
 metadata:
   name: golder-chat-technical
   annotations:
-    discord.golder.tech/id: "996357449156132945"
+    discord.crossplane.io/id: "996357449156132945"
 spec:
   forProvider:
     name: "Technical"

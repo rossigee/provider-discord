@@ -1,4 +1,4 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: example-text-channel
@@ -16,7 +16,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: example-voice-channel
@@ -33,7 +33,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: example-category

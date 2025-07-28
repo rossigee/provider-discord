@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-security-events
   annotations:
-    discord.golder.tech/id: "1394518537854390332"
+    discord.crossplane.io/id: "1394518537854390332"
 spec:
   forProvider:
     name: "security-events"

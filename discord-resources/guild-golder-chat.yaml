@@ -1,9 +1,9 @@
-apiVersion: guild.discord.golder.tech/v1alpha1
+apiVersion: guild.discord.crossplane.io/v1alpha1
 kind: Guild
 metadata:
   name: golder-chat
   annotations:
-    discord.golder.tech/id: "596248212994654225"
+    discord.crossplane.io/id: "596248212994654225"
 spec:
   forProvider:
     name: "Golder Chat"

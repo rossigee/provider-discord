@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-dev-hugo-internal
   annotations:
-    discord.golder.tech/id: "1149146650271551508"
+    discord.crossplane.io/id: "1149146650271551508"
 spec:
   forProvider:
     name: "dev-hugo-internal"

@@ -1,9 +1,9 @@
-apiVersion: role.discord.golder.tech/v1alpha1
+apiVersion: role.discord.crossplane.io/v1alpha1
 kind: Role
 metadata:
   name: golder-chat-family
   annotations:
-    discord.golder.tech/id: "996357175918219294"
+    discord.crossplane.io/id: "996357175918219294"
 spec:
   forProvider:
     name: "Family"

@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.18.0
-  name: guilds.guild.discord.golder.tech
+  name: guilds.guild.discord.crossplane.io
 spec:
-  group: guild.discord.golder.tech
+  group: guild.discord.crossplane.io
   names:
     categories:
     - crossplane

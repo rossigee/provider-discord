@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-visa
   annotations:
-    discord.golder.tech/id: "1161502866209505421"
+    discord.crossplane.io/id: "1161502866209505421"
 spec:
   forProvider:
     name: "visa"

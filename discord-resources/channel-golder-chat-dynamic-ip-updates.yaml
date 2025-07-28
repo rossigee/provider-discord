@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-dynamic-ip-updates
   annotations:
-    discord.golder.tech/id: "1265175664387035176"
+    discord.crossplane.io/id: "1265175664387035176"
 spec:
   forProvider:
     name: "dynamic-ip-updates"

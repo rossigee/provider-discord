@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-document-scans
   annotations:
-    discord.golder.tech/id: "1266590066990518302"
+    discord.crossplane.io/id: "1266590066990518302"
 spec:
   forProvider:
     name: "document-scans"

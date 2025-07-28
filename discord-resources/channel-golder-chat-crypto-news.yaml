@@ -1,9 +1,9 @@
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: golder-chat-crypto-news
   annotations:
-    discord.golder.tech/id: "1183621664253149255"
+    discord.crossplane.io/id: "1183621664253149255"
 spec:
   forProvider:
     name: "crypto-news"

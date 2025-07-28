@@ -1,9 +1,9 @@
-apiVersion: role.discord.golder.tech/v1alpha1
+apiVersion: role.discord.crossplane.io/v1alpha1
 kind: Role
 metadata:
   name: golder-chat-software-engineer
   annotations:
-    discord.golder.tech/id: "1133646438082035712"
+    discord.crossplane.io/id: "1133646438082035712"
 spec:
   forProvider:
     name: "Software Engineer"

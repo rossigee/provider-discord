@@ -24,20 +24,20 @@ spec:
     image: harbor.golder.lan/library/provider-discord:v0.1.2
     permissionRequests:
     - apiGroups:
-      - discord.golder.tech
+      - discord.crossplane.io
       resources:
       - providerconfigs
       - providerconfigusages
       verbs:
       - "*"
     - apiGroups:
-      - guild.discord.golder.tech
+      - guild.discord.crossplane.io
       resources:
       - guilds
       verbs:
       - "*"
     - apiGroups:
-      - channel.discord.golder.tech
+      - channel.discord.crossplane.io
       resources:
       - channels
       verbs:
