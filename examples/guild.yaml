@@ -1,0 +1,17 @@
+apiVersion: guild.discord.golder.tech/v1alpha1
+kind: Guild
+metadata:
+  name: example-guild
+  annotations:
+    kubernetes.io/description: "Example Discord guild managed by Crossplane"
+spec:
+  forProvider:
+    name: "My Crossplane Guild"
+    region: "us-east"
+    verificationLevel: 1  # Low verification
+    defaultMessageNotifications: 1  # Only mentions
+    explicitContentFilter: 1  # Members without roles
+    afkTimeout: 300  # 5 minutes
+    systemChannelFlags: 0
+  providerConfigRef:
+    name: default

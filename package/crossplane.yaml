@@ -1,0 +1,44 @@
+apiVersion: meta.pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-discord
+  annotations:
+    meta.crossplane.io/maintainer: Crossplane Maintainers <info@crossplane.io>
+    meta.crossplane.io/source: github.com/crossplane-contrib/provider-discord
+    meta.crossplane.io/license: Apache-2.0
+    meta.crossplane.io/description: |
+      The Discord Provider enables management of Discord resources like guilds,
+      channels, roles, and webhooks through the Kubernetes API.
+    meta.crossplane.io/readme: |
+      `provider-discord` is a Crossplane provider for managing Discord resources.
+      
+      It currently supports:
+      - Guilds (Discord servers)
+      - Channels (text, voice, categories)
+      
+      To use this provider, you need:
+      1. A Discord bot token with appropriate permissions
+      2. A ProviderConfig with credentials
+spec:
+  controller:
+    image: harbor.golder.lan/library/provider-discord:v0.1.2
+    permissionRequests:
+    - apiGroups:
+      - discord.golder.tech
+      resources:
+      - providerconfigs
+      - providerconfigusages
+      verbs:
+      - "*"
+    - apiGroups:
+      - guild.discord.golder.tech
+      resources:
+      - guilds
+      verbs:
+      - "*"
+    - apiGroups:
+      - channel.discord.golder.tech
+      resources:
+      - channels
+      verbs:
+      - "*"
