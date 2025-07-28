@@ -33,12 +33,23 @@ const (
 	DiscordAPIBaseURL = "https://discord.com/api/v10"
 )
 
+// RoleClient defines the interface for role-related Discord operations
+type RoleClient interface {
+	CreateRole(ctx context.Context, guildID string, req CreateRoleRequest) (*Role, error)
+	GetRole(ctx context.Context, guildID, roleID string) (*Role, error)
+	ModifyRole(ctx context.Context, guildID, roleID string, req ModifyRoleRequest) (*Role, error)
+	DeleteRole(ctx context.Context, guildID, roleID string) error
+}
+
 // DiscordClient is a client for the Discord API
 type DiscordClient struct {
 	httpClient *http.Client
 	token      string
 	baseURL    string
 }
+
+// Ensure DiscordClient implements RoleClient interface
+var _ RoleClient = (*DiscordClient)(nil)
 
 // NewDiscordClient creates a new Discord API client
 func NewDiscordClient(token string) *DiscordClient {
@@ -303,12 +314,7 @@ type ModifyRoleRequest struct {
 
 // CreateRole creates a new role in a guild
 func (c *DiscordClient) CreateRole(ctx context.Context, guildID string, req CreateRoleRequest) (*Role, error) {
-	body, err := json.Marshal(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal create role request")
-	}
-
-	resp, err := c.makeRequest(ctx, "POST", fmt.Sprintf("/guilds/%s/roles", guildID), body)
+	resp, err := c.makeRequest(ctx, "POST", fmt.Sprintf("/guilds/%s/roles", guildID), req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create role")
 	}
@@ -346,12 +352,7 @@ func (c *DiscordClient) GetRole(ctx context.Context, guildID, roleID string) (*R
 
 // ModifyRole modifies an existing role
 func (c *DiscordClient) ModifyRole(ctx context.Context, guildID, roleID string, req ModifyRoleRequest) (*Role, error) {
-	body, err := json.Marshal(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal modify role request")
-	}
-
-	resp, err := c.makeRequest(ctx, "PATCH", fmt.Sprintf("/guilds/%s/roles/%s", guildID, roleID), body)
+	resp, err := c.makeRequest(ctx, "PATCH", fmt.Sprintf("/guilds/%s/roles/%s", guildID, roleID), req)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to modify role")
 	}
