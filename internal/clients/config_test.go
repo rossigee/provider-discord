@@ -112,7 +112,7 @@ func TestGetConfig(t *testing.T) {
 				objects: []client.Object{},
 			},
 			want: want{
-				err: errors.Wrap(errors.New("providerconfigs.discord.golder.tech \"non-existent\" not found"), errGetProviderConfig),
+				err: errors.Wrap(errors.New("providerconfigs.discord.crossplane.io \"non-existent\" not found"), errGetProviderConfig),
 			},
 		},
 		"SecretNotFound": {

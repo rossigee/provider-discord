@@ -1,4 +1,4 @@
-apiVersion: role.discord.golder.tech/v1alpha1
+apiVersion: role.discord.crossplane.io/v1alpha1
 kind: Role
 metadata:
   name: test-role-crossplane
