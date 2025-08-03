@@ -33,9 +33,9 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
-	guildv1alpha1 "github.com/crossplane-contrib/provider-discord/apis/guild/v1alpha1"
-	"github.com/crossplane-contrib/provider-discord/apis/v1beta1"
-	"github.com/crossplane-contrib/provider-discord/internal/clients"
+	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
+	"github.com/rossigee/provider-discord/internal/clients"
 )
 
 const (
@@ -107,7 +107,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 // An ExternalClient observes, then either creates, updates, or deletes an
 // external resource to ensure it reflects the managed resource's desired state.
 type external struct {
-	service *clients.DiscordClient
+	service clients.GuildClient
 	kube    client.Client
 }
 

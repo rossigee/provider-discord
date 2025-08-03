@@ -1,6 +1,6 @@
 # Project Setup
 PROJECT_NAME := provider-discord
-PROJECT_REPO := github.com/crossplane-contrib/$(PROJECT_NAME)
+PROJECT_REPO := github.com/rossigee/$(PROJECT_NAME)
 
 PLATFORMS ?= linux_amd64 linux_arm64
 -include build/makelib/common.mk
@@ -27,16 +27,18 @@ UPTEST_VERSION = v0.11.1
 
 # Setup Images
 IMAGES = provider-discord
+# Force registry override (can be overridden by make command arguments)
+REGISTRY_ORGS = ghcr.io/rossigee
 -include build/makelib/imagelight.mk
 
 # Setup XPKG - Standardized registry configuration
-# Primary registry: GitHub Container Registry under rossigee
-XPKG_REG_ORGS ?= ghcr.io/rossigee
-XPKG_REG_ORGS_NO_PROMOTE ?= ghcr.io/rossigee
+# Force registry override (can be overridden by make command arguments)
+XPKG_REG_ORGS = ghcr.io/rossigee
+XPKG_REG_ORGS_NO_PROMOTE = ghcr.io/rossigee
 
 # Optional registries (can be enabled via environment variables)
 # To enable Harbor: export ENABLE_HARBOR_PUBLISH=true make publish XPKG_REG_ORGS=harbor.golder.lan/library
-# To enable Upbound: export ENABLE_UPBOUND_PUBLISH=true make publish XPKG_REG_ORGS=xpkg.upbound.io/crossplane-contrib
+# To enable Upbound: export ENABLE_UPBOUND_PUBLISH=true make publish XPKG_REG_ORGS=xpkg.upbound.io/rossigee
 XPKGS = provider-discord
 -include build/makelib/xpkg.mk
 
@@ -45,7 +47,7 @@ XPKGS = provider-discord
 xpkg.build.provider-discord: do.build.images
 
 # Setup Package Metadata
-export CROSSPLANE_VERSION := v1.20.0
+CROSSPLANE_VERSION = 1.19.0
 -include build/makelib/local.xpkg.mk
 -include build/makelib/controlplane.mk
 
@@ -84,50 +86,3 @@ run: go.build
 xpkg.build: $(UP)
 
 .PHONY: submodules run
-
-# Additional targets
-
-# Run tests with coverage
-test.cover: generate
-	@$(INFO) Running tests with coverage...
-	@$(GO) test -v -coverprofile=coverage.out ./...
-	@$(GO) tool cover -html=coverage.out -o coverage.html
-
-# Install CRDs into a cluster
-install-crds: generate
-	kubectl apply -f package/crds
-
-# Uninstall CRDs from a cluster
-uninstall-crds:
-	kubectl delete -f package/crds
-
-# Integration tests
-integration-test: generate
-	@$(INFO) Running integration tests...
-	@INTEGRATION_TESTS=true $(GO) test -v ./test/integration/...
-
-# Lint code
-lint: generate
-	@$(INFO) Running linters...
-	@golangci-lint run
-
-# Format code
-fmt:
-	@$(INFO) Formatting code...
-	@$(GO) fmt ./...
-	@goimports -w -local github.com/crossplane-contrib/provider-discord .
-
-# Check for formatting issues
-check-diff: generate fmt
-	@$(INFO) Checking for uncommitted changes...
-	@git diff --exit-code
-
-# Install pre-commit hooks
-install-hooks:
-	@$(INFO) Installing pre-commit hooks...
-	@pre-commit install
-
-# Run pre-commit hooks on all files
-check-hooks:
-	@$(INFO) Running pre-commit hooks on all files...
-	@pre-commit run --all-files

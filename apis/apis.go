@@ -20,10 +20,10 @@ package apis
 import (
 	"k8s.io/apimachinery/pkg/runtime"
 
-	channelv1alpha1 "github.com/crossplane-contrib/provider-discord/apis/channel/v1alpha1"
-	guildv1alpha1 "github.com/crossplane-contrib/provider-discord/apis/guild/v1alpha1"
-	rolev1alpha1 "github.com/crossplane-contrib/provider-discord/apis/role/v1alpha1"
-	v1beta1 "github.com/crossplane-contrib/provider-discord/apis/v1beta1"
+	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	v1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 )
 
 func init() {

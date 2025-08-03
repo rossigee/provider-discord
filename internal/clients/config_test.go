@@ -33,7 +33,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
-	"github.com/crossplane-contrib/provider-discord/apis/v1beta1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
 )
 
 var (

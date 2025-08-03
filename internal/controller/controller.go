@@ -21,10 +21,10 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/pkg/controller"
 
-	"github.com/crossplane-contrib/provider-discord/internal/controller/channel"
-	"github.com/crossplane-contrib/provider-discord/internal/controller/config"
-	"github.com/crossplane-contrib/provider-discord/internal/controller/guild"
-	"github.com/crossplane-contrib/provider-discord/internal/controller/role"
+	"github.com/rossigee/provider-discord/internal/controller/channel"
+	"github.com/rossigee/provider-discord/internal/controller/config"
+	"github.com/rossigee/provider-discord/internal/controller/guild"
+	"github.com/rossigee/provider-discord/internal/controller/role"
 )
 
 // Setup creates all Discord controllers with the supplied logger and adds them to

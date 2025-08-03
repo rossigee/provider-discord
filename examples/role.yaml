@@ -1,0 +1,33 @@
+apiVersion: role.discord.crossplane.io/v1alpha1
+kind: Role
+metadata:
+  name: example-moderator-role
+  annotations:
+    kubernetes.io/description: "Example Discord moderator role"
+spec:
+  forProvider:
+    guildId: "GUILD_ID_HERE"  # Replace with actual guild ID
+    name: "Moderator"
+    color: 3447003  # Blue color (decimal representation)
+    hoist: true     # Display role separately in user list
+    mentionable: false  # Role cannot be mentioned
+    permissions: "8"    # Administrator permissions (be careful with this!)
+  providerConfigRef:
+    name: default
+---
+apiVersion: role.discord.crossplane.io/v1alpha1
+kind: Role
+metadata:
+  name: example-member-role
+  annotations:
+    kubernetes.io/description: "Example Discord member role"
+spec:
+  forProvider:
+    guildId: "GUILD_ID_HERE"  # Replace with actual guild ID
+    name: "Member"
+    color: 3066993  # Green color
+    hoist: false
+    mentionable: true
+    permissions: "104324097"  # Basic permissions: Read Messages, Send Messages, etc.
+  providerConfigRef:
+    name: default

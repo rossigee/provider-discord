@@ -27,9 +27,9 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 
-	"github.com/crossplane-contrib/provider-discord/apis/role/v1alpha1"
-	guildv1alpha1 "github.com/crossplane-contrib/provider-discord/apis/guild/v1alpha1"
-	discordclient "github.com/crossplane-contrib/provider-discord/internal/clients"
+	"github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	discordclient "github.com/rossigee/provider-discord/internal/clients"
 )
 
 // MockDiscordClient implements a mock Discord client for testing

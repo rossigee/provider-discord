@@ -16,10 +16,10 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/pkg/resource"
 
-	"github.com/crossplane-contrib/provider-discord/apis/role/v1alpha1"
-	"github.com/crossplane-contrib/provider-discord/apis/v1beta1"
-	"github.com/crossplane-contrib/provider-discord/internal/clients"
-	discordclient "github.com/crossplane-contrib/provider-discord/internal/clients"
+	"github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
+	"github.com/rossigee/provider-discord/internal/clients"
+	discordclient "github.com/rossigee/provider-discord/internal/clients"
 )
 
 const (

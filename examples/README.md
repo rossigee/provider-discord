@@ -41,7 +41,7 @@ kubectl apply -f providerconfig.yaml
 
 1. Install the provider:
 ```bash
-kubectl apply -f https://github.com/crossplane-contrib/provider-discord/releases/latest/download/provider.yaml
+kubectl apply -f https://github.com/rossigee/provider-discord/releases/latest/download/provider.yaml
 ```
 
 2. Apply provider configuration:
