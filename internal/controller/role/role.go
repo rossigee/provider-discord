@@ -18,7 +18,6 @@ import (
 
 	"github.com/rossigee/provider-discord/apis/role/v1alpha1"
 	"github.com/rossigee/provider-discord/apis/v1beta1"
-	"github.com/rossigee/provider-discord/internal/clients"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 )
 
@@ -28,7 +27,7 @@ const (
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
 
-	errNewClient = "cannot create new Discord client"
+	// errNewClient removed - unused
 )
 
 // Setup adds a controller that reconciles Role managed resources.
@@ -84,8 +83,8 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 	}
 
 	// Extract credentials from the provider config
-	credentials := clients.ProviderCredentials{
-		Source:                      clients.CredentialsSourceSecret,
+	credentials := discordclient.ProviderCredentials{
+		Source:                      discordclient.CredentialsSourceSecret,
 		CommonCredentialSelectors:   pc.Spec.Credentials.CommonCredentialSelectors,
 	}
 	token, err := credentials.Extract(ctx, c.kube)
@@ -147,13 +146,8 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	cr.Status.AtProvider.Managed = role.Managed
 
 	// Check if update is needed
-	needsUpdate := false
-	if role.Name != cr.Spec.ForProvider.Name {
-		needsUpdate = true
-	}
-	if cr.Spec.ForProvider.Color != nil && role.Color != *cr.Spec.ForProvider.Color {
-		needsUpdate = true
-	}
+	needsUpdate := role.Name != cr.Spec.ForProvider.Name ||
+		(cr.Spec.ForProvider.Color != nil && role.Color != *cr.Spec.ForProvider.Color)
 	if cr.Spec.ForProvider.Hoist != nil && role.Hoist != *cr.Spec.ForProvider.Hoist {
 		needsUpdate = true
 	}

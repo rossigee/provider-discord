@@ -417,10 +417,4 @@ func TestTypeAssertions(t *testing.T) {
 }
 
 // Helper functions
-func intPtr(i int) *int {
-	return &i
-}
-
-func strPtr(s string) *string {
-	return &s
-}
+// Helper functions removed - unused

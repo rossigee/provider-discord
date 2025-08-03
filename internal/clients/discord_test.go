@@ -450,7 +450,10 @@ func TestMakeRequestHTTPError(t *testing.T) {
 	client := NewDiscordClient("test-token")
 	client.baseURL = server.URL
 
-	_, err := client.makeRequest(context.Background(), "GET", "/test", nil)
+	resp, err := client.makeRequest(context.Background(), "GET", "/test", nil)
+	if resp != nil {
+		resp.Body.Close()
+	}
 	if err == nil {
 		t.Error("Expected error for HTTP 500, got nil")
 	}
@@ -460,7 +463,10 @@ func TestMakeRequestInvalidURL(t *testing.T) {
 	client := NewDiscordClient("test-token")
 	client.baseURL = "://invalid-url"
 
-	_, err := client.makeRequest(context.Background(), "GET", "/test", nil)
+	resp, err := client.makeRequest(context.Background(), "GET", "/test", nil)
+	if resp != nil {
+		resp.Body.Close()
+	}
 	if err == nil {
 		t.Error("Expected error for invalid URL, got nil")
 	}
@@ -470,7 +476,10 @@ func TestMakeRequestNetworkError(t *testing.T) {
 	client := NewDiscordClient("test-token")
 	client.baseURL = "http://localhost:99999" // Non-existent port
 
-	_, err := client.makeRequest(context.Background(), "GET", "/test", nil)
+	resp, err := client.makeRequest(context.Background(), "GET", "/test", nil)
+	if resp != nil {
+		resp.Body.Close()
+	}
 	if err == nil {
 		t.Error("Expected network error, got nil")
 	}
@@ -482,7 +491,10 @@ func TestMakeRequestInvalidBodyJSON(t *testing.T) {
 
 	// Create an invalid body that can't be marshaled to JSON
 	invalidBody := make(chan int)
-	_, err := client.makeRequest(context.Background(), "POST", "/test", invalidBody)
+	resp, err := client.makeRequest(context.Background(), "POST", "/test", invalidBody)
+	if resp != nil {
+		resp.Body.Close()
+	}
 	if err == nil {
 		t.Error("Expected error for invalid JSON body, got nil")
 	}
