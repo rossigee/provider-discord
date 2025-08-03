@@ -44,7 +44,7 @@
 ## Provider Architecture
 
 ### API Groups
-- `discord.golder.tech/v1alpha1` - Main API group
+- `discord.crossplane.io/v1alpha1` - Main API group
 - Resources will follow Crossplane patterns with:
   - Spec/Status structure
   - Managed resource lifecycle

@@ -31,10 +31,10 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 
-	"github.com/crossplane-contrib/provider-discord/apis"
-	channelv1alpha1 "github.com/crossplane-contrib/provider-discord/apis/channel/v1alpha1"
-	guildv1alpha1 "github.com/crossplane-contrib/provider-discord/apis/guild/v1alpha1"
-	"github.com/crossplane-contrib/provider-discord/apis/v1beta1"
+	"github.com/rossigee/provider-discord/apis"
+	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
 )
 
 func TestGuildLifecycle(t *testing.T) {

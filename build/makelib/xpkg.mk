@@ -80,14 +80,13 @@ ifeq ($(XPKG_CLEANUP_EXAMPLES_ENABLED),true)
 endif
 	@$(INFO) Building package $(1)-$(VERSION).xpkg for $(PLATFORM)
 	@mkdir -p $(OUTPUT_DIR)/xpkg/$(PLATFORM)
-	@controller_arg=$$$$(grep -E '^kind:\s+Provider\s*$$$$' $(XPKG_DIR)/crossplane.yaml > /dev/null && echo "--controller $(BUILD_REGISTRY)/$(1)-$(ARCH)"); \
+	@embed_runtime_arg=$$$$(grep -E '^kind:\s+Provider\s*$$$$' $(XPKG_DIR)/crossplane.yaml > /dev/null && echo "--embed-runtime-image $(BUILD_REGISTRY)/$(1)-$(ARCH)"); \
 	$(CROSSPLANE_CLI) xpkg build \
-		$$$${controller_arg} \
+		$$$${embed_runtime_arg} \
 		--package-root $(XPKG_DIR) \
-		--auth-ext $(XPKG_AUTH_EXT) \
 		--examples-root $(XPKG_PROCESSED_EXAMPLES_DIR) \
 		--ignore $(XPKG_IGNORE) \
-		--output $(XPKG_OUTPUT_DIR)/$(PLATFORM)/$(1)-$(VERSION).xpkg || $(FAIL)
+		--package-file $(XPKG_OUTPUT_DIR)/$(PLATFORM)/$(1)-$(VERSION).xpkg || $(FAIL)
 	@$(OK) Built package $(1)-$(VERSION).xpkg for $(PLATFORM)
 ifeq ($(XPKG_CLEANUP_EXAMPLES_ENABLED),true)
 	@rm -rf $(WORK_DIR)/xpkg-cleaned-examples

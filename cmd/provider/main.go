@@ -31,9 +31,9 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/pkg/ratelimiter"
 
-	"github.com/crossplane-contrib/provider-discord/apis"
-	"github.com/crossplane-contrib/provider-discord/internal/controller"
-	"github.com/crossplane-contrib/provider-discord/internal/features"
+	"github.com/rossigee/provider-discord/apis"
+	"github.com/rossigee/provider-discord/internal/controller"
+	"github.com/rossigee/provider-discord/internal/features"
 )
 
 func main() {

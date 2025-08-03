@@ -41,6 +41,23 @@ type RoleClient interface {
 	DeleteRole(ctx context.Context, guildID, roleID string) error
 }
 
+// GuildClient defines the interface for guild-related Discord operations
+type GuildClient interface {
+	CreateGuild(ctx context.Context, req *CreateGuildRequest) (*Guild, error)
+	GetGuild(ctx context.Context, guildID string) (*Guild, error)
+	ModifyGuild(ctx context.Context, guildID string, req *ModifyGuildRequest) (*Guild, error)
+	DeleteGuild(ctx context.Context, guildID string) error
+	ListGuilds(ctx context.Context) ([]Guild, error)
+}
+
+// ChannelClient defines the interface for channel-related Discord operations
+type ChannelClient interface {
+	CreateChannel(ctx context.Context, req *CreateChannelRequest) (*Channel, error)
+	GetChannel(ctx context.Context, channelID string) (*Channel, error)
+	ModifyChannel(ctx context.Context, channelID string, req *ModifyChannelRequest) (*Channel, error)
+	DeleteChannel(ctx context.Context, channelID string) error
+}
+
 // DiscordClient is a client for the Discord API
 type DiscordClient struct {
 	httpClient *http.Client
@@ -48,8 +65,10 @@ type DiscordClient struct {
 	baseURL    string
 }
 
-// Ensure DiscordClient implements RoleClient interface
+// Ensure DiscordClient implements all client interfaces
 var _ RoleClient = (*DiscordClient)(nil)
+var _ GuildClient = (*DiscordClient)(nil)
+var _ ChannelClient = (*DiscordClient)(nil)
 
 // NewDiscordClient creates a new Discord API client
 func NewDiscordClient(token string) *DiscordClient {
