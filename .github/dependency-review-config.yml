@@ -1,0 +1,73 @@
+# Dependency Review Configuration for provider-discord
+# See: https://docs.github.com/en/code-security/supply-chain-security/understanding-your-software-supply-chain/configuring-dependency-review
+
+# Fail the action if any vulnerabilities with this severity or higher are detected
+fail-on-severity: moderate
+
+# Fail the action if any open source license is detected that is not in the allow list
+fail-on-scopes:
+  - development
+  - runtime
+
+# Allow list of licenses
+allow-licenses:
+  - Apache-2.0
+  - MIT
+  - BSD-2-Clause
+  - BSD-3-Clause
+  - ISC
+  - CC0-1.0
+
+# Deny list of licenses (takes precedence over allow list)
+deny-licenses:
+  - GPL-2.0
+  - GPL-3.0
+  - AGPL-1.0
+  - AGPL-3.0
+  - LGPL-2.0
+  - LGPL-2.1
+  - LGPL-3.0
+  - CPOL-1.02
+  - EPL-1.0
+  - EPL-2.0
+  - EUPL-1.1
+  - EUPL-1.2
+
+# Block packages with these names from being introduced
+deny-packages:
+  - "npm:lodash"  # example - prefer specific lodash functions
+  - "npm:moment"  # prefer date-fns or dayjs
+
+# Allow GitHub Advisory Database vulnerabilities to be ignored
+allow-ghsas:
+  # Example: Allow specific advisories that are false positives or don't apply
+  # - GHSA-xxxx-xxxx-xxxx
+
+# Allow vulnerabilities from OSV database to be ignored
+allow-vulnerabilities:
+  # Example: Allow specific CVEs that don't apply
+  # - CVE-2023-12345
+
+# Comment to add to PR when dependencies are blocked
+comment-summary-in-pr: always
+
+# Show more information about the policies that detected the alert
+enable-licensdb: true
+
+# Retry configuration for network issues
+retry:
+  count: 3
+  delay: 5
+
+# Configuration for specific ecosystems
+config-file: |
+  # Go module configuration
+  go:
+    # Check for updates to Go modules
+    check-for-updates: true
+    
+    # Allow pre-release versions
+    allow-prerelease: false
+    
+    # Check licenses in vendor directory
+    check-vendor: true

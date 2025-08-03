@@ -1,0 +1,205 @@
+# AlertManager rules for Provider Discord
+# These rules define critical alerts for monitoring the provider health and performance
+
+groups:
+  - name: provider-discord.critical
+    interval: 30s
+    rules:
+      - alert: ProviderDiscordDown
+        expr: up{job="provider-discord"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord is down"
+          description: "Provider Discord has been down for more than 1 minute. No metrics are being received."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#provider-down"
+
+      - alert: ProviderDiscordHighErrorRate
+        expr: |
+          (
+            sum(rate(provider_discord_api_operations_total{status!="success"}[5m])) /
+            sum(rate(provider_discord_api_operations_total[5m]))
+          ) > 0.1
+        for: 5m
+        labels:
+          severity: critical
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord high error rate"
+          description: "Provider Discord error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#high-error-rate"
+
+      - alert: ProviderDiscordAPIUnhealthy
+        expr: provider_discord_health_check_status{endpoint="discord_api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord API health check failing"
+          description: "Discord API health check has been failing for more than 2 minutes."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#api-health-check-failing"
+
+      - alert: ProviderDiscordReconciliationStuck
+        expr: |
+          increase(provider_discord_reconcile_operations_total[10m]) == 0 and
+          provider_discord_resources_total > 0
+        for: 10m
+        labels:
+          severity: warning
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord reconciliation appears stuck"
+          description: "No reconciliation operations detected for 10 minutes despite having managed resources."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#reconciliation-stuck"
+
+  - name: provider-discord.warning
+    interval: 1m
+    rules:
+      - alert: ProviderDiscordHighLatency
+        expr: |
+          histogram_quantile(0.95, rate(provider_discord_api_duration_seconds_bucket[5m])) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord high API latency"
+          description: "95th percentile API response time is {{ $value }}s over the last 5 minutes."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#high-latency"
+
+      - alert: ProviderDiscordCircuitBreakerOpen
+        expr: provider_discord_circuit_breaker_state{state="open"} == 1
+        for: 1m
+        labels:
+          severity: warning
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord circuit breaker open"
+          description: "Circuit breaker for {{ $labels.resource_type }} is open, indicating repeated failures."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#circuit-breaker-open"
+
+      - alert: ProviderDiscordHighRetryRate
+        expr: |
+          sum(rate(provider_discord_retry_attempts_total[5m])) by (resource_type) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord high retry rate"
+          description: "High retry rate detected for {{ $labels.resource_type }}: {{ $value }} retries/sec."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#high-retry-rate"
+
+      - alert: ProviderDiscordMemoryUsageHigh
+        expr: |
+          process_resident_memory_bytes{job="provider-discord"} > 500 * 1024 * 1024
+        for: 5m
+        labels:
+          severity: warning
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord high memory usage"
+          description: "Provider Discord memory usage is {{ $value | humanizeBytes }}."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#high-memory-usage"
+
+  - name: provider-discord.info
+    interval: 5m
+    rules:
+      - alert: ProviderDiscordSlowHealthCheck
+        expr: |
+          histogram_quantile(0.95, rate(provider_discord_health_check_duration_seconds_bucket[5m])) > 2
+        for: 10m
+        labels:
+          severity: info
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord slow health checks"
+          description: "Health check duration 95th percentile is {{ $value }}s."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#slow-health-checks"
+
+      - alert: ProviderDiscordResourceDrift
+        expr: |
+          sum(rate(provider_discord_reconcile_operations_total{operation="update"}[1h])) by (resource_type) > 0.1
+        for: 30m
+        labels:
+          severity: info
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord resource drift detected"
+          description: "High update rate for {{ $labels.resource_type }} may indicate configuration drift."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#resource-drift"
+
+  - name: provider-discord.sla
+    interval: 1m
+    rules:
+      - alert: ProviderDiscordSLABreach
+        expr: |
+          (
+            sum(rate(provider_discord_api_operations_total{status="success"}[5m])) /
+            sum(rate(provider_discord_api_operations_total[5m]))
+          ) < 0.99
+        for: 10m
+        labels:
+          severity: warning
+          service: provider-discord
+          team: platform
+          sla: "availability"
+        annotations:
+          summary: "Provider Discord SLA breach - availability"
+          description: "Provider Discord availability is {{ $value | humanizePercentage }}, below 99% SLA."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#sla-breach"
+
+      - alert: ProviderDiscordSLABreachLatency
+        expr: |
+          histogram_quantile(0.95, rate(provider_discord_api_duration_seconds_bucket[5m])) > 3
+        for: 10m
+        labels:
+          severity: warning
+          service: provider-discord
+          team: platform
+          sla: "latency"
+        annotations:
+          summary: "Provider Discord SLA breach - latency"
+          description: "Provider Discord 95th percentile latency is {{ $value }}s, above 3s SLA."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#sla-breach"
+
+  - name: provider-discord.capacity
+    interval: 5m
+    rules:
+      - alert: ProviderDiscordHighResourceCount
+        expr: provider_discord_resources_total > 1000
+        for: 5m
+        labels:
+          severity: info
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord managing high resource count"
+          description: "Provider Discord is managing {{ $value }} resources. Consider scaling or optimization."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#high-resource-count"
+
+      - alert: ProviderDiscordRateLimitApproaching
+        expr: |
+          sum(rate(provider_discord_api_operations_total[1m])) * 60 > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: provider-discord
+          team: platform
+        annotations:
+          summary: "Provider Discord approaching Discord rate limits"
+          description: "API request rate is {{ $value }} requests/minute, approaching Discord limits."
+          runbook_url: "https://github.com/rossigee/provider-discord/blob/master/docs/troubleshooting.md#rate-limit-approaching"
