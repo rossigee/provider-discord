@@ -15,6 +15,8 @@ GO_STATIC_PACKAGES = $(GO_PROJECT)/cmd/provider
 GO_LDFLAGS += -X $(GO_PROJECT)/internal/version.Version=$(VERSION)
 GO_SUBDIRS += cmd internal apis
 GO111MODULE = on
+# Override golangci-lint version for modern Go support
+GOLANGCILINT_VERSION ?= 2.3.1
 -include build/makelib/golang.mk
 
 # Setup Kubernetes tools
@@ -43,7 +45,7 @@ XPKGS = provider-discord
 xpkg.build.provider-discord: do.build.images
 
 # Setup Package Metadata
-export CROSSPLANE_VERSION := $(shell go list -m -f '{{.Version}}' github.com/crossplane/crossplane)
+export CROSSPLANE_VERSION := v1.20.0
 -include build/makelib/local.xpkg.mk
 -include build/makelib/controlplane.mk
 
