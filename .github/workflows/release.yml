@@ -6,157 +6,81 @@ on:
       - 'v*'
 
 env:
-  GO_VERSION: '1.24.5'
-  REGISTRY: ghcr.io
+  GO_VERSION: '1.23'
 
 jobs:
-  build-and-push:
-    runs-on: ubuntu-22.04
-    permissions:
-      contents: read
-      packages: write
+  build-and-release:
+    runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          submodules: true
           fetch-depth: 0
+          submodules: true
 
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Log in to Container Registry
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.PAT_TOKEN }}
 
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all
+      - name: Get Version
+        id: version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_no_v=${VERSION#v}" >> $GITHUB_OUTPUT
 
-      - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@v3
-        with:
-          version: latest
-
-      - name: Cache Go Dependencies
-        uses: actions/cache@v4
-        with:
-          path: .work/pkg
-          key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-pkg-
-
-      - name: Cache Go Build
-        uses: actions/cache@v4
-        with:
-          path: .work/go
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-go-
-
-      - name: Vendor Dependencies
-        run: make vendor vendor.check
+      - name: Build and Package
+        run: |
+          make generate
+          make build-bin
+          make docker-build
+          make xpkg-build
 
       - name: Build and Push Docker Images
-        env:
-          VERSION: ${{ github.ref_name }}
-        run: make docker.publish
-
-      - name: Build and Push Package
-        env:
-          VERSION: ${{ github.ref_name }}
-          XPKG_REG_ORGS: ${{ env.REGISTRY }}/${{ github.repository_owner }}
-        run: make xpkg.publish
-
-  create-release:
-    runs-on: ubuntu-22.04
-    needs: build-and-push
-    permissions:
-      contents: write
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Cache Go Dependencies
-        uses: actions/cache@v4
-        with:
-          path: .work/pkg
-          key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
-          restore-keys: ${{ runner.os }}-pkg-
-
-      - name: Build Package for Release
-        env:
-          VERSION: ${{ github.ref_name }}
-        run: make xpkg.build
-
-      - name: Generate Release Notes
-        id: generate_notes
         run: |
-          # Get the latest tag before current
-          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^1 2>/dev/null || echo "")
-          CURRENT_TAG=${{ github.ref_name }}
-          
-          echo "# Release $CURRENT_TAG" > release_notes.md
-          echo "" >> release_notes.md
-          echo "## What's Changed" >> release_notes.md
-          echo "" >> release_notes.md
-          
-          if [ -n "$PREV_TAG" ]; then
-            # Get commits since last tag
-            git log --pretty=format:"* %s (%h)" $PREV_TAG..$CURRENT_TAG >> release_notes.md
-          else
-            # First release, get all commits
-            git log --pretty=format:"* %s (%h)" >> release_notes.md
-          fi
-          
-          echo "" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "## Docker Images" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "* \`ghcr.io/rossigee/provider-discord:$CURRENT_TAG\`" >> release_notes.md
-          echo "* \`ghcr.io/rossigee/provider-discord:latest\` (if this is the latest release)" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "## Installation" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "### Using kubectl" >> release_notes.md
-          echo '```bash' >> release_notes.md
-          echo "kubectl apply -f https://github.com/${{ github.repository }}/releases/download/$CURRENT_TAG/provider-discord-$CURRENT_TAG.yaml" >> release_notes.md
-          echo '```' >> release_notes.md
-          echo "" >> release_notes.md
-          echo "### Using Crossplane CLI" >> release_notes.md
-          echo '```bash' >> release_notes.md
-          echo "kubectl crossplane install provider ghcr.io/rossigee/provider-discord:$CURRENT_TAG" >> release_notes.md
-          echo '```' >> release_notes.md
-          echo "" >> release_notes.md
-          echo "## Compatibility" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "* Crossplane: v1.14.0+" >> release_notes.md
-          echo "* Kubernetes: v1.24+" >> release_notes.md
-          echo "* Discord API: v10" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "## Security" >> release_notes.md
-          echo "" >> release_notes.md
-          echo "This release includes security scanning and vulnerability assessments. See the [Security Policy](https://github.com/rossigee/provider-discord/blob/main/docs/security-policy.md) for more information." >> release_notes.md
+          # Build and push to GitHub Container Registry
+          docker tag ghcr.io/rossigee/provider-discord:latest ghcr.io/rossigee/provider-discord:${{ steps.version.outputs.version_no_v }}
+          docker push ghcr.io/rossigee/provider-discord:${{ steps.version.outputs.version_no_v }}
+          docker push ghcr.io/rossigee/provider-discord:latest
 
-      - name: Create Release
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          # Simple changelog generation
+          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+          if [ -n "$PREVIOUS_TAG" ]; then
+            echo "## Changes since $PREVIOUS_TAG" > changelog.txt
+            git log --oneline $PREVIOUS_TAG..HEAD >> changelog.txt
+          else
+            echo "## Initial Release" > changelog.txt
+            echo "First release of provider-discord for Crossplane" >> changelog.txt
+            echo "" >> changelog.txt
+            echo "### Features" >> changelog.txt
+            echo "- Discord guild (server) management" >> changelog.txt
+            echo "- Channel creation and configuration" >> changelog.txt
+            echo "- Role and permission management" >> changelog.txt
+            echo "- Webhook support for automation" >> changelog.txt
+            echo "- GitOps-ready Discord infrastructure management" >> changelog.txt
+          fi
+
+      - name: Create GitHub Release
+        id: create_release
         uses: softprops/action-gh-release@v2
         with:
-          body_path: release_notes.md
-          files: |
-            _output/xpkg/*.xpkg
-          generate_release_notes: false
+          name: Release ${{ steps.version.outputs.version }}
+          body_path: changelog.txt
+          files: _output/provider-discord.xpkg
           draft: false
           prerelease: false
