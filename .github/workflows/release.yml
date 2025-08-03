@@ -105,16 +105,51 @@ jobs:
       - name: Generate Release Notes
         id: generate_notes
         run: |
-          echo "## What's Changed" > release_notes.md
+          # Get the latest tag before current
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^1 2>/dev/null || echo "")
+          CURRENT_TAG=${{ github.ref_name }}
+          
+          echo "# Release $CURRENT_TAG" > release_notes.md
           echo "" >> release_notes.md
-          git log --pretty=format:"- %s by @%an" $(git describe --tags --abbrev=0 HEAD^)..HEAD >> release_notes.md
+          echo "## What's Changed" >> release_notes.md
           echo "" >> release_notes.md
+          
+          if [ -n "$PREV_TAG" ]; then
+            # Get commits since last tag
+            git log --pretty=format:"* %s (%h)" $PREV_TAG..$CURRENT_TAG >> release_notes.md
+          else
+            # First release, get all commits
+            git log --pretty=format:"* %s (%h)" >> release_notes.md
+          fi
+          
+          echo "" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "## Docker Images" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "* \`ghcr.io/rossigee/provider-discord:$CURRENT_TAG\`" >> release_notes.md
+          echo "* \`ghcr.io/rossigee/provider-discord:latest\` (if this is the latest release)" >> release_notes.md
           echo "" >> release_notes.md
           echo "## Installation" >> release_notes.md
           echo "" >> release_notes.md
+          echo "### Using kubectl" >> release_notes.md
           echo '```bash' >> release_notes.md
-          echo "kubectl apply -f https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/provider.yaml" >> release_notes.md
+          echo "kubectl apply -f https://github.com/${{ github.repository }}/releases/download/$CURRENT_TAG/provider-discord-$CURRENT_TAG.yaml" >> release_notes.md
           echo '```' >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Using Crossplane CLI" >> release_notes.md
+          echo '```bash' >> release_notes.md
+          echo "kubectl crossplane install provider ghcr.io/rossigee/provider-discord:$CURRENT_TAG" >> release_notes.md
+          echo '```' >> release_notes.md
+          echo "" >> release_notes.md
+          echo "## Compatibility" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "* Crossplane: v1.14.0+" >> release_notes.md
+          echo "* Kubernetes: v1.24+" >> release_notes.md
+          echo "* Discord API: v10" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "## Security" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "This release includes security scanning and vulnerability assessments. See the [Security Policy](https://github.com/rossigee/provider-discord/blob/main/docs/security-policy.md) for more information." >> release_notes.md
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
