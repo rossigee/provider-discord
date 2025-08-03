@@ -18,7 +18,6 @@ package performance
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"runtime"
 	"sync"
@@ -62,7 +61,7 @@ func TestDiscordAPIPerformance(t *testing.T) {
 		t.Skip("DISCORD_TEST_GUILD_ID not set, skipping performance tests")
 	}
 
-	client := clients.NewDiscordClient(token, "https://discord.com/api/v10")
+	client := clients.NewDiscordClient(token)
 
 	// Test different load scenarios
 	scenarios := []struct {
@@ -116,7 +115,7 @@ func TestConcurrentResourceOperations(t *testing.T) {
 		t.Skip("Required environment variables not set, skipping concurrent tests")
 	}
 
-	client := clients.NewDiscordClient(token, "https://discord.com/api/v10")
+	client := clients.NewDiscordClient(token)
 	ctx := context.Background()
 
 	// Test concurrent operations
@@ -191,7 +190,7 @@ func TestRateLimitHandling(t *testing.T) {
 		t.Skip("Required environment variables not set, skipping rate limit tests")
 	}
 
-	client := clients.NewDiscordClient(token, "https://discord.com/api/v10")
+	client := clients.NewDiscordClient(token)
 	ctx := context.Background()
 
 	// Rapid fire requests to trigger rate limiting
@@ -252,7 +251,7 @@ func TestMemoryUsageUnderLoad(t *testing.T) {
 		t.Skip("Required environment variables not set, skipping memory tests")
 	}
 
-	client := clients.NewDiscordClient(token, "https://discord.com/api/v10")
+	client := clients.NewDiscordClient(token)
 
 	// Baseline memory measurement
 	var m1, m2 runtime.MemStats
@@ -303,7 +302,7 @@ func BenchmarkDiscordOperations(b *testing.B) {
 		b.Skip("Required environment variables not set, skipping benchmarks")
 	}
 
-	client := clients.NewDiscordClient(token, "https://discord.com/api/v10")
+	client := clients.NewDiscordClient(token)
 	ctx := context.Background()
 
 	b.Run("GetGuild", func(b *testing.B) {

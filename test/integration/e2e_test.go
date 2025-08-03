@@ -33,10 +33,22 @@ import (
 	"github.com/crossplane/crossplane-runtime/pkg/meta"
 
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
 	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
 	"github.com/rossigee/provider-discord/apis/v1beta1"
 )
+
+// Helper functions
+func stringPtrE2E(s string) *string {
+	return &s
+}
+
+func intPtrE2E(i int) *int {
+	return &i
+}
+
+func boolPtrE2E(b bool) *bool {
+	return &b
+}
 
 // TestEndToEndScenario tests a complete end-to-end scenario:
 // 1. Create ProviderConfig
@@ -192,7 +204,7 @@ func createProviderConfig(suffix, secretName, secretNamespace string) *v1beta1.P
 					},
 				},
 			},
-			BaseURL: "https://discord.com/api/v10",
+			BaseURL: stringPtrE2E("https://discord.com/api/v10"),
 		},
 	}
 }
@@ -209,7 +221,7 @@ func createTestChannels(namespace, suffix, guildID, providerConfigName string) [
 					Name:    fmt.Sprintf("test-text-%s", suffix),
 					Type:    0, // Text channel
 					GuildID: guildID,
-					Topic:   "Test text channel created by E2E tests",
+					Topic:   stringPtrE2E("Test text channel created by E2E tests"),
 				},
 				ResourceSpec: xpv1.ResourceSpec{
 					ProviderConfigReference: &xpv1.Reference{
@@ -228,8 +240,8 @@ func createTestChannels(namespace, suffix, guildID, providerConfigName string) [
 					Name:      fmt.Sprintf("test-voice-%s", suffix),
 					Type:      2, // Voice channel
 					GuildID:   guildID,
-					Bitrate:   64000,
-					UserLimit: 10,
+					Bitrate:   intPtrE2E(64000),
+					UserLimit: intPtrE2E(10),
 				},
 				ResourceSpec: xpv1.ResourceSpec{
 					ProviderConfigReference: &xpv1.Reference{
@@ -252,10 +264,10 @@ func createTestRoles(namespace, suffix, guildID, providerConfigName string) []*r
 				ForProvider: rolev1alpha1.RoleParameters{
 					Name:        fmt.Sprintf("Test Admin %s", suffix),
 					GuildID:     guildID,
-					Color:       0xFF0000, // Red
-					Hoist:       true,
-					Mentionable: false,
-					Permissions: "8", // Administrator permission
+					Color:       intPtrE2E(0xFF0000), // Red
+					Hoist:       boolPtrE2E(true),
+					Mentionable: boolPtrE2E(false),
+					Permissions: stringPtrE2E("8"), // Administrator permission
 				},
 				ResourceSpec: xpv1.ResourceSpec{
 					ProviderConfigReference: &xpv1.Reference{
@@ -273,10 +285,10 @@ func createTestRoles(namespace, suffix, guildID, providerConfigName string) []*r
 				ForProvider: rolev1alpha1.RoleParameters{
 					Name:        fmt.Sprintf("Test Member %s", suffix),
 					GuildID:     guildID,
-					Color:       0x00FF00, // Green
-					Hoist:       false,
-					Mentionable: true,
-					Permissions: "1024", // View channels permission
+					Color:       intPtrE2E(0x00FF00), // Green
+					Hoist:       boolPtrE2E(false),
+					Mentionable: boolPtrE2E(true),
+					Permissions: stringPtrE2E("1024"), // View channels permission
 				},
 				ResourceSpec: xpv1.ResourceSpec{
 					ProviderConfigReference: &xpv1.Reference{
@@ -364,7 +376,7 @@ func testChannelUpdate(ctx context.Context, t *testing.T, k8sClient client.Clien
 	}
 
 	newTopic := fmt.Sprintf("Updated topic at %d", time.Now().Unix())
-	currentChannel.Spec.ForProvider.Topic = newTopic
+	currentChannel.Spec.ForProvider.Topic = stringPtrE2E(newTopic)
 
 	err = k8sClient.Update(ctx, &currentChannel)
 	if err != nil {
@@ -398,7 +410,7 @@ func testRoleUpdate(ctx context.Context, t *testing.T, k8sClient client.Client, 
 	}
 
 	newColor := 0x0000FF // Blue
-	currentRole.Spec.ForProvider.Color = newColor
+	currentRole.Spec.ForProvider.Color = intPtrE2E(newColor)
 
 	err = k8sClient.Update(ctx, &currentRole)
 	if err != nil {
@@ -413,7 +425,7 @@ func testRoleUpdate(ctx context.Context, t *testing.T, k8sClient client.Client, 
 			return false, err
 		}
 
-		return updatedRole.Status.AtProvider.Color == newColor, nil
+		return updatedRole.Spec.ForProvider.Color != nil && *updatedRole.Spec.ForProvider.Color == newColor, nil
 	})
 
 	if err != nil {

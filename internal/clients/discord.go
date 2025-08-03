@@ -229,7 +229,7 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 	}
 
 	if resp.StatusCode >= 400 {
-		defer resp.Body.Close()
+		defer func() { _ = resp.Body.Close() }()
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		return nil, errors.Errorf("Discord API error: %d - %s", resp.StatusCode, string(bodyBytes))
 	}
@@ -243,7 +243,7 @@ func (c *DiscordClient) GetGuild(ctx context.Context, guildID string) (*Guild, e
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get guild")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var guild Guild
 	if err := json.NewDecoder(resp.Body).Decode(&guild); err != nil {
@@ -259,7 +259,7 @@ func (c *DiscordClient) CreateGuild(ctx context.Context, req *CreateGuildRequest
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create guild")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var guild Guild
 	if err := json.NewDecoder(resp.Body).Decode(&guild); err != nil {
@@ -275,7 +275,7 @@ func (c *DiscordClient) ModifyGuild(ctx context.Context, guildID string, req *Mo
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to modify guild")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var guild Guild
 	if err := json.NewDecoder(resp.Body).Decode(&guild); err != nil {
@@ -291,7 +291,7 @@ func (c *DiscordClient) DeleteGuild(ctx context.Context, guildID string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to delete guild")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return nil
 }
@@ -302,7 +302,7 @@ func (c *DiscordClient) ListGuilds(ctx context.Context) ([]Guild, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list guilds")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var guilds []Guild
 	if err := json.NewDecoder(resp.Body).Decode(&guilds); err != nil {
@@ -337,7 +337,7 @@ func (c *DiscordClient) CreateRole(ctx context.Context, guildID string, req Crea
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create role")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var role Role
 	if err := json.NewDecoder(resp.Body).Decode(&role); err != nil {
@@ -353,7 +353,7 @@ func (c *DiscordClient) GetRole(ctx context.Context, guildID, roleID string) (*R
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get roles")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var roles []Role
 	if err := json.NewDecoder(resp.Body).Decode(&roles); err != nil {
@@ -375,7 +375,7 @@ func (c *DiscordClient) ModifyRole(ctx context.Context, guildID, roleID string, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to modify role")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var role Role
 	if err := json.NewDecoder(resp.Body).Decode(&role); err != nil {
@@ -391,7 +391,7 @@ func (c *DiscordClient) DeleteRole(ctx context.Context, guildID, roleID string) 
 	if err != nil {
 		return errors.Wrap(err, "failed to delete role")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return nil
 }
@@ -429,7 +429,7 @@ func (c *DiscordClient) GetChannel(ctx context.Context, channelID string) (*Chan
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get channel")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var channel Channel
 	if err := json.NewDecoder(resp.Body).Decode(&channel); err != nil {
@@ -445,7 +445,7 @@ func (c *DiscordClient) CreateChannel(ctx context.Context, req *CreateChannelReq
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create channel")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var channel Channel
 	if err := json.NewDecoder(resp.Body).Decode(&channel); err != nil {
@@ -461,7 +461,7 @@ func (c *DiscordClient) ModifyChannel(ctx context.Context, channelID string, req
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to modify channel")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	var channel Channel
 	if err := json.NewDecoder(resp.Body).Decode(&channel); err != nil {
@@ -477,7 +477,7 @@ func (c *DiscordClient) DeleteChannel(ctx context.Context, channelID string) err
 	if err != nil {
 		return errors.Wrap(err, "failed to delete channel")
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	return nil
 }

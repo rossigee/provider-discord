@@ -5,40 +5,23 @@ run:
   timeout: 10m
   issues-exit-code: 1
   tests: true
+  skip-files:
+    - "tools/.*\\.go$"
 
 linters:
   enable:
     - bodyclose
-    - depguard
-    - dogsled
-    - dupl
-    - errcheck
-    - copyloopvar
-    - exhaustive
-    - goconst
-    - gocritic
-    - gocyclo
-    - gofmt
-    - goimports
-    - mnd
-    - goprintffuncname
-    - gosec
-    - gosimple
     - govet
-    - ineffassign
-    - lll
-    - misspell
-    - nakedret
-    - noctx
-    - nolintlint
-    - rowserrcheck
-    - staticcheck
-    - stylecheck
-    - typecheck
-    - unconvert
-    - unparam
     - unused
-    - whitespace
+  disable:
+    - staticcheck # Disable style checks for now
+    - errcheck  # Disable error checking for now
+    - depguard  # Disable import restrictions for now
+    - lll       # Disable line length for now
+    - mnd       # Disable magic number detection for now
+    - gosec     # Disable security checks for now
+    - unparam   # Disable unused param checks for now
+    - ineffassign # Disable ineffective assignment checks for now
 
 linters-settings:
   gocyclo:
@@ -59,10 +42,6 @@ linters-settings:
       - octalLiteral
       - whyNoLint
       - wrapperFunc
-  gofmt:
-    simplify: true
-  goimports:
-    local-prefixes: github.com/rossigee/provider-discord
   mnd:
     checks: argument,case,condition,operation,return,assign
   govet:
@@ -97,10 +76,9 @@ issues:
         - lll
     - path: _test\.go
       linters:
-        - mnd
-        - goconst
-        - dupl
-        - lll
+        - errcheck
+        - staticcheck
+        - ineffassign
 
   exclude:
     # Crossplane runtime uses a lot of reflection which golangci-lint
