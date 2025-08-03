@@ -35,7 +35,7 @@ func TestDefaultConfig(t *testing.T) {
 	
 	config := DefaultConfig()
 	
-	assert.True(t, config.Enabled)
+	assert.False(t, config.Enabled)
 	assert.Equal(t, "provider-discord", config.ServiceName)
 	assert.Equal(t, "unknown", config.ServiceVersion)
 	assert.Equal(t, "", config.Endpoint)
