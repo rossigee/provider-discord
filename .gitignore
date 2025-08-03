@@ -82,4 +82,5 @@ __pycache__/
 *$py.class
 
 # Local development
-local/.cache/
+local/
+.cache/
