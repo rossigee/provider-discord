@@ -21,7 +21,7 @@ metadata:
       2. A ProviderConfig with credentials
 spec:
   controller:
-    image: harbor.golder.lan/library/provider-discord:v0.1.2
+    image: ghcr.io/rossigee/provider-discord:v0.3.3
     permissionRequests:
     - apiGroups:
       - discord.crossplane.io
@@ -40,5 +40,11 @@ spec:
       - channel.discord.crossplane.io
       resources:
       - channels
+      verbs:
+      - "*"
+    - apiGroups:
+      - role.discord.crossplane.io
+      resources:
+      - roles
       verbs:
       - "*"
