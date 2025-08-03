@@ -18,9 +18,9 @@ A Crossplane provider for managing Discord resources through Kubernetes.
 
 | Resource | API Version | Description |
 |----------|-------------|-------------|
-| Guild | `guild.discord.golder.tech/v1alpha1` | Discord servers with configuration |
-| Channel | `channel.discord.golder.tech/v1alpha1` | Text, voice, and category channels |
-| ProviderConfig | `discord.golder.tech/v1beta1` | Provider authentication configuration |
+| Guild | `guild.discord.crossplane.io/v1alpha1` | Discord servers with configuration |
+| Channel | `channel.discord.crossplane.io/v1alpha1` | Text, voice, and category channels |
+| ProviderConfig | `discord.crossplane.io/v1beta1` | Provider authentication configuration |
 
 ## Quick Start
 
@@ -50,7 +50,7 @@ kubectl create secret generic discord-creds \
 
 3. Create a ProviderConfig:
 ```yaml
-apiVersion: discord.golder.tech/v1beta1
+apiVersion: discord.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default
@@ -68,7 +68,7 @@ spec:
 #### Create a Discord Guild (Server)
 
 ```yaml
-apiVersion: guild.discord.golder.tech/v1alpha1
+apiVersion: guild.discord.crossplane.io/v1alpha1
 kind: Guild
 metadata:
   name: my-guild
@@ -89,7 +89,7 @@ spec:
 #### Create Discord Channels
 
 ```yaml
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: general-chat
@@ -103,7 +103,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: channel.discord.golder.tech/v1alpha1
+apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
   name: voice-chat
