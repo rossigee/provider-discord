@@ -46,8 +46,9 @@ output/
 /discord-introspect
 /get-bot-invite
 
-# Generated files
+# Generated files (allow all API generated files, exclude others)
 zz_generated.*
+!apis/**/zz_generated.*
 *.pb.go
 
 # Coverage reports
