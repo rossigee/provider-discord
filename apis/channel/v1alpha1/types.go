@@ -145,6 +145,7 @@ type ChannelStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 
 // A Channel is a managed resource that represents a Discord channel.
 // +kubebuilder:printcolumn:name="NAME",type="string",JSONPath=".spec.forProvider.name"
@@ -165,6 +166,7 @@ type Channel struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 
 // ChannelList contains a list of Channel
 type ChannelList struct {

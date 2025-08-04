@@ -48,6 +48,7 @@ type ProviderConfigStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 
 // A ProviderConfig configures a Discord provider.
 // +kubebuilder:subresource:status
@@ -64,6 +65,7 @@ type ProviderConfig struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 
 // ProviderConfigList contains a list of ProviderConfig.
 type ProviderConfigList struct {
@@ -73,6 +75,7 @@ type ProviderConfigList struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 
 // A ProviderConfigUsage indicates that a resource is using a ProviderConfig.
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
@@ -89,6 +92,7 @@ type ProviderConfigUsage struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 
 // ProviderConfigUsageList contains a list of ProviderConfigUsage
 type ProviderConfigUsageList struct {
