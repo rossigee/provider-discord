@@ -142,6 +142,7 @@ type GuildStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 
 // A Guild is a managed resource that represents a Discord guild (server).
 // +kubebuilder:printcolumn:name="NAME",type="string",JSONPath=".spec.forProvider.name"
@@ -161,6 +162,7 @@ type Guild struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 
 // GuildList contains a list of Guild
 type GuildList struct {

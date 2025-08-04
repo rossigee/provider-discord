@@ -64,6 +64,7 @@ type RoleStatus struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 // +kubebuilder:printcolumn:name="NAME",type="string",JSONPath=".spec.forProvider.name"
 // +kubebuilder:printcolumn:name="GUILD",type="string",JSONPath=".spec.forProvider.guildId"
 // +kubebuilder:printcolumn:name="POSITION",type="integer",JSONPath=".spec.forProvider.position"
@@ -83,6 +84,7 @@ type Role struct {
 }
 
 // +kubebuilder:object:root=true
+// +kubebuilder:object:generate=true
 
 // RoleList contains a list of Role
 type RoleList struct {
