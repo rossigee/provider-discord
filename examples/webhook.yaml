@@ -1,0 +1,36 @@
+apiVersion: webhook.discord.crossplane.io/v1alpha1
+kind: Webhook
+metadata:
+  name: example-webhook
+  annotations:
+    kubernetes.io/description: "Example webhook managed by Crossplane"
+spec:
+  forProvider:
+    name: "Crossplane Bot"
+    channelId: "CHANNEL_ID_HERE"  # Replace with actual channel ID
+    # Optional: avatar image data (base64 encoded)
+    # avatar: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
+  providerConfigRef:
+    name: default
+  # Connection secrets will contain:
+  # - token: webhook token for posting messages
+  # - url: webhook URL
+  writeConnectionSecretsToRef:
+    name: webhook-connection
+    namespace: default
+---
+apiVersion: webhook.discord.crossplane.io/v1alpha1
+kind: Webhook
+metadata:
+  name: ci-webhook
+  annotations:
+    kubernetes.io/description: "CI/CD webhook for automated notifications"
+spec:
+  forProvider:
+    name: "CI/CD Notifications"
+    channelId: "CI_CHANNEL_ID_HERE"  # Replace with actual channel ID
+  providerConfigRef:
+    name: default
+  writeConnectionSecretsToRef:
+    name: ci-webhook-connection
+    namespace: ci-system

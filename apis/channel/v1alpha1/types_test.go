@@ -184,7 +184,7 @@ func TestChannelJSONMarshaling(t *testing.T) {
 	
 	// Verify the unmarshaled object matches
 	assert.Equal(t, channel.TypeMeta, unmarshaled.TypeMeta)
-	assert.Equal(t, channel.ObjectMeta.Name, unmarshaled.ObjectMeta.Name)
+	assert.Equal(t, channel.Name, unmarshaled.Name)
 	assert.Equal(t, channel.Spec.ForProvider.Name, unmarshaled.Spec.ForProvider.Name)
 	assert.Equal(t, channel.Spec.ForProvider.Type, unmarshaled.Spec.ForProvider.Type)
 	assert.Equal(t, channel.Status.AtProvider.ID, unmarshaled.Status.AtProvider.ID)

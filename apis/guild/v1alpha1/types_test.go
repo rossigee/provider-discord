@@ -173,7 +173,7 @@ func TestGuildJSONMarshaling(t *testing.T) {
 	
 	// Verify the unmarshaled object matches
 	assert.Equal(t, guild.TypeMeta, unmarshaled.TypeMeta)
-	assert.Equal(t, guild.ObjectMeta.Name, unmarshaled.ObjectMeta.Name)
+	assert.Equal(t, guild.Name, unmarshaled.Name)
 	assert.Equal(t, guild.Spec.ForProvider.Name, unmarshaled.Spec.ForProvider.Name)
 	assert.Equal(t, guild.Status.AtProvider.ID, unmarshaled.Status.AtProvider.ID)
 	

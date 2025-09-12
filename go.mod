@@ -1,6 +1,6 @@
 module github.com/rossigee/provider-discord
 
-go 1.24.5
+go 1.25.1
 
 require (
 	github.com/crossplane/crossplane-runtime v1.20.0

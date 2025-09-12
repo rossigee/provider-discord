@@ -24,7 +24,9 @@ import (
 	"github.com/rossigee/provider-discord/internal/controller/channel"
 	"github.com/rossigee/provider-discord/internal/controller/config"
 	"github.com/rossigee/provider-discord/internal/controller/guild"
+	"github.com/rossigee/provider-discord/internal/controller/invite"
 	"github.com/rossigee/provider-discord/internal/controller/role"
+	"github.com/rossigee/provider-discord/internal/controller/webhook"
 )
 
 // Setup creates all Discord controllers with the supplied logger and adds them to
@@ -35,6 +37,8 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		guild.Setup,
 		channel.Setup,
 		role.Setup,
+		webhook.Setup,
+		invite.Setup,
 	} {
 		if err := setup(mgr, o); err != nil {
 			return err

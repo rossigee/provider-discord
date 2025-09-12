@@ -1,9 +1,0 @@
----
-version: 2
-
-# Disable all linting for utility tools that have conflicting main functions
-linters:
-  disable-all: true
-
-run:
-  timeout: 1m

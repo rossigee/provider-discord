@@ -27,11 +27,21 @@ import (
 
 func TestDefaultConfig(t *testing.T) {
 	// Clear environment variables
-	os.Unsetenv("OTEL_TRACING_ENABLED")
-	os.Unsetenv("OTEL_SERVICE_NAME")
-	os.Unsetenv("OTEL_SERVICE_VERSION")
-	os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	os.Unsetenv("OTEL_SAMPLING_RATIO")
+	if err := os.Unsetenv("OTEL_TRACING_ENABLED"); err != nil {
+		t.Errorf("Failed to unset OTEL_TRACING_ENABLED: %v", err)
+	}
+	if err := os.Unsetenv("OTEL_SERVICE_NAME"); err != nil {
+		t.Errorf("Failed to unset OTEL_SERVICE_NAME: %v", err)
+	}
+	if err := os.Unsetenv("OTEL_SERVICE_VERSION"); err != nil {
+		t.Errorf("Failed to unset OTEL_SERVICE_VERSION: %v", err)
+	}
+	if err := os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT"); err != nil {
+		t.Errorf("Failed to unset OTEL_EXPORTER_OTLP_ENDPOINT: %v", err)
+	}
+	if err := os.Unsetenv("OTEL_SAMPLING_RATIO"); err != nil {
+		t.Errorf("Failed to unset OTEL_SAMPLING_RATIO: %v", err)
+	}
 	
 	config := DefaultConfig()
 	
@@ -45,18 +55,30 @@ func TestDefaultConfig(t *testing.T) {
 
 func TestDefaultConfigWithEnvVars(t *testing.T) {
 	// Set environment variables
-	os.Setenv("OTEL_TRACING_ENABLED", "false")
-	os.Setenv("OTEL_SERVICE_NAME", "test-service")
-	os.Setenv("OTEL_SERVICE_VERSION", "v1.0.0")
-	os.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318")
-	os.Setenv("OTEL_SAMPLING_RATIO", "0.5")
+	if err := os.Setenv("OTEL_TRACING_ENABLED", "false"); err != nil {
+		t.Errorf("Failed to set OTEL_TRACING_ENABLED: %v", err)
+	}
+	if err := os.Setenv("OTEL_SERVICE_NAME", "test-service"); err != nil {
+		t.Errorf("Failed to set OTEL_SERVICE_NAME: %v", err)
+	}
+	if err := os.Setenv("OTEL_SERVICE_VERSION", "v1.0.0"); err != nil {
+		t.Errorf("Failed to set OTEL_SERVICE_VERSION: %v", err)
+	}
+	if err := os.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4318"); err != nil {
+		t.Errorf("Failed to set OTEL_EXPORTER_OTLP_ENDPOINT: %v", err)
+	}
+	if err := os.Setenv("OTEL_SAMPLING_RATIO", "0.5"); err != nil {
+		t.Errorf("Failed to set OTEL_SAMPLING_RATIO: %v", err)
+	}
 	
 	defer func() {
-		os.Unsetenv("OTEL_TRACING_ENABLED")
-		os.Unsetenv("OTEL_SERVICE_NAME")
-		os.Unsetenv("OTEL_SERVICE_VERSION")
-		os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-		os.Unsetenv("OTEL_SAMPLING_RATIO")
+		if err := os.Unsetenv("OTEL_TRACING_ENABLED"); err != nil {
+			t.Errorf("Failed to unset OTEL_TRACING_ENABLED: %v", err)
+		}
+		_ = os.Unsetenv("OTEL_SERVICE_NAME")
+		_ = os.Unsetenv("OTEL_SERVICE_VERSION") 
+		_ = os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
+		_ = os.Unsetenv("OTEL_SAMPLING_RATIO")
 	}()
 	
 	config := DefaultConfig()
@@ -104,7 +126,7 @@ func TestGetTracerBeforeInit(t *testing.T) {
 func TestStartSpan(t *testing.T) {
 	ctx := context.Background()
 	
-	ctx, span := StartSpan(ctx, "test-span")
+	_, span := StartSpan(ctx, "test-span")
 	assert.NotNil(t, span)
 	
 	span.End()
@@ -135,7 +157,7 @@ func TestRecordSuccess(t *testing.T) {
 func TestTraceReconciliation(t *testing.T) {
 	ctx := context.Background()
 	
-	ctx, span := TraceReconciliation(ctx, "guild", "test-guild", "create")
+	_, span := TraceReconciliation(ctx, "guild", "test-guild", "create")
 	assert.NotNil(t, span)
 	
 	span.End()
@@ -144,7 +166,7 @@ func TestTraceReconciliation(t *testing.T) {
 func TestTraceAPICall(t *testing.T) {
 	ctx := context.Background()
 	
-	ctx, span := TraceAPICall(ctx, "POST", "/guilds")
+	_, span := TraceAPICall(ctx, "POST", "/guilds")
 	assert.NotNil(t, span)
 	
 	span.End()
@@ -153,7 +175,7 @@ func TestTraceAPICall(t *testing.T) {
 func TestTraceResourceOperation(t *testing.T) {
 	ctx := context.Background()
 	
-	ctx, span := TraceResourceOperation(ctx, "channel", "update", "123456789")
+	_, span := TraceResourceOperation(ctx, "channel", "update", "123456789")
 	assert.NotNil(t, span)
 	
 	span.End()
@@ -238,28 +260,38 @@ func TestConstants(t *testing.T) {
 
 func TestGetEnvHelpers(t *testing.T) {
 	// Test getEnv
-	os.Setenv("TEST_STRING", "test_value")
+	if err := os.Setenv("TEST_STRING", "test_value"); err != nil {
+		t.Errorf("Failed to set TEST_STRING: %v", err)
+	}
 	assert.Equal(t, "test_value", getEnv("TEST_STRING", "default"))
 	assert.Equal(t, "default", getEnv("NON_EXISTENT", "default"))
-	os.Unsetenv("TEST_STRING")
+	_ = os.Unsetenv("TEST_STRING")
 	
 	// Test getEnvBool
-	os.Setenv("TEST_BOOL_TRUE", "true")
-	os.Setenv("TEST_BOOL_1", "1")
-	os.Setenv("TEST_BOOL_FALSE", "false")
+	if err := os.Setenv("TEST_BOOL_TRUE", "true"); err != nil {
+		t.Errorf("Failed to set TEST_BOOL_TRUE: %v", err)
+	}
+	if err := os.Setenv("TEST_BOOL_1", "1"); err != nil {
+		t.Errorf("Failed to set TEST_BOOL_1: %v", err)
+	}
+	if err := os.Setenv("TEST_BOOL_FALSE", "false"); err != nil {
+		t.Errorf("Failed to set TEST_BOOL_FALSE: %v", err)
+	}
 	assert.True(t, getEnvBool("TEST_BOOL_TRUE", false))
 	assert.True(t, getEnvBool("TEST_BOOL_1", false))
 	assert.False(t, getEnvBool("TEST_BOOL_FALSE", true))
 	assert.True(t, getEnvBool("NON_EXISTENT", true))
-	os.Unsetenv("TEST_BOOL_TRUE")
-	os.Unsetenv("TEST_BOOL_1")
-	os.Unsetenv("TEST_BOOL_FALSE")
+	_ = os.Unsetenv("TEST_BOOL_TRUE")
+	_ = os.Unsetenv("TEST_BOOL_1")
+	_ = os.Unsetenv("TEST_BOOL_FALSE")
 	
 	// Test getEnvFloat
-	os.Setenv("TEST_FLOAT", "0.5")
+	if err := os.Setenv("TEST_FLOAT", "0.5"); err != nil {
+		t.Errorf("Failed to set TEST_FLOAT: %v", err)
+	}
 	assert.Equal(t, 0.5, getEnvFloat("TEST_FLOAT", 0.0))
 	assert.Equal(t, 0.1, getEnvFloat("NON_EXISTENT", 0.1))
-	os.Unsetenv("TEST_FLOAT")
+	_ = os.Unsetenv("TEST_FLOAT")
 }
 
 func TestParseFloat(t *testing.T) {

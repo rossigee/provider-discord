@@ -22,8 +22,10 @@ import (
 
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
 	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	invitev1alpha1 "github.com/rossigee/provider-discord/apis/invite/v1alpha1"
 	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
 	v1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
+	webhookv1alpha1 "github.com/rossigee/provider-discord/apis/webhook/v1alpha1"
 )
 
 func init() {
@@ -33,6 +35,8 @@ func init() {
 		guildv1alpha1.SchemeBuilder.AddToScheme,
 		channelv1alpha1.SchemeBuilder.AddToScheme,
 		rolev1alpha1.SchemeBuilder.AddToScheme,
+		webhookv1alpha1.SchemeBuilder.AddToScheme,
+		invitev1alpha1.SchemeBuilder.AddToScheme,
 	)
 }
 

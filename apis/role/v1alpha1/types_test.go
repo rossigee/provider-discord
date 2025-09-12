@@ -174,7 +174,7 @@ func TestRoleJSONMarshaling(t *testing.T) {
 	
 	// Verify the unmarshaled object matches
 	assert.Equal(t, role.TypeMeta, unmarshaled.TypeMeta)
-	assert.Equal(t, role.ObjectMeta.Name, unmarshaled.ObjectMeta.Name)
+	assert.Equal(t, role.Name, unmarshaled.Name)
 	assert.Equal(t, role.Spec.ForProvider.Name, unmarshaled.Spec.ForProvider.Name)
 	assert.Equal(t, role.Spec.ForProvider.GuildID, unmarshaled.Spec.ForProvider.GuildID)
 	assert.Equal(t, role.Status.AtProvider.ID, unmarshaled.Status.AtProvider.ID)

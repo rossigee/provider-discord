@@ -12,6 +12,8 @@ An **enterprise-grade** Crossplane provider for managing Discord resources throu
 - **Guild Management**: Create and manage Discord servers declaratively
 - **Channel Management**: Text, voice, and category channels with full configuration
 - **Role Management**: Permission management and role hierarchy control
+- **Webhook Management**: Automated message posting and CI/CD integration
+- **Invite Management**: Server invitation control with expiration and usage limits
 - **GitOps Ready**: Full integration with Kubernetes and GitOps workflows
 
 ### Enterprise Features
@@ -35,6 +37,8 @@ An **enterprise-grade** Crossplane provider for managing Discord resources throu
 | Guild | `guild.discord.crossplane.io/v1alpha1` | Discord servers with full configuration | ✅ Production Ready |
 | Channel | `channel.discord.crossplane.io/v1alpha1` | Text, voice, and category channels | ✅ Production Ready |
 | Role | `role.discord.crossplane.io/v1alpha1` | Permission management and role hierarchy | ✅ Production Ready |
+| Webhook | `webhook.discord.crossplane.io/v1alpha1` | Automated messaging and CI/CD integration | ✅ Production Ready |
+| Invite | `invite.discord.crossplane.io/v1alpha1` | Server invitations with expiration control | ✅ Production Ready |
 | ProviderConfig | `discord.crossplane.io/v1beta1` | Provider authentication and configuration | ✅ Production Ready |
 
 ## Quick Start
@@ -46,6 +50,8 @@ An **enterprise-grade** Crossplane provider for managing Discord resources throu
    - Manage Server (for guild operations)
    - Manage Channels (for channel operations)
    - Manage Roles (for role operations)
+   - Manage Webhooks (for webhook operations)
+   - Create Instant Invite (for invite operations)
    - View Channels (for resource observation)
 
 ### Installation
@@ -88,6 +94,36 @@ spec:
       key: token
   baseURL: "https://discord.com/api/v10"  # Optional: custom API endpoint
 ```
+
+### Discord Server Introspection
+
+Import existing Discord infrastructure using the introspection tool:
+
+```bash
+# Set Discord bot token  
+export DISCORD_BOT_TOKEN=your_bot_token_here
+
+# Generate manifests for all servers your bot can access
+go run tools/discord-introspect.go
+
+# Generate manifests for a specific server  
+go run tools/discord-introspect.go -guild="123456789012345678"
+
+# Output to custom directory
+go run tools/discord-introspect.go -output="my-discord-resources"
+
+# Include all resource types (webhooks, invites, etc.)
+go run tools/discord-introspect.go -webhooks=true -invites=true
+```
+
+The tool generates ready-to-use Crossplane manifests:
+- **Guild configurations** with all settings  
+- **Channel hierarchies** including categories and parent relationships
+- **Role definitions** with permissions and properties
+- **Webhook configurations** for CI/CD integration  
+- **Invite settings** with expiration and usage limits
+
+Generated manifests can be immediately applied with `kubectl apply -f discord-resources/`
 
 ### Example Usage
 
@@ -173,6 +209,43 @@ spec:
     permissions: "8"  # Administrator permission
     mentionable: false
     position: 10
+  providerConfigRef:
+    name: default
+---
+# Create Webhook for CI/CD Integration
+apiVersion: webhook.discord.crossplane.io/v1alpha1
+kind: Webhook
+metadata:
+  name: ci-cd-webhook
+  annotations:
+    kubernetes.io/description: "CI/CD webhook for automated notifications"
+spec:
+  forProvider:
+    name: "CI/CD Bot"
+    channelId: "CHANNEL_ID_HERE"
+  writeConnectionSecretsToRef:
+    name: ci-webhook-connection
+    namespace: default
+  providerConfigRef:
+    name: default
+---
+# Create Server Invite
+apiVersion: invite.discord.crossplane.io/v1alpha1
+kind: Invite
+metadata:
+  name: server-invite
+  annotations:
+    kubernetes.io/description: "Main server invitation"
+spec:
+  forProvider:
+    channelId: "GENERAL_CHANNEL_ID_HERE"
+    maxAge: 86400      # 24 hours
+    maxUses: 100       # 100 uses maximum
+    temporary: false   # Permanent membership
+    unique: false      # Allow similar invites
+  writeConnectionSecretsToRef:
+    name: server-invite-connection
+    namespace: default
   providerConfigRef:
     name: default
 ```
@@ -450,34 +523,38 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Roadmap
 
-### ✅ v0.3.x (Current - Enterprise Ready)
+### ✅ v0.4.0 (Current - Feature Complete)
 - ✅ Guild, Channel, and Role management
+- ✅ **Webhook management** with CI/CD integration and connection secrets
+- ✅ **Invite management** with expiration control and usage limits  
+- ✅ **Discord Server Introspection** tool for importing existing infrastructure
 - ✅ Enterprise health monitoring and metrics
 - ✅ OpenTelemetry tracing integration
 - ✅ Circuit breakers and resilience patterns
 - ✅ Production-ready deployment configurations
 - ✅ Comprehensive test coverage (62-100%)
-
-### 🚧 v0.4.0 (In Development)
-- Webhook management and event handling
-- Invite management with expiration control
-- User/Member management operations
-- Enhanced permission management
-- Advanced Discord integration patterns
+- ✅ Complete linting and code quality compliance
 
 ### 📋 v0.5.0 (Planned)
+- User/Member management operations
+- Enhanced permission management and role assignments
 - Message management and automation
+- Advanced Discord integration patterns
+- Performance optimizations and caching
+
+### 🎯 v0.6.0 (Future)
 - Emoji and sticker management
 - Integration with external notification systems
 - Advanced role hierarchy management
-- Performance optimizations
+- Scheduled events and community features
+- Enhanced observability and monitoring
 
-### 🎯 v1.0.0 (Future)
-- Production certification
+### 🎯 v1.0.0 (Production Certification)
+- Production certification and enterprise support
 - Full Discord API coverage
 - Advanced observability features
 - Comprehensive documentation
-- Enterprise support options
+- Long-term support guarantees
 
 ---
 

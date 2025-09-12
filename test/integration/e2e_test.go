@@ -96,7 +96,9 @@ func TestEndToEndScenario(t *testing.T) {
 			t.Fatalf("Failed to create secret: %v", err)
 		}
 		defer func() {
-			k8sClient.Delete(ctx, secret)
+			if err := k8sClient.Delete(ctx, secret); err != nil {
+				t.Logf("Warning: Failed to delete secret: %v", err)
+			}
 		}()
 
 		// Step 2: Create ProviderConfig
@@ -106,7 +108,9 @@ func TestEndToEndScenario(t *testing.T) {
 			t.Fatalf("Failed to create provider config: %v", err)
 		}
 		defer func() {
-			k8sClient.Delete(ctx, providerConfig)
+			if err := k8sClient.Delete(ctx, providerConfig); err != nil {
+				t.Logf("Warning: Failed to delete provider config: %v", err)
+			}
 		}()
 
 		// Wait for ProviderConfig to be ready
@@ -123,7 +127,9 @@ func TestEndToEndScenario(t *testing.T) {
 				t.Fatalf("Failed to create channel %s: %v", channel.Name, err)
 			}
 			defer func(ch *channelv1alpha1.Channel) {
-				k8sClient.Delete(ctx, ch)
+				if err := k8sClient.Delete(ctx, ch); err != nil {
+					t.Logf("Warning: Failed to delete channel: %v", err)
+				}
 			}(channel)
 		}
 
@@ -143,7 +149,9 @@ func TestEndToEndScenario(t *testing.T) {
 				t.Fatalf("Failed to create role %s: %v", role.Name, err)
 			}
 			defer func(r *rolev1alpha1.Role) {
-				k8sClient.Delete(ctx, r)
+				if err := k8sClient.Delete(ctx, r); err != nil {
+					t.Logf("Warning: Failed to delete role: %v", err)
+				}
 			}(role)
 		}
 
