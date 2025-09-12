@@ -1,0 +1,58 @@
+apiVersion: invite.discord.crossplane.io/v1alpha1
+kind: Invite
+metadata:
+  name: example-invite
+  annotations:
+    kubernetes.io/description: "Example invite managed by Crossplane"
+spec:
+  forProvider:
+    channelId: "CHANNEL_ID_HERE"  # Replace with actual channel ID
+    maxAge: 86400      # 24 hours (in seconds)
+    maxUses: 10        # Max 10 uses
+    temporary: false   # Not temporary membership
+    unique: false      # Can reuse similar invites
+  providerConfigRef:
+    name: default
+  # Connection secrets will contain:
+  # - url: full invite URL (https://discord.gg/CODE)
+  writeConnectionSecretsToRef:
+    name: invite-connection
+    namespace: default
+---
+apiVersion: invite.discord.crossplane.io/v1alpha1
+kind: Invite
+metadata:
+  name: temporary-invite
+  annotations:
+    kubernetes.io/description: "Temporary invite with limited uses"
+spec:
+  forProvider:
+    channelId: "CHANNEL_ID_HERE"  # Replace with actual channel ID
+    maxAge: 3600       # 1 hour (in seconds)
+    maxUses: 1         # Single use
+    temporary: true    # Temporary membership only
+    unique: true       # Must be unique
+  providerConfigRef:
+    name: default
+  writeConnectionSecretsToRef:
+    name: temp-invite-connection
+    namespace: default
+---
+apiVersion: invite.discord.crossplane.io/v1alpha1
+kind: Invite
+metadata:
+  name: permanent-invite
+  annotations:
+    kubernetes.io/description: "Permanent invite with unlimited uses"
+spec:
+  forProvider:
+    channelId: "GENERAL_CHANNEL_ID_HERE"  # Replace with actual channel ID
+    maxAge: 0          # Never expires (0 = permanent)
+    maxUses: 0         # Unlimited uses
+    temporary: false   # Full membership
+    unique: false      # Can reuse similar invites
+  providerConfigRef:
+    name: default
+  writeConnectionSecretsToRef:
+    name: permanent-invite-connection
+    namespace: default

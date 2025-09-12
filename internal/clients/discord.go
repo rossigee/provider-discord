@@ -58,6 +58,25 @@ type ChannelClient interface {
 	DeleteChannel(ctx context.Context, channelID string) error
 }
 
+// WebhookClient defines the interface for webhook-related Discord operations
+type WebhookClient interface {
+	CreateWebhook(ctx context.Context, channelID string, req *CreateWebhookRequest) (*Webhook, error)
+	GetWebhook(ctx context.Context, webhookID string) (*Webhook, error)
+	ModifyWebhook(ctx context.Context, webhookID string, req *ModifyWebhookRequest) (*Webhook, error)
+	DeleteWebhook(ctx context.Context, webhookID string) error
+	GetChannelWebhooks(ctx context.Context, channelID string) ([]Webhook, error)
+	GetGuildWebhooks(ctx context.Context, guildID string) ([]Webhook, error)
+}
+
+// InviteClient defines the interface for invite-related Discord operations
+type InviteClient interface {
+	CreateChannelInvite(ctx context.Context, channelID string, req *CreateInviteRequest) (*Invite, error)
+	GetInvite(ctx context.Context, inviteCode string) (*Invite, error)
+	DeleteInvite(ctx context.Context, inviteCode string) error
+	GetChannelInvites(ctx context.Context, channelID string) ([]Invite, error)
+	GetGuildInvites(ctx context.Context, guildID string) ([]Invite, error)
+}
+
 // DiscordClient is a client for the Discord API
 type DiscordClient struct {
 	httpClient *http.Client
@@ -69,6 +88,8 @@ type DiscordClient struct {
 var _ RoleClient = (*DiscordClient)(nil)
 var _ GuildClient = (*DiscordClient)(nil)
 var _ ChannelClient = (*DiscordClient)(nil)
+var _ WebhookClient = (*DiscordClient)(nil)
+var _ InviteClient = (*DiscordClient)(nil)
 
 // NewDiscordClient creates a new Discord API client
 func NewDiscordClient(token string) *DiscordClient {
@@ -423,6 +444,110 @@ type ModifyChannelRequest struct {
 	ParentID         *string `json:"parent_id,omitempty"`
 }
 
+// Webhook represents a Discord webhook
+type Webhook struct {
+	ID            string  `json:"id,omitempty"`
+	Type          int     `json:"type,omitempty"`
+	GuildID       string  `json:"guild_id,omitempty"`
+	ChannelID     string  `json:"channel_id,omitempty"`
+	User          *User   `json:"user,omitempty"`
+	Name          string  `json:"name,omitempty"`
+	Avatar        *string `json:"avatar,omitempty"`
+	Token         string  `json:"token,omitempty"`
+	ApplicationID *string `json:"application_id,omitempty"`
+	SourceGuild   *Guild  `json:"source_guild,omitempty"`
+	SourceChannel *Channel `json:"source_channel,omitempty"`
+	URL           string  `json:"url,omitempty"`
+}
+
+// CreateWebhookRequest represents a request to create a webhook
+type CreateWebhookRequest struct {
+	Name   string  `json:"name"`
+	Avatar *string `json:"avatar,omitempty"`
+}
+
+// ModifyWebhookRequest represents a request to modify a webhook
+type ModifyWebhookRequest struct {
+	Name      *string `json:"name,omitempty"`
+	Avatar    *string `json:"avatar,omitempty"`
+	ChannelID *string `json:"channel_id,omitempty"`
+}
+
+// Invite represents a Discord invite
+type Invite struct {
+	Code                     string     `json:"code"`
+	Guild                    *Guild     `json:"guild,omitempty"`
+	Channel                  *Channel   `json:"channel,omitempty"`
+	Inviter                  *User      `json:"inviter,omitempty"`
+	TargetType               *int       `json:"target_type,omitempty"`
+	TargetUser               *User      `json:"target_user,omitempty"`
+	TargetApplication        *Application `json:"target_application,omitempty"`
+	ApproximatePresenceCount *int       `json:"approximate_presence_count,omitempty"`
+	ApproximateMemberCount   *int       `json:"approximate_member_count,omitempty"`
+	ExpiresAt                *string    `json:"expires_at,omitempty"`
+	StageInstance            *StageInstance `json:"stage_instance,omitempty"`
+	GuildScheduledEvent      *GuildScheduledEvent `json:"guild_scheduled_event,omitempty"`
+	Uses                     int        `json:"uses"`
+	MaxUses                  int        `json:"max_uses"`
+	MaxAge                   int        `json:"max_age"`
+	Temporary                bool       `json:"temporary"`
+	CreatedAt                string     `json:"created_at"`
+}
+
+// CreateInviteRequest represents a request to create an invite
+type CreateInviteRequest struct {
+	MaxAge              *int    `json:"max_age,omitempty"`
+	MaxUses             *int    `json:"max_uses,omitempty"`
+	Temporary           *bool   `json:"temporary,omitempty"`
+	Unique              *bool   `json:"unique,omitempty"`
+	TargetType          *int    `json:"target_type,omitempty"`
+	TargetUserID        *string `json:"target_user_id,omitempty"`
+	TargetApplicationID *string `json:"target_application_id,omitempty"`
+}
+
+// User represents a Discord user (basic fields for webhook/invite context)
+type User struct {
+	ID            string `json:"id"`
+	Username      string `json:"username"`
+	Discriminator string `json:"discriminator"`
+	Avatar        *string `json:"avatar"`
+}
+
+// Application represents a Discord application (basic fields for invite context)
+type Application struct {
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Icon        *string `json:"icon"`
+	Description string  `json:"description"`
+}
+
+// StageInstance represents a Discord stage instance (basic fields for invite context)
+type StageInstance struct {
+	ID                    string `json:"id"`
+	GuildID               string `json:"guild_id"`
+	ChannelID             string `json:"channel_id"`
+	Topic                 string `json:"topic"`
+	PrivacyLevel          int    `json:"privacy_level"`
+	DiscoverableDisabled  bool   `json:"discoverable_disabled"`
+	GuildScheduledEventID *string `json:"guild_scheduled_event_id"`
+}
+
+// GuildScheduledEvent represents a Discord scheduled event (basic fields for invite context)
+type GuildScheduledEvent struct {
+	ID                 string  `json:"id"`
+	GuildID            string  `json:"guild_id"`
+	ChannelID          *string `json:"channel_id"`
+	CreatorID          *string `json:"creator_id"`
+	Name               string  `json:"name"`
+	Description        *string `json:"description"`
+	ScheduledStartTime string  `json:"scheduled_start_time"`
+	ScheduledEndTime   *string `json:"scheduled_end_time"`
+	PrivacyLevel       int     `json:"privacy_level"`
+	Status             int     `json:"status"`
+	EntityType         int     `json:"entity_type"`
+	EntityID           *string `json:"entity_id"`
+}
+
 // GetChannel retrieves a channel by ID
 func (c *DiscordClient) GetChannel(ctx context.Context, channelID string) (*Channel, error) {
 	resp, err := c.makeRequest(ctx, "GET", "/channels/"+channelID, nil)
@@ -480,4 +605,174 @@ func (c *DiscordClient) DeleteChannel(ctx context.Context, channelID string) err
 	defer func() { _ = resp.Body.Close() }()
 
 	return nil
+}
+
+// Webhook methods
+
+// CreateWebhook creates a new webhook in a channel
+func (c *DiscordClient) CreateWebhook(ctx context.Context, channelID string, req *CreateWebhookRequest) (*Webhook, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/channels/"+channelID+"/webhooks", req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create webhook")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var webhook Webhook
+	if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
+		return nil, errors.Wrap(err, "failed to decode created webhook response")
+	}
+
+	return &webhook, nil
+}
+
+// GetWebhook retrieves a webhook by ID
+func (c *DiscordClient) GetWebhook(ctx context.Context, webhookID string) (*Webhook, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/webhooks/"+webhookID, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get webhook")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var webhook Webhook
+	if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
+		return nil, errors.Wrap(err, "failed to decode webhook response")
+	}
+
+	return &webhook, nil
+}
+
+// ModifyWebhook modifies an existing webhook
+func (c *DiscordClient) ModifyWebhook(ctx context.Context, webhookID string, req *ModifyWebhookRequest) (*Webhook, error) {
+	resp, err := c.makeRequest(ctx, "PATCH", "/webhooks/"+webhookID, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to modify webhook")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var webhook Webhook
+	if err := json.NewDecoder(resp.Body).Decode(&webhook); err != nil {
+		return nil, errors.Wrap(err, "failed to decode modified webhook response")
+	}
+
+	return &webhook, nil
+}
+
+// DeleteWebhook deletes a webhook
+func (c *DiscordClient) DeleteWebhook(ctx context.Context, webhookID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/webhooks/"+webhookID, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete webhook")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	return nil
+}
+
+// GetChannelWebhooks gets all webhooks for a channel
+func (c *DiscordClient) GetChannelWebhooks(ctx context.Context, channelID string) ([]Webhook, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/channels/"+channelID+"/webhooks", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get channel webhooks")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var webhooks []Webhook
+	if err := json.NewDecoder(resp.Body).Decode(&webhooks); err != nil {
+		return nil, errors.Wrap(err, "failed to decode channel webhooks response")
+	}
+
+	return webhooks, nil
+}
+
+// GetGuildWebhooks gets all webhooks for a guild
+func (c *DiscordClient) GetGuildWebhooks(ctx context.Context, guildID string) ([]Webhook, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/guilds/"+guildID+"/webhooks", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get guild webhooks")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var webhooks []Webhook
+	if err := json.NewDecoder(resp.Body).Decode(&webhooks); err != nil {
+		return nil, errors.Wrap(err, "failed to decode guild webhooks response")
+	}
+
+	return webhooks, nil
+}
+
+// Invite methods
+
+// CreateChannelInvite creates a new invite for a channel
+func (c *DiscordClient) CreateChannelInvite(ctx context.Context, channelID string, req *CreateInviteRequest) (*Invite, error) {
+	resp, err := c.makeRequest(ctx, "POST", "/channels/"+channelID+"/invites", req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create channel invite")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var invite Invite
+	if err := json.NewDecoder(resp.Body).Decode(&invite); err != nil {
+		return nil, errors.Wrap(err, "failed to decode created invite response")
+	}
+
+	return &invite, nil
+}
+
+// GetInvite retrieves an invite by code
+func (c *DiscordClient) GetInvite(ctx context.Context, inviteCode string) (*Invite, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/invites/"+inviteCode+"?with_counts=true&with_expiration=true", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get invite")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var invite Invite
+	if err := json.NewDecoder(resp.Body).Decode(&invite); err != nil {
+		return nil, errors.Wrap(err, "failed to decode invite response")
+	}
+
+	return &invite, nil
+}
+
+// DeleteInvite deletes an invite
+func (c *DiscordClient) DeleteInvite(ctx context.Context, inviteCode string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/invites/"+inviteCode, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete invite")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	return nil
+}
+
+// GetChannelInvites gets all invites for a channel
+func (c *DiscordClient) GetChannelInvites(ctx context.Context, channelID string) ([]Invite, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/channels/"+channelID+"/invites", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get channel invites")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var invites []Invite
+	if err := json.NewDecoder(resp.Body).Decode(&invites); err != nil {
+		return nil, errors.Wrap(err, "failed to decode channel invites response")
+	}
+
+	return invites, nil
+}
+
+// GetGuildInvites gets all invites for a guild
+func (c *DiscordClient) GetGuildInvites(ctx context.Context, guildID string) ([]Invite, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/guilds/"+guildID+"/invites", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get guild invites")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var invites []Invite
+	if err := json.NewDecoder(resp.Body).Decode(&invites); err != nil {
+		return nil, errors.Wrap(err, "failed to decode guild invites response")
+	}
+
+	return invites, nil
 }

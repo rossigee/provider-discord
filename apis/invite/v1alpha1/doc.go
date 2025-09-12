@@ -14,17 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package features
-
-import "github.com/crossplane/crossplane-runtime/pkg/feature"
-
-// Feature flags.
-const (
-	// EnableAlphaManagementPolicies enables alpha support for
-	// management policies.
-	EnableAlphaManagementPolicies feature.Flag = "EnableAlphaManagementPolicies"
-	
-	// EnableAlphaExternalSecretStores enables alpha support for
-	// external secret stores.
-	EnableAlphaExternalSecretStores feature.Flag = "EnableAlphaExternalSecretStores"
-)
+// Package v1alpha1 contains the v1alpha1 API definitions for invite resources.
+// +kubebuilder:object:generate=true
+// +groupName=invite.discord.crossplane.io
+// +versionName=v1alpha1
+package v1alpha1

@@ -149,7 +149,7 @@ func TestProviderConfigJSONMarshaling(t *testing.T) {
 	
 	// Verify the unmarshaled object matches
 	assert.Equal(t, config.TypeMeta, unmarshaled.TypeMeta)
-	assert.Equal(t, config.ObjectMeta.Name, unmarshaled.ObjectMeta.Name)
+	assert.Equal(t, config.Name, unmarshaled.Name)
 	assert.Equal(t, config.Spec.Credentials.Source, unmarshaled.Spec.Credentials.Source)
 	require.NotNil(t, unmarshaled.Spec.Credentials.SecretRef)
 	assert.Equal(t, "discord-creds", unmarshaled.Spec.Credentials.SecretRef.Name)
@@ -194,7 +194,7 @@ func TestProviderConfigUsageJSONMarshaling(t *testing.T) {
 	
 	// Verify the unmarshaled object matches
 	assert.Equal(t, usage.TypeMeta, unmarshaled.TypeMeta)
-	assert.Equal(t, usage.ObjectMeta.Name, unmarshaled.ObjectMeta.Name)
+	assert.Equal(t, usage.Name, unmarshaled.Name)
 	assert.Equal(t, usage.ProviderConfigReference.Name, unmarshaled.ProviderConfigReference.Name)
 	assert.Equal(t, usage.ResourceReference.Kind, unmarshaled.ResourceReference.Kind)
 	assert.Equal(t, usage.ResourceReference.Name, unmarshaled.ResourceReference.Name)

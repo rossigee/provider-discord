@@ -166,6 +166,10 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{
 			ResourceExists:   true,
 			ResourceUpToDate: c.isUpToDate(cr, guild),
+			ConnectionDetails: managed.ConnectionDetails{
+				"guildId":   []byte(guild.ID),
+				"guildName": []byte(guild.Name),
+			},
 		}, nil
 	}
 
@@ -273,7 +277,12 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	meta.SetExternalName(cr, guild.ID)
 
-	return managed.ExternalCreation{}, nil
+	return managed.ExternalCreation{
+		ConnectionDetails: managed.ConnectionDetails{
+			"guildId":   []byte(guild.ID),
+			"guildName": []byte(guild.Name),
+		},
+	}, nil
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {

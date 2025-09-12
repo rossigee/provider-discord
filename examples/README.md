@@ -9,6 +9,8 @@ This directory contains example manifests for using the Discord Crossplane provi
    - Manage Server
    - Manage Channels
    - Manage Roles
+   - Manage Webhooks
+   - Create Instant Invite
    - View Channels
    - Send Messages
 
@@ -37,6 +39,15 @@ kubectl apply -f providerconfig.yaml
   - Voice channel with bitrate and user limits
   - Category channel for organization
 
+### Role Management
+- `role.yaml` - Creates Discord roles with permissions and properties
+
+### Webhook Management
+- `webhook.yaml` - Creates webhooks for CI/CD integration and automated messaging
+
+### Invite Management
+- `invite.yaml` - Creates server invitations with expiration and usage controls
+
 ## Usage
 
 1. Install the provider:
@@ -53,12 +64,16 @@ kubectl apply -f examples/providerconfig.yaml
 ```bash
 kubectl apply -f examples/guild.yaml
 kubectl apply -f examples/channel.yaml
+kubectl apply -f examples/role.yaml
+kubectl apply -f examples/webhook.yaml
+kubectl apply -f examples/invite.yaml
 ```
 
 4. Check resource status:
 ```bash
-kubectl get guild,channel
+kubectl get guild,channel,role,webhook,invite
 kubectl describe guild example-guild
+kubectl describe webhook example-webhook
 ```
 
 ## Notes

@@ -59,7 +59,9 @@ func TestCreateRole(t *testing.T) {
 
 		// Return mock response
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(expectedRole)
+		if err := json.NewEncoder(w).Encode(expectedRole); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -122,7 +124,9 @@ func TestGetRole(t *testing.T) {
 		assert.Equal(t, "Bot test-token", r.Header.Get("Authorization"))
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(roles)
+		if err := json.NewEncoder(w).Encode(roles); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -149,7 +153,9 @@ func TestGetRoleNotFound(t *testing.T) {
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(roles)
+		if err := json.NewEncoder(w).Encode(roles); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -195,7 +201,9 @@ func TestModifyRole(t *testing.T) {
 		assert.Equal(t, "9876543210", *req.Permissions)
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(expectedRole)
+		if err := json.NewEncoder(w).Encode(expectedRole); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -309,7 +317,9 @@ func TestRoleErrorHandling(t *testing.T) {
 				assert.True(t, strings.HasPrefix(r.URL.Path, tt.endpoint) || r.URL.Path == tt.endpoint)
 				
 				w.WriteHeader(tt.statusCode)
-				w.Write([]byte(`{"message": "Error occurred", "code": 50013}`))
+				if _, err := w.Write([]byte(`{"message": "Error occurred", "code": 50013}`)); err != nil {
+					t.Errorf("Failed to write error response: %v", err)
+				}
 			}))
 			defer server.Close()
 

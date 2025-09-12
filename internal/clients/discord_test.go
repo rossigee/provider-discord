@@ -71,7 +71,9 @@ func TestGetGuild(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(mockGuild)
+		if err := json.NewEncoder(w).Encode(mockGuild); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -91,7 +93,9 @@ func TestGetGuild(t *testing.T) {
 func TestGetGuildNotFound(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"message": "Unknown Guild", "code": 10004}`))
+		if _, err := w.Write([]byte(`{"message": "Unknown Guild", "code": 10004}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -143,7 +147,9 @@ func TestCreateGuild(t *testing.T) {
 
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
-		json.NewEncoder(w).Encode(mockResponse)
+		if err := json.NewEncoder(w).Encode(mockResponse); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -197,7 +203,9 @@ func TestModifyGuild(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(mockResponse)
+		if err := json.NewEncoder(w).Encode(mockResponse); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -261,7 +269,9 @@ func TestListGuilds(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(mockGuilds)
+		if err := json.NewEncoder(w).Encode(mockGuilds); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -296,7 +306,9 @@ func TestGetChannel(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(mockChannel)
+		if err := json.NewEncoder(w).Encode(mockChannel); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -350,7 +362,9 @@ func TestCreateChannel(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(mockResponse)
+		if err := json.NewEncoder(w).Encode(mockResponse); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -399,7 +413,9 @@ func TestModifyChannel(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(mockResponse)
+		if err := json.NewEncoder(w).Encode(mockResponse); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -427,7 +443,9 @@ func TestDeleteChannel(t *testing.T) {
 		}
 
 		w.WriteHeader(http.StatusOK)
-		json.NewEncoder(w).Encode(Channel{ID: "123456789"})
+		if err := json.NewEncoder(w).Encode(Channel{ID: "123456789"}); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -443,7 +461,9 @@ func TestDeleteChannel(t *testing.T) {
 func TestMakeRequestHTTPError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"message": "Internal Server Error", "code": 0}`))
+		if _, err := w.Write([]byte(`{"message": "Internal Server Error", "code": 0}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -452,7 +472,9 @@ func TestMakeRequestHTTPError(t *testing.T) {
 
 	resp, err := client.makeRequest(context.Background(), "GET", "/test", nil)
 	if resp != nil {
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("Failed to close response body: %v", err)
+		}
 	}
 	if err == nil {
 		t.Error("Expected error for HTTP 500, got nil")
@@ -465,7 +487,9 @@ func TestMakeRequestInvalidURL(t *testing.T) {
 
 	resp, err := client.makeRequest(context.Background(), "GET", "/test", nil)
 	if resp != nil {
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("Failed to close response body: %v", err)
+		}
 	}
 	if err == nil {
 		t.Error("Expected error for invalid URL, got nil")
@@ -478,7 +502,9 @@ func TestMakeRequestNetworkError(t *testing.T) {
 
 	resp, err := client.makeRequest(context.Background(), "GET", "/test", nil)
 	if resp != nil {
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("Failed to close response body: %v", err)
+		}
 	}
 	if err == nil {
 		t.Error("Expected network error, got nil")
@@ -493,7 +519,9 @@ func TestMakeRequestInvalidBodyJSON(t *testing.T) {
 	invalidBody := make(chan int)
 	resp, err := client.makeRequest(context.Background(), "POST", "/test", invalidBody)
 	if resp != nil {
-		resp.Body.Close()
+		if err := resp.Body.Close(); err != nil {
+			t.Errorf("Failed to close response body: %v", err)
+		}
 	}
 	if err == nil {
 		t.Error("Expected error for invalid JSON body, got nil")
@@ -503,7 +531,9 @@ func TestMakeRequestInvalidBodyJSON(t *testing.T) {
 func TestCreateGuildError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"message": "Name already taken", "code": 50035}`))
+		if _, err := w.Write([]byte(`{"message": "Name already taken", "code": 50035}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -520,7 +550,9 @@ func TestCreateGuildError(t *testing.T) {
 func TestModifyGuildError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"message": "Missing Permissions", "code": 50013}`))
+		if _, err := w.Write([]byte(`{"message": "Missing Permissions", "code": 50013}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -537,7 +569,9 @@ func TestModifyGuildError(t *testing.T) {
 func TestDeleteGuildError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"message": "Missing Permissions", "code": 50013}`))
+		if _, err := w.Write([]byte(`{"message": "Missing Permissions", "code": 50013}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -553,7 +587,9 @@ func TestDeleteGuildError(t *testing.T) {
 func TestCreateChannelError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"message": "Invalid Form Body", "code": 50035}`))
+		if _, err := w.Write([]byte(`{"message": "Invalid Form Body", "code": 50035}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -570,7 +606,9 @@ func TestCreateChannelError(t *testing.T) {
 func TestModifyChannelError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"message": "Unknown Channel", "code": 10003}`))
+		if _, err := w.Write([]byte(`{"message": "Unknown Channel", "code": 10003}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -587,7 +625,9 @@ func TestModifyChannelError(t *testing.T) {
 func TestDeleteChannelError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"message": "Unknown Channel", "code": 10003}`))
+		if _, err := w.Write([]byte(`{"message": "Unknown Channel", "code": 10003}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -603,7 +643,9 @@ func TestDeleteChannelError(t *testing.T) {
 func TestListGuildsError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"message": "401: Unauthorized", "code": 0}`))
+		if _, err := w.Write([]byte(`{"message": "401: Unauthorized", "code": 0}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 
@@ -619,7 +661,9 @@ func TestListGuildsError(t *testing.T) {
 func TestGetChannelError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"message": "Unknown Channel", "code": 10003}`))
+		if _, err := w.Write([]byte(`{"message": "Unknown Channel", "code": 10003}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
 	}))
 	defer server.Close()
 

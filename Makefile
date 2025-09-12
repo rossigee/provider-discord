@@ -15,8 +15,8 @@ GO_STATIC_PACKAGES = $(GO_PROJECT)/cmd/provider
 GO_LDFLAGS += -X $(GO_PROJECT)/internal/version.Version=$(VERSION)
 GO_SUBDIRS += cmd internal apis
 GO111MODULE = on
-# Override golangci-lint version for modern Go support
-GOLANGCILINT_VERSION ?= 2.3.1
+# Override golangci-lint version for modern Go support  
+GOLANGCILINT_VERSION ?= 2.4.0
 -include build/makelib/golang.mk
 
 # Setup Kubernetes tools
@@ -37,7 +37,7 @@ XPKG_REG_ORGS = ghcr.io/rossigee
 XPKG_REG_ORGS_NO_PROMOTE = ghcr.io/rossigee
 
 # Optional registries (can be enabled via environment variables)
-# To enable Harbor: export ENABLE_HARBOR_PUBLISH=true make publish XPKG_REG_ORGS=harbor.golder.lan/library
+# Harbor publishing has been removed - using only ghcr.io/rossigee
 # To enable Upbound: export ENABLE_UPBOUND_PUBLISH=true make publish XPKG_REG_ORGS=xpkg.upbound.io/rossigee
 XPKGS = provider-discord
 -include build/makelib/xpkg.mk
