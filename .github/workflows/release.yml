@@ -63,12 +63,16 @@ jobs:
           echo "XPKG_REG_ORGS: ghcr.io/${{ github.repository_owner }}"
           echo "VERSION: ${{ steps.version.outputs.version }}"
           echo "PLATFORMS: linux_amd64"
+          echo "BRANCH_NAME: ${GITHUB_REF#refs/heads/}"
+          echo "GITHUB_REF: $GITHUB_REF"
+          echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
+          echo "GITHUB_REF_TYPE: $GITHUB_REF_TYPE"
           ls -la _output/xpkg/linux_amd64/ || echo "No packages found"
           
       - name: Publish to Registry
         run: |
           set -x
-          make publish VERSION=${{ steps.version.outputs.version }} PLATFORMS=linux_amd64
+          make publish VERSION=${{ steps.version.outputs.version }} PLATFORMS=linux_amd64 BRANCH_NAME=master
         env:
           REGISTRY_ORGS: "ghcr.io/${{ github.repository_owner }}"
           XPKG_REG_ORGS: "ghcr.io/${{ github.repository_owner }}"
