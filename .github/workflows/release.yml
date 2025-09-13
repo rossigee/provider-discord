@@ -41,19 +41,19 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "version_no_v=${VERSION#v}" >> $GITHUB_OUTPUT
 
-      - name: Build and Package
+      - name: Install Crossplane CLI
+        run: |
+          mkdir -p .cache/tools/linux_x86_64
+          curl -fsSLo .cache/tools/linux_x86_64/crossplane-cli-v1.20.0 --create-dirs https://releases.crossplane.io/stable/v1.20.0/bin/linux_amd64/crank?source=build
+          chmod +x .cache/tools/linux_x86_64/crossplane-cli-v1.20.0
+
+      - name: Build and Publish
         run: |
           make generate
-          make build-bin
-          make docker-build
-          make xpkg-build
-
-      - name: Build and Push Docker Images
-        run: |
-          # Build and push to GitHub Container Registry
-          docker tag ghcr.io/rossigee/provider-discord:latest ghcr.io/rossigee/provider-discord:${{ steps.version.outputs.version_no_v }}
-          docker push ghcr.io/rossigee/provider-discord:${{ steps.version.outputs.version_no_v }}
-          docker push ghcr.io/rossigee/provider-discord:latest
+          make publish VERSION=${{ steps.version.outputs.version }}
+        env:
+          REGISTRY_ORGS: "ghcr.io/${{ github.repository_owner }}"
+          XPKG_REG_ORGS: "ghcr.io/${{ github.repository_owner }}"
 
       - name: Generate Changelog
         id: changelog
@@ -81,6 +81,6 @@ jobs:
         with:
           name: Release ${{ steps.version.outputs.version }}
           body_path: changelog.txt
-          files: _output/provider-discord.xpkg
+          files: _output/xpkg/linux_amd64/provider-discord-${{ steps.version.outputs.version }}.xpkg
           draft: false
           prerelease: false
