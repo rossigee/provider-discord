@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
 
+permissions:
+  contents: write
+  packages: write
+  id-token: write
+
 env:
   GO_VERSION: '1.23'
 
@@ -47,13 +52,24 @@ jobs:
           curl -fsSLo .cache/tools/linux_x86_64/crossplane-cli-v1.20.0 --create-dirs https://releases.crossplane.io/stable/v1.20.0/bin/linux_amd64/crank?source=build
           chmod +x .cache/tools/linux_x86_64/crossplane-cli-v1.20.0
 
-      - name: Build and Publish
+      - name: Build Packages
         run: |
           make generate
+          make build
+
+      - name: Publish to Registry
+        run: |
           make publish VERSION=${{ steps.version.outputs.version }}
         env:
           REGISTRY_ORGS: "ghcr.io/${{ github.repository_owner }}"
           XPKG_REG_ORGS: "ghcr.io/${{ github.repository_owner }}"
+
+      - name: List Build Artifacts
+        run: |
+          echo "=== Build artifacts created ==="
+          find _output -name "*.xpkg" -o -name "provider-discord*" | head -20
+          echo "=== Checking specific package file ==="
+          ls -la _output/xpkg/linux_amd64/provider-discord-${{ steps.version.outputs.version }}.xpkg || echo "Package file not found"
 
       - name: Generate Changelog
         id: changelog
@@ -81,6 +97,8 @@ jobs:
         with:
           name: Release ${{ steps.version.outputs.version }}
           body_path: changelog.txt
-          files: _output/xpkg/linux_amd64/provider-discord-${{ steps.version.outputs.version }}.xpkg
+          files: |
+            _output/xpkg/linux_amd64/provider-discord-${{ steps.version.outputs.version }}.xpkg
           draft: false
           prerelease: false
+          fail_on_unmatched_files: false
