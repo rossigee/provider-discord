@@ -55,11 +55,11 @@ jobs:
       - name: Build Packages
         run: |
           make generate
-          make build
+          make build PLATFORMS=linux_amd64
 
       - name: Publish to Registry
         run: |
-          make publish VERSION=${{ steps.version.outputs.version }}
+          make publish VERSION=${{ steps.version.outputs.version }} PLATFORMS=linux_amd64
         env:
           REGISTRY_ORGS: "ghcr.io/${{ github.repository_owner }}"
           XPKG_REG_ORGS: "ghcr.io/${{ github.repository_owner }}"
