@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -77,6 +78,41 @@ type InviteClient interface {
 	GetGuildInvites(ctx context.Context, guildID string) ([]Invite, error)
 }
 
+// MemberClient defines the interface for member-related Discord operations
+type MemberClient interface {
+	GetGuildMember(ctx context.Context, guildID, userID string) (*GuildMember, error)
+	ListGuildMembers(ctx context.Context, guildID string, req *ListGuildMembersRequest) ([]GuildMember, error)
+	SearchGuildMembers(ctx context.Context, guildID string, req *SearchGuildMembersRequest) ([]GuildMember, error)
+	AddGuildMember(ctx context.Context, guildID, userID string, req *AddGuildMemberRequest) (*GuildMember, error)
+	ModifyGuildMember(ctx context.Context, guildID, userID string, req *ModifyGuildMemberRequest) (*GuildMember, error)
+	ModifyCurrentMember(ctx context.Context, guildID string, req *ModifyCurrentMemberRequest) (*GuildMember, error)
+	RemoveGuildMember(ctx context.Context, guildID, userID string) error
+	AddGuildMemberRole(ctx context.Context, guildID, userID, roleID string) error
+	RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID string) error
+}
+
+// UserClient defines the interface for user-related Discord operations
+type UserClient interface {
+	GetUser(ctx context.Context, userID string) (*DiscordUser, error)
+	GetCurrentUser(ctx context.Context) (*DiscordUser, error)
+	ModifyCurrentUser(ctx context.Context, req *ModifyCurrentUserRequest) (*DiscordUser, error)
+	GetCurrentUserGuilds(ctx context.Context, req *GetCurrentUserGuildsRequest) ([]Guild, error)
+	LeaveGuild(ctx context.Context, guildID string) error
+}
+
+// ApplicationClient defines the interface for application-related Discord operations
+type ApplicationClient interface {
+	GetApplication(ctx context.Context, applicationID string) (*DiscordApplication, error)
+	GetCurrentApplication(ctx context.Context) (*DiscordApplication, error)
+	ModifyCurrentApplication(ctx context.Context, req *ModifyCurrentApplicationRequest) (*DiscordApplication, error)
+}
+
+// IntegrationClient defines the interface for integration-related Discord operations
+type IntegrationClient interface {
+	GetGuildIntegrations(ctx context.Context, guildID string) ([]GuildIntegration, error)
+	DeleteGuildIntegration(ctx context.Context, guildID, integrationID string) error
+}
+
 // DiscordClient is a client for the Discord API
 type DiscordClient struct {
 	httpClient *http.Client
@@ -90,6 +126,10 @@ var _ GuildClient = (*DiscordClient)(nil)
 var _ ChannelClient = (*DiscordClient)(nil)
 var _ WebhookClient = (*DiscordClient)(nil)
 var _ InviteClient = (*DiscordClient)(nil)
+var _ MemberClient = (*DiscordClient)(nil)
+var _ UserClient = (*DiscordClient)(nil)
+var _ ApplicationClient = (*DiscordClient)(nil)
+var _ IntegrationClient = (*DiscordClient)(nil)
 
 // NewDiscordClient creates a new Discord API client
 func NewDiscordClient(token string) *DiscordClient {
@@ -505,12 +545,174 @@ type CreateInviteRequest struct {
 	TargetApplicationID *string `json:"target_application_id,omitempty"`
 }
 
+// Member-related request structures
+
+// ListGuildMembersRequest represents a request to list guild members
+type ListGuildMembersRequest struct {
+	Limit *int    `json:"limit,omitempty"`
+	After *string `json:"after,omitempty"`
+}
+
+// SearchGuildMembersRequest represents a request to search guild members
+type SearchGuildMembersRequest struct {
+	Query string `json:"query"`
+	Limit *int   `json:"limit,omitempty"`
+}
+
+// AddGuildMemberRequest represents a request to add a guild member
+type AddGuildMemberRequest struct {
+	AccessToken string    `json:"access_token"`
+	Nick        *string   `json:"nick,omitempty"`
+	Roles       []string  `json:"roles,omitempty"`
+	Mute        *bool     `json:"mute,omitempty"`
+	Deaf        *bool     `json:"deaf,omitempty"`
+}
+
+// ModifyGuildMemberRequest represents a request to modify a guild member
+type ModifyGuildMemberRequest struct {
+	Nick                       *string  `json:"nick,omitempty"`
+	Roles                      []string `json:"roles,omitempty"`
+	Mute                       *bool    `json:"mute,omitempty"`
+	Deaf                       *bool    `json:"deaf,omitempty"`
+	ChannelID                  *string  `json:"channel_id,omitempty"`
+	CommunicationDisabledUntil *string  `json:"communication_disabled_until,omitempty"`
+	Flags                      *int     `json:"flags,omitempty"`
+}
+
+// ModifyCurrentMemberRequest represents a request to modify the current member
+type ModifyCurrentMemberRequest struct {
+	Nick *string `json:"nick,omitempty"`
+}
+
+// User-related request structures
+
+// ModifyCurrentUserRequest represents a request to modify the current user
+type ModifyCurrentUserRequest struct {
+	Username *string `json:"username,omitempty"`
+	Avatar   *string `json:"avatar,omitempty"`
+	Banner   *string `json:"banner,omitempty"`
+}
+
+// GetCurrentUserGuildsRequest represents a request to get current user guilds
+type GetCurrentUserGuildsRequest struct {
+	Before     *string `json:"before,omitempty"`
+	After      *string `json:"after,omitempty"`
+	Limit      *int    `json:"limit,omitempty"`
+	WithCounts *bool   `json:"with_counts,omitempty"`
+}
+
+// Application-related request structures
+
+// ModifyCurrentApplicationRequest represents a request to modify the current application
+type ModifyCurrentApplicationRequest struct {
+	Name                  *string  `json:"name,omitempty"`
+	Description           *string  `json:"description,omitempty"`
+	Icon                  *string  `json:"icon,omitempty"`
+	CoverImage            *string  `json:"cover_image,omitempty"`
+	RPCOrigins            []string `json:"rpc_origins,omitempty"`
+	BotPublic             *bool    `json:"bot_public,omitempty"`
+	BotRequireCodeGrant   *bool    `json:"bot_require_code_grant,omitempty"`
+	TermsOfServiceURL     *string  `json:"terms_of_service_url,omitempty"`
+	PrivacyPolicyURL      *string  `json:"privacy_policy_url,omitempty"`
+	CustomInstallURL      *string  `json:"custom_install_url,omitempty"`
+	Tags                  []string `json:"tags,omitempty"`
+}
+
 // User represents a Discord user (basic fields for webhook/invite context)
 type User struct {
 	ID            string `json:"id"`
 	Username      string `json:"username"`
 	Discriminator string `json:"discriminator"`
 	Avatar        *string `json:"avatar"`
+}
+
+// DiscordUser represents a full Discord user object
+type DiscordUser struct {
+	ID               string                 `json:"id"`
+	Username         string                 `json:"username"`
+	Discriminator    string                 `json:"discriminator"`
+	GlobalName       *string                `json:"global_name"`
+	Avatar           *string                `json:"avatar"`
+	Bot              *bool                  `json:"bot,omitempty"`
+	System           *bool                  `json:"system,omitempty"`
+	MFAEnabled       *bool                  `json:"mfa_enabled,omitempty"`
+	Banner           *string                `json:"banner"`
+	AccentColor      *int                   `json:"accent_color"`
+	Locale           *string                `json:"locale,omitempty"`
+	Verified         *bool                  `json:"verified,omitempty"`
+	Email            *string                `json:"email,omitempty"`
+	Flags            *int                   `json:"flags,omitempty"`
+	PremiumType      *int                   `json:"premium_type,omitempty"`
+	PublicFlags      *int                   `json:"public_flags,omitempty"`
+	AvatarDecoration map[string]interface{} `json:"avatar_decoration_data,omitempty"`
+}
+
+// GuildMember represents a Discord guild member
+type GuildMember struct {
+	User                       *DiscordUser           `json:"user,omitempty"`
+	Nick                       *string                `json:"nick"`
+	Avatar                     *string                `json:"avatar"`
+	Banner                     *string                `json:"banner"`
+	Roles                      []string               `json:"roles"`
+	JoinedAt                   *string                `json:"joined_at"`
+	PremiumSince               *string                `json:"premium_since"`
+	Deaf                       bool                   `json:"deaf"`
+	Mute                       bool                   `json:"mute"`
+	Flags                      int                    `json:"flags"`
+	Pending                    *bool                  `json:"pending,omitempty"`
+	Permissions                *string                `json:"permissions,omitempty"`
+	CommunicationDisabledUntil *string                `json:"communication_disabled_until"`
+	AvatarDecorationData       map[string]interface{} `json:"avatar_decoration_data,omitempty"`
+}
+
+// DiscordApplication represents a Discord application
+type DiscordApplication struct {
+	ID                             string                 `json:"id"`
+	Name                           string                 `json:"name"`
+	Icon                           *string                `json:"icon"`
+	Description                    string                 `json:"description"`
+	RPCOrigins                     []string               `json:"rpc_origins"`
+	BotPublic                      bool                   `json:"bot_public"`
+	BotRequireCodeGrant            bool                   `json:"bot_require_code_grant"`
+	Bot                            map[string]interface{} `json:"bot,omitempty"`
+	TermsOfServiceURL              *string                `json:"terms_of_service_url"`
+	PrivacyPolicyURL               *string                `json:"privacy_policy_url"`
+	Owner                          map[string]interface{} `json:"owner,omitempty"`
+	Summary                        string                 `json:"summary"`
+	VerifyKey                      string                 `json:"verify_key"`
+	Team                           map[string]interface{} `json:"team"`
+	GuildID                        *string                `json:"guild_id"`
+	PrimarySkuID                   *string                `json:"primary_sku_id"`
+	Slug                           *string                `json:"slug"`
+	CoverImage                     *string                `json:"cover_image"`
+	Flags                          *int                   `json:"flags"`
+	ApproximateGuildCount          *int                   `json:"approximate_guild_count"`
+	RedirectURIs                   []string               `json:"redirect_uris"`
+	InteractionsEndpointURL        *string                `json:"interactions_endpoint_url"`
+	RoleConnectionsVerificationURL *string                `json:"role_connections_verification_url"`
+	Tags                           []string               `json:"tags"`
+	InstallParams                  map[string]interface{} `json:"install_params"`
+	CustomInstallURL               *string                `json:"custom_install_url"`
+}
+
+// GuildIntegration represents a Discord guild integration
+type GuildIntegration struct {
+	ID                string                 `json:"id"`
+	Name              string                 `json:"name"`
+	Type              string                 `json:"type"`
+	Enabled           bool                   `json:"enabled"`
+	Syncing           *bool                  `json:"syncing,omitempty"`
+	RoleID            *string                `json:"role_id"`
+	EnableEmoticons   *bool                  `json:"enable_emoticons,omitempty"`
+	ExpireBehavior    *int                   `json:"expire_behavior,omitempty"`
+	ExpireGracePeriod *int                   `json:"expire_grace_period,omitempty"`
+	User              map[string]interface{} `json:"user,omitempty"`
+	Account           map[string]interface{} `json:"account"`
+	SyncedAt          *string                `json:"synced_at"`
+	SubscriberCount   *int                   `json:"subscriber_count,omitempty"`
+	Revoked           *bool                  `json:"revoked,omitempty"`
+	Application       map[string]interface{} `json:"application,omitempty"`
+	Scopes            []string               `json:"scopes,omitempty"`
 }
 
 // Application represents a Discord application (basic fields for invite context)
@@ -775,4 +977,332 @@ func (c *DiscordClient) GetGuildInvites(ctx context.Context, guildID string) ([]
 	}
 
 	return invites, nil
+}
+
+// Member Client Methods
+
+// GetGuildMember retrieves a guild member by user ID
+func (c *DiscordClient) GetGuildMember(ctx context.Context, guildID, userID string) (*GuildMember, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/guilds/"+guildID+"/members/"+userID, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get guild member")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var member GuildMember
+	if err := json.NewDecoder(resp.Body).Decode(&member); err != nil {
+		return nil, errors.Wrap(err, "failed to decode member response")
+	}
+
+	return &member, nil
+}
+
+// ListGuildMembers lists guild members
+func (c *DiscordClient) ListGuildMembers(ctx context.Context, guildID string, req *ListGuildMembersRequest) ([]GuildMember, error) {
+	query := ""
+	if req != nil {
+		params := make([]string, 0)
+		if req.Limit != nil {
+			params = append(params, fmt.Sprintf("limit=%d", *req.Limit))
+		}
+		if req.After != nil {
+			params = append(params, fmt.Sprintf("after=%s", *req.After))
+		}
+		if len(params) > 0 {
+			query = "?" + strings.Join(params, "&")
+		}
+	}
+
+	resp, err := c.makeRequest(ctx, "GET", "/guilds/"+guildID+"/members"+query, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list guild members")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var members []GuildMember
+	if err := json.NewDecoder(resp.Body).Decode(&members); err != nil {
+		return nil, errors.Wrap(err, "failed to decode members response")
+	}
+
+	return members, nil
+}
+
+// AddGuildMember adds a user to a guild (requires OAuth2 access token)
+func (c *DiscordClient) AddGuildMember(ctx context.Context, guildID, userID string, req *AddGuildMemberRequest) (*GuildMember, error) {
+	resp, err := c.makeRequest(ctx, "PUT", "/guilds/"+guildID+"/members/"+userID, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to add guild member")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode == 204 {
+		// Member was already in the guild
+		return c.GetGuildMember(ctx, guildID, userID)
+	}
+
+	var member GuildMember
+	if err := json.NewDecoder(resp.Body).Decode(&member); err != nil {
+		return nil, errors.Wrap(err, "failed to decode added member response")
+	}
+
+	return &member, nil
+}
+
+// ModifyGuildMember modifies a guild member
+func (c *DiscordClient) ModifyGuildMember(ctx context.Context, guildID, userID string, req *ModifyGuildMemberRequest) (*GuildMember, error) {
+	resp, err := c.makeRequest(ctx, "PATCH", "/guilds/"+guildID+"/members/"+userID, req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to modify guild member")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var member GuildMember
+	if err := json.NewDecoder(resp.Body).Decode(&member); err != nil {
+		return nil, errors.Wrap(err, "failed to decode modified member response")
+	}
+
+	return &member, nil
+}
+
+// ModifyCurrentMember modifies the current user's member in a guild
+func (c *DiscordClient) ModifyCurrentMember(ctx context.Context, guildID string, req *ModifyCurrentMemberRequest) (*GuildMember, error) {
+	resp, err := c.makeRequest(ctx, "PATCH", "/guilds/"+guildID+"/members/@me", req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to modify current member")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var member GuildMember
+	if err := json.NewDecoder(resp.Body).Decode(&member); err != nil {
+		return nil, errors.Wrap(err, "failed to decode current member response")
+	}
+
+	return &member, nil
+}
+
+// AddGuildMemberRole adds a role to a guild member
+func (c *DiscordClient) AddGuildMemberRole(ctx context.Context, guildID, userID, roleID string) error {
+	resp, err := c.makeRequest(ctx, "PUT", "/guilds/"+guildID+"/members/"+userID+"/roles/"+roleID, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to add guild member role")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	return nil
+}
+
+// RemoveGuildMemberRole removes a role from a guild member
+func (c *DiscordClient) RemoveGuildMemberRole(ctx context.Context, guildID, userID, roleID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/guilds/"+guildID+"/members/"+userID+"/roles/"+roleID, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove guild member role")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	return nil
+}
+
+// RemoveGuildMember removes/kicks a member from a guild
+func (c *DiscordClient) RemoveGuildMember(ctx context.Context, guildID, userID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/guilds/"+guildID+"/members/"+userID, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to remove guild member")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	return nil
+}
+
+// SearchGuildMembers searches for guild members by username or nickname
+func (c *DiscordClient) SearchGuildMembers(ctx context.Context, guildID string, req *SearchGuildMembersRequest) ([]GuildMember, error) {
+	query := fmt.Sprintf("?query=%s", req.Query)
+	if req.Limit != nil {
+		query += fmt.Sprintf("&limit=%d", *req.Limit)
+	}
+
+	resp, err := c.makeRequest(ctx, "GET", "/guilds/"+guildID+"/members/search"+query, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to search guild members")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var members []GuildMember
+	if err := json.NewDecoder(resp.Body).Decode(&members); err != nil {
+		return nil, errors.Wrap(err, "failed to decode search members response")
+	}
+
+	return members, nil
+}
+
+// User Client Methods
+
+// GetUser retrieves a user by ID
+func (c *DiscordClient) GetUser(ctx context.Context, userID string) (*DiscordUser, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/users/"+userID, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get user")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var user DiscordUser
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, errors.Wrap(err, "failed to decode user response")
+	}
+
+	return &user, nil
+}
+
+// GetCurrentUser retrieves the current authenticated user
+func (c *DiscordClient) GetCurrentUser(ctx context.Context) (*DiscordUser, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/users/@me", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get current user")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var user DiscordUser
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, errors.Wrap(err, "failed to decode current user response")
+	}
+
+	return &user, nil
+}
+
+// ModifyCurrentUser modifies the current authenticated user
+func (c *DiscordClient) ModifyCurrentUser(ctx context.Context, req *ModifyCurrentUserRequest) (*DiscordUser, error) {
+	resp, err := c.makeRequest(ctx, "PATCH", "/users/@me", req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to modify current user")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var user DiscordUser
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, errors.Wrap(err, "failed to decode modified user response")
+	}
+
+	return &user, nil
+}
+
+// GetCurrentUserGuilds gets the current user's guilds
+func (c *DiscordClient) GetCurrentUserGuilds(ctx context.Context, req *GetCurrentUserGuildsRequest) ([]Guild, error) {
+	query := ""
+	if req != nil {
+		params := make([]string, 0)
+		if req.Before != nil {
+			params = append(params, fmt.Sprintf("before=%s", *req.Before))
+		}
+		if req.After != nil {
+			params = append(params, fmt.Sprintf("after=%s", *req.After))
+		}
+		if req.Limit != nil {
+			params = append(params, fmt.Sprintf("limit=%d", *req.Limit))
+		}
+		if len(params) > 0 {
+			query = "?" + strings.Join(params, "&")
+		}
+	}
+
+	resp, err := c.makeRequest(ctx, "GET", "/users/@me/guilds"+query, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get current user guilds")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var guilds []Guild
+	if err := json.NewDecoder(resp.Body).Decode(&guilds); err != nil {
+		return nil, errors.Wrap(err, "failed to decode current user guilds response")
+	}
+
+	return guilds, nil
+}
+
+// LeaveGuild leaves a guild
+func (c *DiscordClient) LeaveGuild(ctx context.Context, guildID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/users/@me/guilds/"+guildID, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to leave guild")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	return nil
+}
+
+// Application Client Methods
+
+// GetApplication retrieves an application by ID
+func (c *DiscordClient) GetApplication(ctx context.Context, applicationID string) (*DiscordApplication, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/applications/"+applicationID, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get application")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var application DiscordApplication
+	if err := json.NewDecoder(resp.Body).Decode(&application); err != nil {
+		return nil, errors.Wrap(err, "failed to decode application response")
+	}
+
+	return &application, nil
+}
+
+// GetCurrentApplication retrieves the current application
+func (c *DiscordClient) GetCurrentApplication(ctx context.Context) (*DiscordApplication, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/applications/@me", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get current application")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var application DiscordApplication
+	if err := json.NewDecoder(resp.Body).Decode(&application); err != nil {
+		return nil, errors.Wrap(err, "failed to decode current application response")
+	}
+
+	return &application, nil
+}
+
+// ModifyCurrentApplication modifies the current application
+func (c *DiscordClient) ModifyCurrentApplication(ctx context.Context, req *ModifyCurrentApplicationRequest) (*DiscordApplication, error) {
+	resp, err := c.makeRequest(ctx, "PATCH", "/applications/@me", req)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to edit current application")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var application DiscordApplication
+	if err := json.NewDecoder(resp.Body).Decode(&application); err != nil {
+		return nil, errors.Wrap(err, "failed to decode edited application response")
+	}
+
+	return &application, nil
+}
+
+// Integration Client Methods
+
+// GetGuildIntegrations retrieves integrations for a guild
+func (c *DiscordClient) GetGuildIntegrations(ctx context.Context, guildID string) ([]GuildIntegration, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/guilds/"+guildID+"/integrations", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get guild integrations")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var integrations []GuildIntegration
+	if err := json.NewDecoder(resp.Body).Decode(&integrations); err != nil {
+		return nil, errors.Wrap(err, "failed to decode integrations response")
+	}
+
+	return integrations, nil
+}
+
+// DeleteGuildIntegration deletes a guild integration
+func (c *DiscordClient) DeleteGuildIntegration(ctx context.Context, guildID, integrationID string) error {
+	resp, err := c.makeRequest(ctx, "DELETE", "/guilds/"+guildID+"/integrations/"+integrationID, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to delete guild integration")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	return nil
 }

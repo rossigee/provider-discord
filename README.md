@@ -12,6 +12,10 @@ An **enterprise-grade** Crossplane provider for managing Discord resources throu
 - **Guild Management**: Create and manage Discord servers declaratively
 - **Channel Management**: Text, voice, and category channels with full configuration
 - **Role Management**: Permission management and role hierarchy control
+- **Member Management**: Guild member operations, role assignments, and permissions
+- **User Management**: User profile management and current user operations
+- **Application Management**: Discord bot application configuration and settings
+- **Integration Management**: Third-party service integrations (Twitch, YouTube, etc.)
 - **Webhook Management**: Automated message posting and CI/CD integration
 - **Invite Management**: Server invitation control with expiration and usage limits
 - **GitOps Ready**: Full integration with Kubernetes and GitOps workflows
@@ -37,6 +41,10 @@ An **enterprise-grade** Crossplane provider for managing Discord resources throu
 | Guild | `guild.discord.crossplane.io/v1alpha1` | Discord servers with full configuration | ✅ Production Ready |
 | Channel | `channel.discord.crossplane.io/v1alpha1` | Text, voice, and category channels | ✅ Production Ready |
 | Role | `role.discord.crossplane.io/v1alpha1` | Permission management and role hierarchy | ✅ Production Ready |
+| Member | `member.discord.crossplane.io/v1alpha1` | Guild member management and role assignments | ✅ Production Ready |
+| User | `user.discord.crossplane.io/v1alpha1` | User profile management and current user operations | ✅ Production Ready |
+| Application | `application.discord.crossplane.io/v1alpha1` | Discord bot application configuration | ✅ Production Ready |
+| Integration | `integration.discord.crossplane.io/v1alpha1` | Third-party service integrations (Twitch, YouTube, etc.) | ✅ Production Ready |
 | Webhook | `webhook.discord.crossplane.io/v1alpha1` | Automated messaging and CI/CD integration | ✅ Production Ready |
 | Invite | `invite.discord.crossplane.io/v1alpha1` | Server invitations with expiration control | ✅ Production Ready |
 | ProviderConfig | `discord.crossplane.io/v1beta1` | Provider authentication and configuration | ✅ Production Ready |
@@ -50,6 +58,10 @@ An **enterprise-grade** Crossplane provider for managing Discord resources throu
    - Manage Server (for guild operations)
    - Manage Channels (for channel operations)
    - Manage Roles (for role operations)
+   - Kick Members / Ban Members (for member operations)
+   - Moderate Members (for member timeout operations)
+   - View Guild Insights (for user and member information)
+   - Manage Applications (for application configuration)
    - Manage Webhooks (for webhook operations)
    - Create Instant Invite (for invite operations)
    - View Channels (for resource observation)
@@ -246,6 +258,73 @@ spec:
   writeConnectionSecretsToRef:
     name: server-invite-connection
     namespace: default
+  providerConfigRef:
+    name: default
+---
+# Manage Guild Member
+apiVersion: member.discord.crossplane.io/v1alpha1
+kind: Member
+metadata:
+  name: user-member
+  annotations:
+    kubernetes.io/description: "Guild member with assigned roles"
+spec:
+  forProvider:
+    guildId: "GUILD_ID_HERE"
+    userId: "USER_ID_HERE"
+    nick: "Awesome User"
+    roles:
+      - "ROLE_ID_1"
+      - "ROLE_ID_2"
+    mute: false
+    deaf: false
+  providerConfigRef:
+    name: default
+---
+# Manage User Profile (current user only)
+apiVersion: user.discord.crossplane.io/v1alpha1
+kind: User
+metadata:
+  name: current-user-profile
+  annotations:
+    kubernetes.io/description: "Current bot user profile management"
+spec:
+  forProvider:
+    userId: "@me"  # Current user
+    username: "My Bot Name"
+  providerConfigRef:
+    name: default
+---
+# Configure Bot Application
+apiVersion: application.discord.crossplane.io/v1alpha1
+kind: Application
+metadata:
+  name: bot-application-config
+  annotations:
+    kubernetes.io/description: "Bot application configuration"
+spec:
+  forProvider:
+    applicationId: "@me"  # Current application
+    name: "My Enterprise Bot"
+    description: "Enterprise Discord bot managed by Crossplane"
+    botPublic: false
+    botRequireCodeGrant: true
+    termsOfServiceUrl: "https://example.com/terms"
+    privacyPolicyUrl: "https://example.com/privacy"
+  providerConfigRef:
+    name: default
+---
+# Monitor Third-party Integration
+apiVersion: integration.discord.crossplane.io/v1alpha1
+kind: Integration
+metadata:
+  name: twitch-integration
+  annotations:
+    kubernetes.io/description: "Monitor Twitch integration status"
+spec:
+  forProvider:
+    guildId: "GUILD_ID_HERE"
+    integrationId: "INTEGRATION_ID_HERE"
   providerConfigRef:
     name: default
 ```
@@ -523,8 +602,12 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Roadmap
 
-### ✅ v0.4.0 (Current - Feature Complete)
+### ✅ v0.5.0 (Current - Complete Discord API Coverage)
 - ✅ Guild, Channel, and Role management
+- ✅ **Member management** with role assignments and permissions
+- ✅ **User management** and profile operations
+- ✅ **Application management** for bot configuration
+- ✅ **Integration management** for third-party services (Twitch, YouTube, etc.)
 - ✅ **Webhook management** with CI/CD integration and connection secrets
 - ✅ **Invite management** with expiration control and usage limits  
 - ✅ **Discord Server Introspection** tool for importing existing infrastructure
@@ -535,12 +618,12 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - ✅ Comprehensive test coverage (62-100%)
 - ✅ Complete linting and code quality compliance
 
-### 📋 v0.5.0 (Planned)
-- User/Member management operations
-- Enhanced permission management and role assignments
+### 📋 v0.6.0 (Planned)
 - Message management and automation
+- Enhanced permission validation and role hierarchy checks
 - Advanced Discord integration patterns
 - Performance optimizations and caching
+- Extended user operations and bulk member management
 
 ### 🎯 v0.6.0 (Future)
 - Emoji and sticker management

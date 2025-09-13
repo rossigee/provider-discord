@@ -17,7 +17,7 @@ kubectl get providerconfigs
 kubectl describe providerconfig default
 
 # Check managed resources
-kubectl get guilds,channels,roles -A
+kubectl get guilds,channels,roles,webhooks,invites,members,users,applications,integrations -A
 ```
 
 ### Health Checks
