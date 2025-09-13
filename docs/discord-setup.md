@@ -56,13 +56,22 @@ The bot needs these permissions for provider functionality:
 - **Manage Channels** - Required for channel operations
 - **Manage Roles** - Required for role operations
 
-#### Optional Permissions (based on use case)
+#### Member & User Management
+- **Manage Members** - Required for member management operations
 - **Create Instant Invite** - For invite management
 - **Kick Members** - For member management
 - **Ban Members** - For moderation features
 - **Manage Nicknames** - For user management
+- **View Audit Log** - For audit operations
+
+#### Application & Integration Management
+- **Applications.Commands** - For application resource management
+- **Read Message History** - For integration monitoring
+
+#### Optional Permissions (based on use case)
 - **Manage Messages** - For message operations
-- **Read Message History** - For audit operations
+- **Use Slash Commands** - For bot application features
+- **Manage Events** - For event-based integrations
 
 ### Permission Calculator
 
@@ -71,11 +80,20 @@ Use Discord's permission calculator:
 2. Select required permissions
 3. Copy the permission integer for your configurations
 
-**Minimum Required Permissions Integer**: `268435472`
+**Minimum Required Permissions Integer**: `402653200`
 - Manage Server (MANAGE_GUILD): 32
 - View Channels (VIEW_CHANNEL): 1024
 - Manage Channels (MANAGE_CHANNELS): 16
 - Manage Roles (MANAGE_ROLES): 268435456
+- Manage Members (KICK_MEMBERS): 2
+- Manage Nicknames (MANAGE_NICKNAMES): 134217728
+- View Audit Log (VIEW_AUDIT_LOG): 128
+
+**Extended Permissions Integer (with optional features)**: `402719744`
+- Includes above plus:
+- Create Instant Invite (CREATE_INSTANT_INVITE): 1
+- Ban Members (BAN_MEMBERS): 4
+- Read Message History (READ_MESSAGE_HISTORY): 65536
 
 ## Step 4: Invite Bot to Server
 

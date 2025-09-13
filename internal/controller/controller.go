@@ -21,11 +21,15 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/pkg/controller"
 
+	"github.com/rossigee/provider-discord/internal/controller/application"
 	"github.com/rossigee/provider-discord/internal/controller/channel"
 	"github.com/rossigee/provider-discord/internal/controller/config"
 	"github.com/rossigee/provider-discord/internal/controller/guild"
+	"github.com/rossigee/provider-discord/internal/controller/integration"
 	"github.com/rossigee/provider-discord/internal/controller/invite"
+	"github.com/rossigee/provider-discord/internal/controller/member"
 	"github.com/rossigee/provider-discord/internal/controller/role"
+	"github.com/rossigee/provider-discord/internal/controller/user"
 	"github.com/rossigee/provider-discord/internal/controller/webhook"
 )
 
@@ -39,6 +43,10 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		role.Setup,
 		webhook.Setup,
 		invite.Setup,
+		member.Setup,
+		user.Setup,
+		application.Setup,
+		integration.Setup,
 	} {
 		if err := setup(mgr, o); err != nil {
 			return err
