@@ -1,0 +1,469 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.18.0
+  name: applications.application.discord.crossplane.io
+spec:
+  group: application.discord.crossplane.io
+  names:
+    categories:
+    - crossplane
+    - managed
+    - discord
+    kind: Application
+    listKind: ApplicationList
+    plural: applications
+    singular: application
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.forProvider.applicationId
+      name: APP_ID
+      type: string
+    - jsonPath: .status.atProvider.name
+      name: NAME
+      type: string
+    - jsonPath: .status.atProvider.botPublic
+      name: BOT_PUBLIC
+      type: boolean
+    - jsonPath: .status.conditions[?(@.type=='Ready')].status
+      name: READY
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='Synced')].status
+      name: SYNCED
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: AGE
+      type: date
+    name: v1alpha1
+    schema:
+      openAPIV3Schema:
+        description: A Application is a managed resource that represents a Discord
+          application
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: A ApplicationSpec defines the desired state of a Application.
+            properties:
+              deletionPolicy:
+                default: Delete
+                description: |-
+                  DeletionPolicy specifies what will happen to the underlying external
+                  when this managed resource is deleted - either "Delete" or "Orphan" the
+                  external resource.
+                  This field is planned to be deprecated in favor of the ManagementPolicies
+                  field in a future release. Currently, both could be set independently and
+                  non-default values would be honored if the feature flag is enabled.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                enum:
+                - Orphan
+                - Delete
+                type: string
+              forProvider:
+                description: ApplicationParameters defines the desired state of a
+                  Discord application
+                properties:
+                  applicationId:
+                    description: |-
+                      ApplicationID is the Discord application ID to retrieve/manage
+                      For current application operations, use "@me"
+                    type: string
+                  botPublic:
+                    description: BotPublic indicates whether the bot is public
+                    type: boolean
+                  botRequireCodeGrant:
+                    description: BotRequireCodeGrant indicates if the bot requires
+                      OAuth2 code grant
+                    type: boolean
+                  coverImage:
+                    description: CoverImage is the application cover image (base64
+                      encoded)
+                    type: string
+                  customInstallUrl:
+                    description: CustomInstallURL is a custom URL for OAuth2 authorization
+                    type: string
+                  description:
+                    description: Description is the application description
+                    type: string
+                  icon:
+                    description: |-
+                      Icon is the application icon image data (base64 encoded)
+                      Only applicable when editing current application
+                    type: string
+                  name:
+                    description: Name is the application name (only for editing current
+                      application)
+                    type: string
+                  privacyPolicyUrl:
+                    description: PrivacyPolicyURL is the URL to the application's
+                      privacy policy
+                    type: string
+                  rpcOrigins:
+                    description: RPCOrigins are RPC origin URLs
+                    items:
+                      type: string
+                    type: array
+                  tags:
+                    description: Tags are tags describing the application
+                    items:
+                      type: string
+                    type: array
+                  termsOfServiceUrl:
+                    description: TermsOfServiceURL is the URL to the application's
+                      terms of service
+                    type: string
+                required:
+                - applicationId
+                type: object
+              managementPolicies:
+                default:
+                - '*'
+                description: |-
+                  THIS IS A BETA FIELD. It is on by default but can be opted out
+                  through a Crossplane feature flag.
+                  ManagementPolicies specify the array of actions Crossplane is allowed to
+                  take on the managed and external resources.
+                  This field is planned to replace the DeletionPolicy field in a future
+                  release. Currently, both could be set independently and non-default
+                  values would be honored if the feature flag is enabled. If both are
+                  custom, the DeletionPolicy field will be ignored.
+                  See the design doc for more information: https://github.com/crossplane/crossplane/blob/499895a25d1a1a0ba1604944ef98ac7a1a71f197/design/design-doc-observe-only-resources.md?plain=1#L223
+                  and this one: https://github.com/crossplane/crossplane/blob/444267e84783136daa93568b364a5f01228cacbe/design/one-pager-ignore-changes.md
+                items:
+                  description: |-
+                    A ManagementAction represents an action that the Crossplane controllers
+                    can take on an external resource.
+                  enum:
+                  - Observe
+                  - Create
+                  - Update
+                  - Delete
+                  - LateInitialize
+                  - '*'
+                  type: string
+                type: array
+              providerConfigRef:
+                default:
+                  name: default
+                description: |-
+                  ProviderConfigReference specifies how the provider that will be used to
+                  create, observe, update, and delete this managed resource should be
+                  configured.
+                properties:
+                  name:
+                    description: Name of the referenced object.
+                    type: string
+                  policy:
+                    description: Policies for referencing.
+                    properties:
+                      resolution:
+                        default: Required
+                        description: |-
+                          Resolution specifies whether resolution of this reference is required.
+                          The default is 'Required', which means the reconcile will fail if the
+                          reference cannot be resolved. 'Optional' means this reference will be
+                          a no-op if it cannot be resolved.
+                        enum:
+                        - Required
+                        - Optional
+                        type: string
+                      resolve:
+                        description: |-
+                          Resolve specifies when this reference should be resolved. The default
+                          is 'IfNotPresent', which will attempt to resolve the reference only when
+                          the corresponding field is not present. Use 'Always' to resolve the
+                          reference on every reconcile.
+                        enum:
+                        - Always
+                        - IfNotPresent
+                        type: string
+                    type: object
+                required:
+                - name
+                type: object
+              publishConnectionDetailsTo:
+                description: |-
+                  PublishConnectionDetailsTo specifies the connection secret config which
+                  contains a name, metadata and a reference to secret store config to
+                  which any connection details for this managed resource should be written.
+                  Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                properties:
+                  configRef:
+                    default:
+                      name: default
+                    description: |-
+                      SecretStoreConfigRef specifies which secret store config should be used
+                      for this ConnectionSecret.
+                    properties:
+                      name:
+                        description: Name of the referenced object.
+                        type: string
+                      policy:
+                        description: Policies for referencing.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
+                  metadata:
+                    description: Metadata is the metadata for connection secret.
+                    properties:
+                      annotations:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Annotations are the annotations to be added to connection secret.
+                          - For Kubernetes secrets, this will be used as "metadata.annotations".
+                          - It is up to Secret Store implementation for others store types.
+                        type: object
+                      labels:
+                        additionalProperties:
+                          type: string
+                        description: |-
+                          Labels are the labels/tags to be added to connection secret.
+                          - For Kubernetes secrets, this will be used as "metadata.labels".
+                          - It is up to Secret Store implementation for others store types.
+                        type: object
+                      type:
+                        description: |-
+                          Type is the SecretType for the connection secret.
+                          - Only valid for Kubernetes Secret Stores.
+                        type: string
+                    type: object
+                  name:
+                    description: Name is the name of the connection secret.
+                    type: string
+                required:
+                - name
+                type: object
+              writeConnectionSecretToRef:
+                description: |-
+                  WriteConnectionSecretToReference specifies the namespace and name of a
+                  Secret to which any connection details for this managed resource should
+                  be written. Connection details frequently include the endpoint, username,
+                  and password required to connect to the managed resource.
+                  This field is planned to be replaced in a future release in favor of
+                  PublishConnectionDetailsTo. Currently, both could be set independently
+                  and connection details would be published to both without affecting
+                  each other.
+                properties:
+                  name:
+                    description: Name of the secret.
+                    type: string
+                  namespace:
+                    description: Namespace of the secret.
+                    type: string
+                required:
+                - name
+                - namespace
+                type: object
+            required:
+            - forProvider
+            type: object
+          status:
+            description: A ApplicationStatus represents the observed state of a Application.
+            properties:
+              atProvider:
+                description: ApplicationObservation represents the observed state
+                  of a Discord application
+                properties:
+                  approximateGuildCount:
+                    description: ApproximateGuildCount is the approximate count of
+                      guilds the app is in
+                    type: integer
+                  botPublic:
+                    description: BotPublic indicates whether the bot is public
+                    type: boolean
+                  botRequireCodeGrant:
+                    description: BotRequireCodeGrant indicates if bot requires OAuth2
+                      code grant
+                    type: boolean
+                  botUserId:
+                    description: BotUserID is the ID of the bot user associated with
+                      this application
+                    type: string
+                  coverImage:
+                    description: CoverImage is the application's cover image hash
+                    type: string
+                  customInstallUrl:
+                    description: CustomInstallURL is the custom URL for OAuth2 authorization
+                    type: string
+                  description:
+                    description: Description is the application description
+                    type: string
+                  flags:
+                    description: Flags are the application's public flags
+                    type: integer
+                  guildId:
+                    description: GuildID is the guild ID associated with the application
+                    type: string
+                  icon:
+                    description: Icon is the application icon hash
+                    type: string
+                  id:
+                    description: ID is the application's unique Discord ID
+                    type: string
+                  installParamsPermissions:
+                    description: InstallParamsPermissions are the permissions for
+                      installation
+                    type: string
+                  installParamsScopes:
+                    description: InstallParamsScopes are the OAuth2 scopes for installation
+                    items:
+                      type: string
+                    type: array
+                  interactionsEndpointUrl:
+                    description: InteractionsEndpointURL is the URL for receiving
+                      interactions
+                    type: string
+                  name:
+                    description: Name is the application name
+                    type: string
+                  ownerId:
+                    description: OwnerID is the ID of the application owner
+                    type: string
+                  primarySkuId:
+                    description: PrimarySkuID is the ID of the "Game SKU" created
+                      for the application
+                    type: string
+                  privacyPolicyUrl:
+                    description: PrivacyPolicyURL is the URL to the privacy policy
+                    type: string
+                  redirectUris:
+                    description: RedirectURIs are array of redirect URIs for OAuth2
+                    items:
+                      type: string
+                    type: array
+                  roleConnectionsVerificationUrl:
+                    description: RoleConnectionsVerificationURL is the URL for role
+                      connections
+                    type: string
+                  rpcOrigins:
+                    description: RPCOrigins are RPC origin URLs
+                    items:
+                      type: string
+                    type: array
+                  slug:
+                    description: Slug is the URL slug that links to the application's
+                      store page
+                    type: string
+                  summary:
+                    description: Summary is a summary of the application (deprecated)
+                    type: string
+                  tags:
+                    description: Tags are tags describing the application
+                    items:
+                      type: string
+                    type: array
+                  teamId:
+                    description: TeamID is the ID of the team if the application belongs
+                      to a team
+                    type: string
+                  termsOfServiceUrl:
+                    description: TermsOfServiceURL is the URL to the terms of service
+                    type: string
+                  verifyKey:
+                    description: VerifyKey is the hex-encoded key for GameSDK's GetTicket
+                    type: string
+                type: object
+              conditions:
+                description: Conditions of the resource.
+                items:
+                  description: A Condition that may apply to a resource.
+                  properties:
+                    lastTransitionTime:
+                      description: |-
+                        LastTransitionTime is the last time this condition transitioned from one
+                        status to another.
+                      format: date-time
+                      type: string
+                    message:
+                      description: |-
+                        A Message containing details about this condition's last transition from
+                        one status to another, if any.
+                      type: string
+                    observedGeneration:
+                      description: |-
+                        ObservedGeneration represents the .metadata.generation that the condition was set based upon.
+                        For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+                        with respect to the current state of the instance.
+                      format: int64
+                      type: integer
+                    reason:
+                      description: A Reason for this condition's last transition from
+                        one status to another.
+                      type: string
+                    status:
+                      description: Status of this condition; is it currently True,
+                        False, or Unknown?
+                      type: string
+                    type:
+                      description: |-
+                        Type of this condition. At most one of each condition type may apply to
+                        a resource at any point in time.
+                      type: string
+                  required:
+                  - lastTransitionTime
+                  - reason
+                  - status
+                  - type
+                  type: object
+                type: array
+                x-kubernetes-list-map-keys:
+                - type
+                x-kubernetes-list-type: map
+              observedGeneration:
+                description: |-
+                  ObservedGeneration is the latest metadata.generation
+                  which resulted in either a ready state, or stalled due to error
+                  it can not recover from without human intervention.
+                format: int64
+                type: integer
+            type: object
+        required:
+        - spec
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
