@@ -18,6 +18,7 @@ package channel
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
@@ -43,6 +44,16 @@ const (
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
 )
+
+var (
+	// Discord snowflake IDs are 18-19 digit numbers
+	discordSnowflakeRegex = regexp.MustCompile(`^\d{18,19}$`)
+)
+
+// isValidDiscordID checks if the provided string is a valid Discord snowflake ID
+func isValidDiscordID(id string) bool {
+	return discordSnowflakeRegex.MatchString(id)
+}
 
 // Setup adds a controller that reconciles Channel managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
@@ -114,22 +125,35 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotChannel)
 	}
 
-	// If we have an external name (channel ID), try to get by ID
-	if meta.GetExternalName(cr) != "" {
-		channel, err := c.service.GetChannel(ctx, meta.GetExternalName(cr))
-		if err != nil {
-			return managed.ExternalObservation{}, errors.Wrap(err, "failed to get channel by ID")
-		}
+	externalName := meta.GetExternalName(cr)
+	
+	// If external-name is empty or not a valid Discord ID, this is a new resource to be created
+	// Crossplane runtime defaults external-name to metadata.name for new resources
+	if externalName == "" || !isValidDiscordID(externalName) {
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
 
-		if channel == nil {
-			return managed.ExternalObservation{
-				ResourceExists: false,
-			}, nil
-		}
+	// If we have a valid external name (Discord channel ID), try to get by ID
+	channel, err := c.service.GetChannel(ctx, externalName)
+	if err != nil {
+		// If channel not found by ID, assume it needs to be created
+		// This handles cases where external-name was set but channel doesn't exist
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
 
-		// Update status with observed values
-		now := &metav1.Time{Time: time.Now()}
-		cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
+	if channel == nil {
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
+
+	// Update status with observed values
+	now := &metav1.Time{Time: time.Now()}
+	cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
 			ID:       channel.ID,
 			Name:     channel.Name,
 			Type:     channel.Type,
@@ -140,10 +164,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}
 
 		// Check if we need to update
-		needsUpdate := false
-		if cr.Spec.ForProvider.Name != channel.Name {
-			needsUpdate = true
-		}
+		needsUpdate := cr.Spec.ForProvider.Name != channel.Name
 		if cr.Spec.ForProvider.Position != nil && *cr.Spec.ForProvider.Position != channel.Position {
 			needsUpdate = true
 		}
@@ -151,15 +172,9 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			needsUpdate = true
 		}
 
-		return managed.ExternalObservation{
-			ResourceExists:   true,
-			ResourceUpToDate: !needsUpdate,
-		}, nil
-	}
-
-	// No external name means the resource doesn't exist
 	return managed.ExternalObservation{
-		ResourceExists: false,
+		ResourceExists:   true,
+		ResourceUpToDate: !needsUpdate,
 	}, nil
 }
 
