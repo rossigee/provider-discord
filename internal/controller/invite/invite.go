@@ -18,6 +18,7 @@ package invite
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
@@ -43,6 +44,19 @@ const (
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
 )
+
+var (
+	// Discord invite codes are typically 6-12 character alphanumeric strings
+	// Examples: "abc123", "xyz789", "discord", "general"
+	discordInviteCodeRegex = regexp.MustCompile(`^[a-zA-Z0-9]{3,12}$`)
+)
+
+// isValidDiscordInviteCode checks if the provided string looks like a Discord invite code
+func isValidDiscordInviteCode(code string) bool {
+	// Resource names like "general-channel-invite" should fail this validation
+	// Real Discord invite codes are short alphanumeric strings without dashes/underscores
+	return discordInviteCodeRegex.MatchString(code)
+}
 
 // Setup adds a controller that reconciles Invite managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
@@ -114,70 +128,77 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotInvite)
 	}
 
-	// If we have an external name (invite code), try to get by code
-	if meta.GetExternalName(cr) != "" {
-		invite, err := c.service.GetInvite(ctx, meta.GetExternalName(cr))
-		if err != nil {
-			return managed.ExternalObservation{}, errors.Wrap(err, "failed to get invite by code")
-		}
-
-		if invite == nil {
-			return managed.ExternalObservation{
-				ResourceExists: false,
-			}, nil
-		}
-
-		// Parse expiration time if present
-		var expiresAt *metav1.Time
-		if invite.ExpiresAt != nil {
-			if parsedTime, err := time.Parse(time.RFC3339, *invite.ExpiresAt); err == nil {
-				expiresAt = &metav1.Time{Time: parsedTime}
-			}
-		}
-
-		// Parse created time
-		var createdAt *metav1.Time
-		if parsedTime, err := time.Parse(time.RFC3339, invite.CreatedAt); err == nil {
-			createdAt = &metav1.Time{Time: parsedTime}
-		}
-
-		// Update status with observed values
-		cr.Status.AtProvider = invitev1alpha1.InviteObservation{
-			Code:                     invite.Code,
-			GuildID:                  getStringFromGuild(invite.Guild),
-			ChannelID:                getStringFromChannel(invite.Channel),
-			InviterID:                getStringFromUser(invite.Inviter),
-			TargetType:               invite.TargetType,
-			TargetUserID:             getStringPtrFromUser(invite.TargetUser),
-			TargetApplicationID:      getStringPtrFromApplication(invite.TargetApplication),
-			ApproximatePresenceCount: invite.ApproximatePresenceCount,
-			ApproximateMemberCount:   invite.ApproximateMemberCount,
-			ExpiresAt:                expiresAt,
-			CreatedAt:                createdAt,
-			Uses:                     invite.Uses,
-			MaxAge:                   invite.MaxAge,
-			MaxUses:                  invite.MaxUses,
-			Temporary:                invite.Temporary,
-		}
-
-		// Store invite URL in connection secret
-		connectionDetails := managed.ConnectionDetails{}
-		if invite.Code != "" {
-			inviteURL := "https://discord.gg/" + invite.Code
-			connectionDetails["url"] = []byte(inviteURL)
-		}
-
-		// Invites cannot be updated, so always up to date if it exists
+	externalName := meta.GetExternalName(cr)
+	
+	// If external-name is empty or not a valid Discord invite code, this is a new resource to be created
+	// Crossplane runtime defaults external-name to metadata.name for new resources
+	if externalName == "" || !isValidDiscordInviteCode(externalName) {
 		return managed.ExternalObservation{
-			ResourceExists:    true,
-			ResourceUpToDate:  true,
-			ConnectionDetails: connectionDetails,
+			ResourceExists: false,
 		}, nil
 	}
 
-	// No external name means the resource doesn't exist
+	// If we have a valid external name (Discord invite code), try to get by code
+	invite, err := c.service.GetInvite(ctx, externalName)
+	if err != nil {
+		// If invite not found by code, assume it needs to be created
+		// This handles cases where external-name was set but invite doesn't exist
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
+
+	if invite == nil {
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
+
+	// Parse expiration time if present
+	var expiresAt *metav1.Time
+	if invite.ExpiresAt != nil {
+		if parsedTime, err := time.Parse(time.RFC3339, *invite.ExpiresAt); err == nil {
+			expiresAt = &metav1.Time{Time: parsedTime}
+		}
+	}
+
+	// Parse created time
+	var createdAt *metav1.Time
+	if parsedTime, err := time.Parse(time.RFC3339, invite.CreatedAt); err == nil {
+		createdAt = &metav1.Time{Time: parsedTime}
+	}
+
+	// Update status with observed values
+	cr.Status.AtProvider = invitev1alpha1.InviteObservation{
+		Code:                     invite.Code,
+		GuildID:                  getStringFromGuild(invite.Guild),
+		ChannelID:                getStringFromChannel(invite.Channel),
+		InviterID:                getStringFromUser(invite.Inviter),
+		TargetType:               invite.TargetType,
+		TargetUserID:             getStringPtrFromUser(invite.TargetUser),
+		TargetApplicationID:      getStringPtrFromApplication(invite.TargetApplication),
+		ApproximatePresenceCount: invite.ApproximatePresenceCount,
+		ApproximateMemberCount:   invite.ApproximateMemberCount,
+		ExpiresAt:                expiresAt,
+		CreatedAt:                createdAt,
+		Uses:                     invite.Uses,
+		MaxAge:                   invite.MaxAge,
+		MaxUses:                  invite.MaxUses,
+		Temporary:                invite.Temporary,
+	}
+
+	// Store invite URL in connection secret
+	connectionDetails := managed.ConnectionDetails{}
+	if invite.Code != "" {
+		inviteURL := "https://discord.gg/" + invite.Code
+		connectionDetails["url"] = []byte(inviteURL)
+	}
+
+	// Invites cannot be updated, so always up to date if it exists
 	return managed.ExternalObservation{
-		ResourceExists: false,
+		ResourceExists:    true,
+		ResourceUpToDate:  true,
+		ConnectionDetails: connectionDetails,
 	}, nil
 }
 

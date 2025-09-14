@@ -18,6 +18,7 @@ package webhook
 
 import (
 	"context"
+	"regexp"
 	"time"
 
 	"github.com/pkg/errors"
@@ -43,6 +44,16 @@ const (
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
 )
+
+var (
+	// Discord snowflake IDs are 18-19 digit numbers
+	discordSnowflakeRegex = regexp.MustCompile(`^\d{18,19}$`)
+)
+
+// isValidDiscordID checks if the provided string is a valid Discord snowflake ID
+func isValidDiscordID(id string) bool {
+	return discordSnowflakeRegex.MatchString(id)
+}
 
 // Setup adds a controller that reconciles Webhook managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
@@ -114,68 +125,75 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotWebhook)
 	}
 
-	// If we have an external name (webhook ID), try to get by ID
-	if meta.GetExternalName(cr) != "" {
-		webhook, err := c.service.GetWebhook(ctx, meta.GetExternalName(cr))
-		if err != nil {
-			return managed.ExternalObservation{}, errors.Wrap(err, "failed to get webhook by ID")
-		}
-
-		if webhook == nil {
-			return managed.ExternalObservation{
-				ResourceExists: false,
-			}, nil
-		}
-
-		// Update status with observed values
-		now := &metav1.Time{Time: time.Now()}
-		observation := webhookv1alpha1.WebhookObservation{
-			ID:        webhook.ID,
-			Type:      webhook.Type,
-			Name:      webhook.Name,
-			ChannelID: webhook.ChannelID,
-			GuildID:   webhook.GuildID,
-			UpdatedAt: now,
-		}
-		
-		// Handle optional fields
-		if webhook.Avatar != nil {
-			observation.Avatar = *webhook.Avatar
-		}
-		if webhook.ApplicationID != nil {
-			observation.ApplicationID = *webhook.ApplicationID
-		}
-		
-		cr.Status.AtProvider = observation
-
-		// Store sensitive fields in connection secret
-		connectionDetails := managed.ConnectionDetails{}
-		if webhook.Token != "" {
-			connectionDetails["token"] = []byte(webhook.Token)
-		}
-		if webhook.URL != "" {
-			connectionDetails["url"] = []byte(webhook.URL)
-		}
-
-		// Check if we need to update
-		needsUpdate := false
-		if cr.Spec.ForProvider.Name != webhook.Name {
-			needsUpdate = true
-		}
-		if cr.Spec.ForProvider.Avatar != nil && (webhook.Avatar == nil || *cr.Spec.ForProvider.Avatar != *webhook.Avatar) {
-			needsUpdate = true
-		}
-
+	externalName := meta.GetExternalName(cr)
+	
+	// If external-name is empty or not a valid Discord ID, this is a new resource to be created
+	// Crossplane runtime defaults external-name to metadata.name for new resources
+	if externalName == "" || !isValidDiscordID(externalName) {
 		return managed.ExternalObservation{
-			ResourceExists:    true,
-			ResourceUpToDate:  !needsUpdate,
-			ConnectionDetails: connectionDetails,
+			ResourceExists: false,
 		}, nil
 	}
 
-	// No external name means the resource doesn't exist
+	// If we have a valid external name (Discord webhook ID), try to get by ID
+	webhook, err := c.service.GetWebhook(ctx, externalName)
+	if err != nil {
+		// If webhook not found by ID, assume it needs to be created
+		// This handles cases where external-name was set but webhook doesn't exist
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
+
+	if webhook == nil {
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
+
+	// Update status with observed values
+	now := &metav1.Time{Time: time.Now()}
+	observation := webhookv1alpha1.WebhookObservation{
+		ID:        webhook.ID,
+		Type:      webhook.Type,
+		Name:      webhook.Name,
+		ChannelID: webhook.ChannelID,
+		GuildID:   webhook.GuildID,
+		UpdatedAt: now,
+	}
+	
+	// Handle optional fields
+	if webhook.Avatar != nil {
+		observation.Avatar = *webhook.Avatar
+	}
+	if webhook.ApplicationID != nil {
+		observation.ApplicationID = *webhook.ApplicationID
+	}
+	
+	cr.Status.AtProvider = observation
+
+	// Store sensitive fields in connection secret
+	connectionDetails := managed.ConnectionDetails{}
+	if webhook.Token != "" {
+		connectionDetails["token"] = []byte(webhook.Token)
+	}
+	if webhook.URL != "" {
+		connectionDetails["url"] = []byte(webhook.URL)
+	}
+
+	// Check if we need to update
+	needsUpdate := false
+	if cr.Spec.ForProvider.Name != webhook.Name {
+		needsUpdate = true
+	}
+	if cr.Spec.ForProvider.Avatar != nil && (webhook.Avatar == nil || *cr.Spec.ForProvider.Avatar != *webhook.Avatar) {
+		needsUpdate = true
+	}
+
 	return managed.ExternalObservation{
-		ResourceExists: false,
+		ResourceExists:    true,
+		ResourceUpToDate:  !needsUpdate,
+		ConnectionDetails: connectionDetails,
 	}, nil
 }
 
