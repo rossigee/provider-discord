@@ -73,8 +73,8 @@ func (m *MockChannelClient) DeleteChannel(ctx context.Context, channelID string)
 
 func TestObserve(t *testing.T) {
 	ctx := context.Background()
-	guildID := "123456789"
-	channelID := "987654321"
+	guildID := "123456789012345678"  // Valid Discord snowflake ID (18 digits)
+	channelID := "987654321098765432" // Valid Discord snowflake ID (18 digits)
 	
 	tests := []struct {
 		name                string
@@ -187,6 +187,30 @@ func TestObserve(t *testing.T) {
 			expectedUpToDate: false,
 			expectError:      false,
 		},
+		{
+			name: "invalid external name (not Discord ID)",
+			channel: &channelv1alpha1.Channel{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-resource-name",
+					Annotations: map[string]string{
+						meta.AnnotationKeyExternalName: "test-resource-name", // Invalid - not a Discord snowflake
+					},
+				},
+				Spec: channelv1alpha1.ChannelSpec{
+					ForProvider: channelv1alpha1.ChannelParameters{
+						Name:    "test-channel",
+						Type:    0,
+						GuildID: guildID,
+					},
+				},
+			},
+			mockSetup: func(m *MockChannelClient) {
+				// No setup needed - should not call GetChannel for invalid IDs
+			},
+			expectedExists:   false,
+			expectedUpToDate: false,
+			expectError:      false,
+		},
 	}
 
 	for _, tc := range tests {
@@ -210,8 +234,8 @@ func TestObserve(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	ctx := context.Background()
-	guildID := "123456789"
-	channelID := "987654321"
+	guildID := "123456789012345678"  // Valid Discord snowflake ID
+	channelID := "987654321098765432" // Valid Discord snowflake ID
 
 	mockClient := &MockChannelClient{
 		CreateChannelFunc: func(ctx context.Context, req *discordclient.CreateChannelRequest) (*discordclient.Channel, error) {
@@ -243,8 +267,8 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	ctx := context.Background()
-	guildID := "123456789"
-	channelID := "987654321"
+	guildID := "123456789012345678"  // Valid Discord snowflake ID
+	channelID := "987654321098765432" // Valid Discord snowflake ID
 
 	mockClient := &MockChannelClient{
 		ModifyChannelFunc: func(ctx context.Context, channelID string, req *discordclient.ModifyChannelRequest) (*discordclient.Channel, error) {
@@ -280,7 +304,7 @@ func TestUpdate(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	ctx := context.Background()
-	channelID := "987654321"
+	channelID := "987654321098765432" // Valid Discord snowflake ID
 
 	tests := []struct {
 		name        string
