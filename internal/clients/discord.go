@@ -26,7 +26,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const (
@@ -118,6 +120,7 @@ type DiscordClient struct {
 	httpClient *http.Client
 	token      string
 	baseURL    string
+	logger     logr.Logger
 }
 
 // Ensure DiscordClient implements all client interfaces
@@ -139,6 +142,7 @@ func NewDiscordClient(token string) *DiscordClient {
 		},
 		token:   token,
 		baseURL: DiscordAPIBaseURL,
+		logger:  ctrl.Log.WithName("discord-client"),
 	}
 }
 
@@ -266,17 +270,26 @@ type ModifyGuildRequest struct {
 // makeRequest performs an HTTP request to the Discord API
 func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
 	var reqBody io.Reader
+	var bodyStr string
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
 		if err != nil {
+			c.logger.Error(err, "Failed to marshal request body", "endpoint", endpoint)
 			return nil, errors.Wrap(err, "failed to marshal request body")
 		}
 		reqBody = bytes.NewReader(jsonBody)
+		bodyStr = string(jsonBody)
 	}
 
 	url := c.baseURL + endpoint
+	c.logger.Info("Making Discord API request",
+		"method", method,
+		"url", url,
+		"body", bodyStr)
+
 	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
+		c.logger.Error(err, "Failed to create request", "url", url)
 		return nil, errors.Wrap(err, "failed to create request")
 	}
 
@@ -286,12 +299,23 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
+		c.logger.Error(err, "Failed to perform request", "url", url)
 		return nil, errors.Wrap(err, "failed to perform request")
 	}
+
+	c.logger.Info("Discord API response",
+		"method", method,
+		"url", url,
+		"status", resp.StatusCode)
 
 	if resp.StatusCode >= 400 {
 		defer func() { _ = resp.Body.Close() }()
 		bodyBytes, _ := io.ReadAll(resp.Body)
+		c.logger.Error(nil, "Discord API error",
+			"method", method,
+			"url", url,
+			"status", resp.StatusCode,
+			"response", string(bodyBytes))
 		return nil, errors.Errorf("Discord API error: %d - %s", resp.StatusCode, string(bodyBytes))
 	}
 

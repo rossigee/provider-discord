@@ -25,6 +25,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	uzap "go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	xpcontroller "github.com/crossplane/crossplane-runtime/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/pkg/feature"
@@ -50,14 +52,21 @@ func main() {
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	zl := zap.New(zap.UseDevMode(*debug))
+	var zl = zap.New(zap.UseDevMode(*debug), func(o *zap.Options) {
+		if *debug {
+			o.Development = true
+			o.Level = uzap.NewAtomicLevelAt(zapcore.DebugLevel)
+		} else {
+			o.Development = false
+			o.Level = uzap.NewAtomicLevelAt(zapcore.InfoLevel)
+		}
+	})
+
 	log := logging.NewLogrLogger(zl.WithName("provider-discord"))
-	if *debug {
-		// The controller-runtime runs with a no-op logger by default. It is
-		// *very* verbose even at info level, so we only provide it a real
-		// logger when we're running in debug mode.
-		ctrl.SetLogger(zl)
-	}
+
+	// Always set the controller-runtime logger to capture reconciliation events
+	// Use info level to avoid excessive verbosity while still showing important operations
+	ctrl.SetLogger(zl.WithName("controller-runtime"))
 
 	log.Debug("Starting", "sync-period", syncPeriod.String())
 
