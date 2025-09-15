@@ -182,13 +182,8 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Check if we need to update
-	needsUpdate := false
-	if cr.Spec.ForProvider.Name != webhook.Name {
-		needsUpdate = true
-	}
-	if cr.Spec.ForProvider.Avatar != nil && (webhook.Avatar == nil || *cr.Spec.ForProvider.Avatar != *webhook.Avatar) {
-		needsUpdate = true
-	}
+	needsUpdate := cr.Spec.ForProvider.Name != webhook.Name ||
+		(cr.Spec.ForProvider.Avatar != nil && (webhook.Avatar == nil || *cr.Spec.ForProvider.Avatar != *webhook.Avatar))
 
 	return managed.ExternalObservation{
 		ResourceExists:    true,
