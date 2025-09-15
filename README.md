@@ -6,6 +6,8 @@
 
 An **enterprise-grade** Crossplane provider for managing Discord resources through Kubernetes APIs with comprehensive observability, resilience, and monitoring.
 
+> **CI/CD Status**: Testing pipeline after lint fixes
+
 ## Features
 
 ### Core Discord Management
