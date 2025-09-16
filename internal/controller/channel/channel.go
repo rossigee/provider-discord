@@ -18,6 +18,7 @@ package channel
 
 import (
 	"context"
+	"fmt"
 	"regexp"
 	"time"
 
@@ -52,7 +53,10 @@ var (
 
 // isValidDiscordID checks if the provided string is a valid Discord snowflake ID
 func isValidDiscordID(id string) bool {
-	return discordSnowflakeRegex.MatchString(id)
+	isValid := discordSnowflakeRegex.MatchString(id)
+	// Debug logging to understand validation behavior
+	fmt.Printf("DEBUG: Validating ID '%s' - isValid: %t\n", id, isValid)
+	return isValid
 }
 
 // Setup adds a controller that reconciles Channel managed resources.
@@ -126,14 +130,29 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	externalName := meta.GetExternalName(cr)
-	
+
+	// DEBUG: Always log what we're checking
+	fmt.Printf("OBSERVE DEBUG: External name='%s', Channel name='%s'\n", externalName, cr.Spec.ForProvider.Name)
+
 	// If external-name is empty or not a valid Discord ID, this is a new resource to be created
 	// Crossplane runtime defaults external-name to metadata.name for new resources
-	if externalName == "" || !isValidDiscordID(externalName) {
+	if externalName == "" {
+		fmt.Printf("OBSERVE DEBUG: External name is empty - returning ResourceExists=false\n")
 		return managed.ExternalObservation{
 			ResourceExists: false,
 		}, nil
 	}
+
+	// Check if external-name is a valid Discord snowflake ID (18-19 digits)
+	if !isValidDiscordID(externalName) {
+		// Force creation for non-snowflake external names
+		fmt.Printf("OBSERVE DEBUG: External name '%s' is not valid snowflake - returning ResourceExists=false\n", externalName)
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
+
+	fmt.Printf("OBSERVE DEBUG: External name '%s' is valid snowflake - calling GetChannel\n", externalName)
 
 	// If we have a valid external name (Discord channel ID), try to get by ID
 	channel, err := c.service.GetChannel(ctx, externalName)
