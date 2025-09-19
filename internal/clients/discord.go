@@ -23,12 +23,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
+
+	"github.com/rossigee/provider-discord/internal/metrics"
 )
 
 const (
@@ -117,10 +120,11 @@ type IntegrationClient interface {
 
 // DiscordClient is a client for the Discord API
 type DiscordClient struct {
-	httpClient *http.Client
-	token      string
-	baseURL    string
-	logger     logr.Logger
+	httpClient     *http.Client
+	token          string
+	baseURL        string
+	logger         logr.Logger
+	metricsRecorder *metrics.MetricsRecorder
 }
 
 // Ensure DiscordClient implements all client interfaces
@@ -136,13 +140,19 @@ var _ IntegrationClient = (*DiscordClient)(nil)
 
 // NewDiscordClient creates a new Discord API client
 func NewDiscordClient(token string) *DiscordClient {
+	return NewDiscordClientWithMetrics(token, nil)
+}
+
+// NewDiscordClientWithMetrics creates a new Discord API client with metrics recorder
+func NewDiscordClientWithMetrics(token string, metricsRecorder *metrics.MetricsRecorder) *DiscordClient {
 	return &DiscordClient{
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
-		token:   token,
-		baseURL: DiscordAPIBaseURL,
-		logger:  ctrl.Log.WithName("discord-client"),
+		token:           token,
+		baseURL:         DiscordAPIBaseURL,
+		logger:          ctrl.Log.WithName("discord-client"),
+		metricsRecorder: metricsRecorder,
 	}
 }
 
@@ -297,9 +307,17 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "Crossplane Discord Provider/1.0")
 
+	startTime := time.Now()
 	resp, err := c.httpClient.Do(req)
+	duration := time.Since(startTime)
+
 	if err != nil {
 		c.logger.Error(err, "Failed to perform request", "url", url)
+		// Record failed API operation if metrics recorder is available
+		if c.metricsRecorder != nil {
+			operation := c.mapHTTPMethodToOperation(method)
+			c.metricsRecorder.RecordAPIOperation("unknown", operation, "error", duration)
+		}
 		return nil, errors.Wrap(err, "failed to perform request")
 	}
 
@@ -307,6 +325,17 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 		"method", method,
 		"url", url,
 		"status", resp.StatusCode)
+
+	// Record API operation and rate limit metrics if metrics recorder is available
+	if c.metricsRecorder != nil {
+		resourceType := c.extractResourceTypeFromEndpoint(endpoint)
+		operation := c.mapHTTPMethodToOperation(method)
+		status := c.mapHTTPStatusToStatus(resp.StatusCode)
+		c.metricsRecorder.RecordAPIOperation(resourceType, operation, status, duration)
+
+		// Parse and record rate limit information from headers
+		c.recordRateLimitMetrics(resourceType, endpoint, resp.Header)
+	}
 
 	if resp.StatusCode >= 400 {
 		defer func() { _ = resp.Body.Close() }()
@@ -1329,4 +1358,121 @@ func (c *DiscordClient) DeleteGuildIntegration(ctx context.Context, guildID, int
 	defer func() { _ = resp.Body.Close() }()
 
 	return nil
+}
+
+// extractResourceTypeFromEndpoint extracts the resource type from a Discord API endpoint
+func (c *DiscordClient) extractResourceTypeFromEndpoint(endpoint string) string {
+	// Remove leading slash and query parameters
+	path := strings.TrimPrefix(endpoint, "/")
+	if idx := strings.Index(path, "?"); idx != -1 {
+		path = path[:idx]
+	}
+
+	parts := strings.Split(path, "/")
+	if len(parts) == 0 {
+		return "unknown"
+	}
+
+	// Map Discord API endpoints to resource types
+	switch parts[0] {
+	case "guilds":
+		if len(parts) >= 3 {
+			switch parts[2] {
+			case "channels":
+				return "channel"
+			case "roles":
+				return "role"
+			case "members":
+				return "member"
+			case "webhooks":
+				return "webhook"
+			case "invites":
+				return "invite"
+			case "integrations":
+				return "integration"
+			default:
+				return "guild"
+			}
+		}
+		return "guild"
+	case "channels":
+		if len(parts) >= 3 {
+			switch parts[2] {
+			case "webhooks":
+				return "webhook"
+			case "invites":
+				return "invite"
+			default:
+				return "channel"
+			}
+		}
+		return "channel"
+	case "users":
+		return "user"
+	case "applications":
+		return "application"
+	case "webhooks":
+		return "webhook"
+	case "invites":
+		return "invite"
+	default:
+		return "unknown"
+	}
+}
+
+// recordRateLimitMetrics parses rate limit headers and records metrics
+func (c *DiscordClient) recordRateLimitMetrics(resourceType, endpoint string, headers http.Header) {
+	// Discord rate limit headers
+	remaining := headers.Get("X-RateLimit-Remaining")
+	resetAfter := headers.Get("X-RateLimit-Reset-After")
+	limit := headers.Get("X-RateLimit-Limit")
+
+	if remaining != "" {
+		if remainingInt, err := strconv.Atoi(remaining); err == nil {
+			// Calculate reset time
+			var resetTime time.Time
+			if resetAfter != "" {
+				if resetAfterFloat, err := strconv.ParseFloat(resetAfter, 64); err == nil {
+					resetTime = time.Now().Add(time.Duration(resetAfterFloat) * time.Second)
+				}
+			}
+
+			c.metricsRecorder.RecordRateLimit(resourceType, endpoint, remainingInt, resetTime)
+
+			// Log rate limit information for debugging
+			c.logger.Info("Discord rate limit info",
+				"resourceType", resourceType,
+				"endpoint", endpoint,
+				"remaining", remainingInt,
+				"limit", limit,
+				"resetAfter", resetAfter)
+		}
+	}
+}
+
+// mapHTTPMethodToOperation maps HTTP methods to operation types
+func (c *DiscordClient) mapHTTPMethodToOperation(method string) string {
+	switch strings.ToUpper(method) {
+	case "POST":
+		return "create"
+	case "GET":
+		return "observe"
+	case "PATCH", "PUT":
+		return "update"
+	case "DELETE":
+		return "delete"
+	default:
+		return "unknown"
+	}
+}
+
+// mapHTTPStatusToStatus maps HTTP status codes to status types
+func (c *DiscordClient) mapHTTPStatusToStatus(statusCode int) string {
+	if statusCode == 429 {
+		return "rate_limited"
+	} else if statusCode >= 400 {
+		return "error"
+	} else {
+		return "success"
+	}
 }

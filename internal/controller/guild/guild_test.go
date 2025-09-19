@@ -25,7 +25,7 @@ import (
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	"github.com/crossplane/crossplane-runtime/pkg/meta"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
 	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"

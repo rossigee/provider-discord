@@ -30,8 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/apis/common/v1"
-	"github.com/crossplane/crossplane-runtime/pkg/resource"
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	"github.com/rossigee/provider-discord/apis/v1beta1"
 )
@@ -304,12 +304,6 @@ func (m *MockManaged) GetManagementPolicies() xpv1.ManagementPolicies {
 }
 
 func (m *MockManaged) SetManagementPolicies(p xpv1.ManagementPolicies) {}
-
-func (m *MockManaged) GetPublishConnectionDetailsTo() *xpv1.PublishConnectionDetailsTo {
-	return nil
-}
-
-func (m *MockManaged) SetPublishConnectionDetailsTo(p *xpv1.PublishConnectionDetailsTo) {}
 
 func (m *MockManaged) GetObjectKind() schema.ObjectKind {
 	return schema.EmptyObjectKind

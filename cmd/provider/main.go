@@ -28,14 +28,15 @@ import (
 	uzap "go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
-	xpcontroller "github.com/crossplane/crossplane-runtime/pkg/controller"
-	"github.com/crossplane/crossplane-runtime/pkg/feature"
-	"github.com/crossplane/crossplane-runtime/pkg/logging"
-	"github.com/crossplane/crossplane-runtime/pkg/ratelimiter"
+	xpcontroller "github.com/crossplane/crossplane-runtime/v2/pkg/controller"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 
 	"github.com/rossigee/provider-discord/apis"
 	"github.com/rossigee/provider-discord/internal/controller"
 	"github.com/rossigee/provider-discord/internal/features"
+	"github.com/rossigee/provider-discord/internal/metrics"
 )
 
 func main() {
@@ -107,7 +108,10 @@ func main() {
 		kingpin.FatalIfError(err, "Cannot add Discord APIs to scheme")
 	}
 
-	if err := controller.Setup(mgr, o); err != nil {
+	// Initialize metrics recorder for Discord API monitoring
+	metricsRecorder := metrics.NewMetricsRecorder()
+
+	if err := controller.SetupWithMetrics(mgr, o, metricsRecorder); err != nil {
 		kingpin.FatalIfError(err, "Cannot setup Discord controllers")
 	}
 
