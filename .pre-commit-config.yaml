@@ -87,7 +87,7 @@ repos:
           python3 -c "
           import sys
           import re
-          
+
           secret_patterns = [
               r'(?i)(password|passwd|pwd)\s*[=:]\s*[\"\']\w+[\"\']\s*',
               r'(?i)(api[_-]?key|apikey)\s*[=:]\s*[\"\']\w+[\"\']\s*',
@@ -96,7 +96,7 @@ repos:
               r'(?i)(auth[_-]?token|authtoken)\s*[=:]\s*[\"\']\w+[\"\']\s*',
               r'(?i)(discord[_-]?token|bot[_-]?token)\s*[=:]\s*[\"\']\w+[\"\']\s*',
           ]
-          
+
           for filename in sys.argv[1:]:
               try:
                   with open(filename, 'r', encoding='utf-8', errors='ignore') as f:

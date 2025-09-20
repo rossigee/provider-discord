@@ -39,12 +39,14 @@ bin/
 _output/
 output/
 *.xpkg
+.cache/
 
 # Provider binaries (prevent accidental commits)
 /provider
 /provider-discord
 /discord-introspect
 /get-bot-invite
+/test-provider
 
 # Generated files (allow all API generated files, exclude others)
 zz_generated.*
