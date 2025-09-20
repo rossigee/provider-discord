@@ -1,0 +1,139 @@
+apiVersion: meta.pkg.crossplane.io/v1
+kind: Provider
+metadata:
+  name: provider-discord
+  annotations:
+    meta.crossplane.io/maintainer: Crossplane Maintainers <info@crossplane.io>
+    meta.crossplane.io/source: github.com/rossigee/provider-discord
+    meta.crossplane.io/license: Apache-2.0
+    meta.crossplane.io/description: |
+      Enterprise-grade Crossplane provider for managing Discord resources through
+      Kubernetes APIs with comprehensive observability, resilience, and monitoring.
+
+      Features:
+      - Complete Discord server management (guilds, channels, roles)
+      - Production-ready with health checks and metrics
+      - Rate limiting and circuit breaker patterns
+      - OpenTelemetry tracing integration
+      - Comprehensive error handling and retry logic
+      - Enterprise security and resource controls
+    meta.crossplane.io/readme: |
+      # Discord Provider for Crossplane
+
+      `provider-discord` is an enterprise-grade Crossplane provider that enables
+      declarative management of Discord resources through Kubernetes APIs.
+
+      ## Supported Resources
+
+      ### Core Resources
+      - **Guilds**: Discord server management with comprehensive configuration
+      - **Channels**: Text, voice, and category channels with permissions
+      - **Roles**: Permission management and role hierarchy
+
+      ### Enterprise Features
+      - **Health Monitoring**: Built-in `/healthz` and `/readyz` endpoints
+      - **Metrics**: Prometheus metrics for operations, rate limits, and errors
+      - **Observability**: OpenTelemetry tracing with correlation IDs
+      - **Resilience**: Exponential backoff, circuit breakers, and retry logic
+      - **Security**: Pod security contexts, network policies, RBAC
+
+      ## Quick Start
+
+      1. **Install the Provider**:
+         ```yaml
+         apiVersion: pkg.crossplane.io/v1
+         kind: Provider
+         metadata:
+           name: provider-discord
+         spec:
+           package: ghcr.io/rossigee/provider-discord:v0.5.9-debug
+         ```
+
+      2. **Create Bot Token Secret**:
+         ```bash
+         kubectl create secret generic discord-creds \
+           -n crossplane-system \
+           --from-literal=token=YOUR_BOT_TOKEN
+         ```
+
+      3. **Configure Provider**:
+         ```yaml
+         apiVersion: discord.crossplane.io/v1beta1
+         kind: ProviderConfig
+         metadata:
+           name: default
+         spec:
+           credentials:
+             source: Secret
+             secretRef:
+               namespace: crossplane-system
+               name: discord-creds
+               key: token
+         ```
+
+      4. **Create Discord Resources**:
+         ```yaml
+         apiVersion: guild.discord.crossplane.io/v1alpha1
+         kind: Guild
+         metadata:
+           name: my-discord-server
+         spec:
+           forProvider:
+             name: "My Crossplane Server"
+             region: "us-west"
+         ```
+
+      ## Production Deployment
+
+      The provider includes comprehensive production configurations:
+
+      - **Resource Limits**: CPU/memory limits and requests
+      - **Health Probes**: Kubernetes liveness and readiness probes
+      - **Monitoring**: Prometheus ServiceMonitor and metrics
+      - **Security**: Pod security contexts and network policies
+      - **Observability**: OpenTelemetry tracing integration
+
+      See `examples/provider-config.yaml` for complete deployment configuration.
+
+      ## Discord Bot Requirements
+
+      Your Discord bot needs these permissions:
+      - Manage Server (for guild operations)
+      - Manage Channels (for channel operations)
+      - Manage Roles (for role operations)
+      - View Channels (for resource observation)
+
+      ## Documentation
+
+      - [GitHub Repository](https://github.com/rossigee/provider-discord)
+      - [API Reference](https://doc.crds.dev/github.com/rossigee/provider-discord)
+      - [Discord API Documentation](https://discord.com/developers/docs)
+spec:
+  controller:
+    image: ghcr.io/rossigee/provider-discord:v0.5.9-debug
+    permissionRequests:
+      - apiGroups:
+          - discord.crossplane.io
+        resources:
+          - providerconfigs
+          - providerconfigusages
+        verbs:
+          - "*"
+      - apiGroups:
+          - guild.discord.crossplane.io
+        resources:
+          - guilds
+        verbs:
+          - "*"
+      - apiGroups:
+          - channel.discord.crossplane.io
+        resources:
+          - channels
+        verbs:
+          - "*"
+      - apiGroups:
+          - role.discord.crossplane.io
+        resources:
+          - roles
+        verbs:
+          - "*"
