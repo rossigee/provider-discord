@@ -28,7 +28,7 @@ import (
 
 const (
 	// Metric namespaces
-	ProviderNamespace = "provider_discord"
+	ProviderNamespace = "discord"
 	
 	// Resource types
 	ResourceGuild   = "guild"

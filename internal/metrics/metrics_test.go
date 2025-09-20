@@ -218,7 +218,7 @@ func TestNewMetricsRecorder(t *testing.T) {
 
 func TestConstants(t *testing.T) {
 	// Verify metric constants are defined
-	assert.Equal(t, "provider_discord", ProviderNamespace)
+	assert.Equal(t, "discord", ProviderNamespace)
 	assert.Equal(t, "guild", ResourceGuild)
 	assert.Equal(t, "channel", ResourceChannel)
 	assert.Equal(t, "role", ResourceRole)
