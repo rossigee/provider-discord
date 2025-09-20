@@ -28,5 +28,7 @@ func main() {
 	fmt.Println("- discord_api_errors_total")
 
 	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(":8080", nil)
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		panic(err)
+	}
 }

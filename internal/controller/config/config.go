@@ -32,6 +32,13 @@ import (
 func Setup(mgr ctrl.Manager, o controller.Options) error {
 	name := providerconfig.ControllerName(v1beta1.ProviderConfigGroupKind)
 
+	// Debug logging for scheme registration issue
+	o.Logger.Info("Setting up provider config controller",
+		"configGVK", v1beta1.ProviderConfigGroupVersionKind,
+		"usageListGVK", v1beta1.ProviderConfigUsageListGroupVersionKind,
+		"group", v1beta1.Group,
+		"version", v1beta1.Version)
+
 	of := resource.ProviderConfigKinds{
 		Config:    v1beta1.ProviderConfigGroupVersionKind,
 		UsageList: v1beta1.ProviderConfigUsageListGroupVersionKind,

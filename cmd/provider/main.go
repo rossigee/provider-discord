@@ -104,16 +104,20 @@ func main() {
 		log.Info("Alpha feature enabled", "flag", features.EnableAlphaManagementPolicies)
 	}
 
+	log.Info("Adding Discord APIs to scheme")
 	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
 		kingpin.FatalIfError(err, "Cannot add Discord APIs to scheme")
 	}
+	log.Info("Successfully added Discord APIs to scheme")
 
 	// Initialize metrics recorder for Discord API monitoring
 	metricsRecorder := metrics.NewMetricsRecorder()
 
+	log.Info("Setting up Discord controllers")
 	if err := controller.SetupWithMetrics(mgr, o, metricsRecorder); err != nil {
 		kingpin.FatalIfError(err, "Cannot setup Discord controllers")
 	}
+	log.Info("Successfully set up Discord controllers")
 
 	kingpin.FatalIfError(mgr.Start(ctrl.SetupSignalHandler()), "Cannot start controller manager")
 }
