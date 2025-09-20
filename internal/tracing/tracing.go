@@ -40,7 +40,7 @@ import (
 const (
 	// Tracer name for the Discord provider
 	TracerName = "provider-discord"
-	
+
 	// Common span attributes
 	AttrResourceType = "discord.resource.type"
 	AttrResourceID   = "discord.resource.id"
@@ -55,7 +55,7 @@ const (
 	AttrRetryAttempt = "discord.retry.attempt"
 	AttrRateLimited  = "discord.rate_limited"
 	AttrErrorType    = "discord.error.type"
-	
+
 	// Span names
 	SpanReconcile        = "discord.reconcile"
 	SpanAPICall          = "discord.api.call"
@@ -97,24 +97,24 @@ func DefaultConfig() *Config {
 // Initialize sets up OpenTelemetry tracing
 func Initialize(ctx context.Context, config *Config) error {
 	logger = log.Log.WithName("tracing")
-	
+
 	if config == nil {
 		config = DefaultConfig()
 	}
-	
+
 	if !config.Enabled || config.Endpoint == "" {
 		logger.Info("Tracing disabled or no endpoint configured")
 		// Set up a no-op tracer
 		tracer = otel.Tracer(TracerName)
 		return nil
 	}
-	
+
 	logger.Info("Initializing OpenTelemetry tracing",
 		"service_name", config.ServiceName,
 		"endpoint", config.Endpoint,
 		"sampling_ratio", config.SamplingRatio,
 	)
-	
+
 	// Create resource
 	res, err := resource.New(ctx,
 		resource.WithAttributes(
@@ -127,30 +127,30 @@ func Initialize(ctx context.Context, config *Config) error {
 	if err != nil {
 		return fmt.Errorf("failed to create resource: %w", err)
 	}
-	
+
 	// Create OTLP exporter
 	exporter, err := createOTLPExporter(ctx, config)
 	if err != nil {
 		return fmt.Errorf("failed to create OTLP exporter: %w", err)
 	}
-	
+
 	// Create trace provider
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
 		sdktrace.WithResource(res),
 		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(config.SamplingRatio)),
 	)
-	
+
 	// Set global providers
 	otel.SetTracerProvider(tp)
 	otel.SetTextMapPropagator(propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	))
-	
+
 	// Get tracer
 	tracer = otel.Tracer(TracerName)
-	
+
 	logger.Info("OpenTelemetry tracing initialized successfully")
 	return nil
 }
@@ -160,18 +160,18 @@ func createOTLPExporter(ctx context.Context, config *Config) (sdktrace.SpanExpor
 	opts := []otlptracehttp.Option{
 		otlptracehttp.WithEndpoint(config.Endpoint),
 	}
-	
+
 	// Add headers if configured
 	if len(config.Headers) > 0 {
 		opts = append(opts, otlptracehttp.WithHeaders(config.Headers))
 	}
-	
+
 	// Create HTTP exporter
 	exporter, err := otlptrace.New(ctx, otlptracehttp.NewClient(opts...))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OTLP HTTP exporter: %w", err)
 	}
-	
+
 	return exporter, nil
 }
 
@@ -194,13 +194,13 @@ func RecordError(span trace.Span, err error, errorType string) {
 	if err == nil {
 		return
 	}
-	
+
 	span.RecordError(err)
 	span.SetAttributes(
 		attribute.String(AttrErrorType, errorType),
 		attribute.String("error.message", err.Error()),
 	)
-	
+
 	// Mark span as error
 	span.SetStatus(codes.Error, err.Error())
 }
@@ -213,7 +213,7 @@ func RecordSuccess(span trace.Span) {
 // TraceReconciliation creates a span for resource reconciliation
 func TraceReconciliation(ctx context.Context, resourceType, resourceName, operation string) (context.Context, trace.Span) {
 	spanName := fmt.Sprintf("%s.%s", SpanReconcile, operation)
-	
+
 	ctx, span := StartSpan(ctx, spanName,
 		trace.WithAttributes(
 			attribute.String(AttrResourceType, resourceType),
@@ -221,7 +221,7 @@ func TraceReconciliation(ctx context.Context, resourceType, resourceName, operat
 			attribute.String(AttrOperation, operation),
 		),
 	)
-	
+
 	return ctx, span
 }
 
@@ -233,14 +233,14 @@ func TraceAPICall(ctx context.Context, method, endpoint string) (context.Context
 			attribute.String(AttrAPIEndpoint, endpoint),
 		),
 	)
-	
+
 	return ctx, span
 }
 
 // TraceResourceOperation creates a span for specific resource operations
 func TraceResourceOperation(ctx context.Context, resourceType, operation, resourceID string) (context.Context, trace.Span) {
 	spanName := fmt.Sprintf("%s.%s.%s", resourceType, operation, SpanAPICall)
-	
+
 	ctx, span := StartSpan(ctx, spanName,
 		trace.WithAttributes(
 			attribute.String(AttrResourceType, resourceType),
@@ -248,7 +248,7 @@ func TraceResourceOperation(ctx context.Context, resourceType, operation, resour
 			attribute.String(AttrResourceID, resourceID),
 		),
 	)
-	
+
 	return ctx, span
 }
 
@@ -303,7 +303,7 @@ func RecordAPIResponse(span trace.Span, statusCode int, rateLimited bool) {
 		attribute.Int(AttrStatusCode, statusCode),
 		attribute.Bool(AttrRateLimited, rateLimited),
 	)
-	
+
 	if statusCode >= 400 {
 		span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", statusCode))
 	} else {

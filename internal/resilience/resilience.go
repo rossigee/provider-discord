@@ -39,12 +39,12 @@ const (
 	DefaultBaseDelay      = 100 * time.Millisecond
 	DefaultMaxDelay       = 30 * time.Second
 	DefaultJitterFactor   = 0.1
-	
+
 	// Circuit breaker defaults
 	DefaultFailureThreshold = 5
 	DefaultRecoveryTimeout  = 60 * time.Second
 	DefaultSuccessThreshold = 3
-	
+
 	// Discord-specific constants
 	DiscordRateLimitHeader  = "X-RateLimit-Remaining"
 	DiscordRateLimitReset   = "X-RateLimit-Reset-After"
@@ -114,7 +114,7 @@ type DiscordError struct {
 }
 
 func (e *DiscordError) Error() string {
-	return fmt.Sprintf("Discord API error [%d]: %s (type: %s, retryable: %v)", 
+	return fmt.Sprintf("Discord API error [%d]: %s (type: %s, retryable: %v)",
 		e.StatusCode, e.Message, e.ErrorType, e.Retryable)
 }
 
@@ -296,8 +296,8 @@ func (rc *ResilientClient) Do(ctx context.Context, operation string, fn func() e
 		discordErr := ParseDiscordError(err, rc.resourceType, operation)
 
 		// Record the error
-		rc.metrics.RecordAPIError(rc.resourceType, 
-			strconv.Itoa(discordErr.StatusCode), 
+		rc.metrics.RecordAPIError(rc.resourceType,
+			strconv.Itoa(discordErr.StatusCode),
 			string(discordErr.ErrorType))
 
 		if discordErr.RateLimited {
@@ -313,7 +313,7 @@ func (rc *ResilientClient) Do(ctx context.Context, operation string, fn func() e
 
 		// Calculate delay
 		delay := rc.calculateDelay(attempt, discordErr.GetRetryAfter())
-		
+
 		rc.logger.Info("Retrying operation after error",
 			"operation", operation,
 			"attempt", attempt+1,
@@ -344,7 +344,7 @@ func (rc *ResilientClient) calculateDelay(attempt int, serverRetryAfter time.Dur
 
 	// Exponential backoff with jitter
 	delay := float64(rc.retryConfig.BaseDelay) * math.Pow(rc.retryConfig.Multiplier, float64(attempt))
-	
+
 	// Add jitter (±10% by default)
 	jitter := delay * rc.retryConfig.JitterFactor * (rand.Float64() - 0.5)
 	delay += jitter
@@ -386,7 +386,7 @@ func ParseDiscordError(err error, resourceType, operation string) *DiscordError 
 
 	// Default retry logic based on error content
 	errorStr := err.Error()
-	
+
 	switch {
 	case containsAny(errorStr, []string{"rate limit", "too many requests"}):
 		discordErr.ErrorType = ErrorTypeRateLimit

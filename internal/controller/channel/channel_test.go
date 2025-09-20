@@ -75,7 +75,7 @@ func TestObserve(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789012345678"  // Valid Discord snowflake ID (18 digits)
 	channelID := "987654321098765432" // Valid Discord snowflake ID (18 digits)
-	
+
 	tests := []struct {
 		name                string
 		channel             *channelv1alpha1.Channel

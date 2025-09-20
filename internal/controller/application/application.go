@@ -228,47 +228,47 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	// Build modify current application request
 	req := &discordclient.ModifyCurrentApplicationRequest{}
-	
+
 	if cr.Spec.ForProvider.Name != nil {
 		req.Name = cr.Spec.ForProvider.Name
 	}
-	
+
 	if cr.Spec.ForProvider.Description != nil {
 		req.Description = cr.Spec.ForProvider.Description
 	}
-	
+
 	if cr.Spec.ForProvider.Icon != nil {
 		req.Icon = cr.Spec.ForProvider.Icon
 	}
-	
+
 	if cr.Spec.ForProvider.CoverImage != nil {
 		req.CoverImage = cr.Spec.ForProvider.CoverImage
 	}
-	
+
 	if len(cr.Spec.ForProvider.RPCOrigins) > 0 {
 		req.RPCOrigins = cr.Spec.ForProvider.RPCOrigins
 	}
-	
+
 	if cr.Spec.ForProvider.BotPublic != nil {
 		req.BotPublic = cr.Spec.ForProvider.BotPublic
 	}
-	
+
 	if cr.Spec.ForProvider.BotRequireCodeGrant != nil {
 		req.BotRequireCodeGrant = cr.Spec.ForProvider.BotRequireCodeGrant
 	}
-	
+
 	if cr.Spec.ForProvider.TermsOfServiceURL != nil {
 		req.TermsOfServiceURL = cr.Spec.ForProvider.TermsOfServiceURL
 	}
-	
+
 	if cr.Spec.ForProvider.PrivacyPolicyURL != nil {
 		req.PrivacyPolicyURL = cr.Spec.ForProvider.PrivacyPolicyURL
 	}
-	
+
 	if cr.Spec.ForProvider.CustomInstallURL != nil {
 		req.CustomInstallURL = cr.Spec.ForProvider.CustomInstallURL
 	}
-	
+
 	if len(cr.Spec.ForProvider.Tags) > 0 {
 		req.Tags = cr.Spec.ForProvider.Tags
 	}

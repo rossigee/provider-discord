@@ -23,7 +23,7 @@ const (
 	// EnableAlphaManagementPolicies enables alpha support for
 	// management policies.
 	EnableAlphaManagementPolicies feature.Flag = "EnableAlphaManagementPolicies"
-	
+
 	// EnableAlphaExternalSecretStores enables alpha support for
 	// external secret stores.
 	EnableAlphaExternalSecretStores feature.Flag = "EnableAlphaExternalSecretStores"

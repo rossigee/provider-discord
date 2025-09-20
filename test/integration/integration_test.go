@@ -85,7 +85,7 @@ func TestGuildLifecycle(t *testing.T) {
 		t.Fatalf("Failed to update guild with external name: %v", err)
 	}
 
-	// Test status update (simulating controller behavior) 
+	// Test status update (simulating controller behavior)
 	// For integration tests, we'll just update the object directly
 	createdGuild.Status.AtProvider = guildv1alpha1.GuildObservation{
 		ID:      "123456789",
@@ -176,7 +176,7 @@ func TestChannelLifecycle(t *testing.T) {
 	}
 
 	// Test status update (simulating controller behavior)
-	// For integration tests, we'll just update the object directly  
+	// For integration tests, we'll just update the object directly
 	createdChannel.Status.AtProvider = channelv1alpha1.ChannelObservation{
 		ID:      "987654321",
 		Name:    "test-channel",

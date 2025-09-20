@@ -69,16 +69,16 @@ func TestChannelDeepCopy(t *testing.T) {
 
 	// Test DeepCopy
 	copied := original.DeepCopy()
-	
+
 	// Verify they're not the same object
 	assert.NotSame(t, original, copied)
-	
+
 	// Verify the content is the same
 	assert.Equal(t, original.TypeMeta, copied.TypeMeta)
 	assert.Equal(t, original.ObjectMeta, copied.ObjectMeta)
 	assert.Equal(t, original.Spec, copied.Spec)
 	assert.Equal(t, original.Status, copied.Status)
-	
+
 	// Verify deep copy - modifying one shouldn't affect the other
 	copied.Spec.ForProvider.Name = "modified-channel"
 	assert.NotEqual(t, original.Spec.ForProvider.Name, copied.Spec.ForProvider.Name)
@@ -125,15 +125,15 @@ func TestChannelListDeepCopy(t *testing.T) {
 	obj := original.DeepCopyObject()
 	copied, ok := obj.(*ChannelList)
 	require.True(t, ok)
-	
+
 	// Verify they're not the same object
 	assert.NotSame(t, original, copied)
-	
+
 	// Verify the content is the same
 	assert.Equal(t, original.TypeMeta, copied.TypeMeta)
 	assert.Equal(t, original.ListMeta, copied.ListMeta)
 	assert.Len(t, copied.Items, len(original.Items))
-	
+
 	// Verify deep copy - modifying one shouldn't affect the other
 	copied.Items[0].Spec.ForProvider.Name = "Modified Channel"
 	assert.NotEqual(t, original.Items[0].Spec.ForProvider.Name, copied.Items[0].Spec.ForProvider.Name)
@@ -181,14 +181,14 @@ func TestChannelJSONMarshaling(t *testing.T) {
 	var unmarshaled Channel
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
-	
+
 	// Verify the unmarshaled object matches
 	assert.Equal(t, channel.TypeMeta, unmarshaled.TypeMeta)
 	assert.Equal(t, channel.Name, unmarshaled.Name)
 	assert.Equal(t, channel.Spec.ForProvider.Name, unmarshaled.Spec.ForProvider.Name)
 	assert.Equal(t, channel.Spec.ForProvider.Type, unmarshaled.Spec.ForProvider.Type)
 	assert.Equal(t, channel.Status.AtProvider.ID, unmarshaled.Status.AtProvider.ID)
-	
+
 	// Verify pointer fields are handled correctly
 	require.NotNil(t, unmarshaled.Spec.ForProvider.Topic)
 	assert.Equal(t, "General discussion", *unmarshaled.Spec.ForProvider.Topic)
@@ -200,7 +200,7 @@ func TestChannelJSONMarshaling(t *testing.T) {
 
 func TestChannelParametersValidation(t *testing.T) {
 	// Test creating valid channel parameters for different channel types
-	
+
 	// Text channel
 	textParams := ChannelParameters{
 		Name:             "general-chat",
@@ -212,7 +212,7 @@ func TestChannelParametersValidation(t *testing.T) {
 		NSFW:             boolPtr(false),
 		RateLimitPerUser: intPtr(5),
 	}
-	
+
 	assert.Equal(t, "general-chat", textParams.Name)
 	assert.Equal(t, 0, textParams.Type)
 	assert.Equal(t, "123456789", textParams.GuildID)
@@ -231,7 +231,7 @@ func TestChannelParametersValidation(t *testing.T) {
 		Bitrate:   intPtr(64000),
 		UserLimit: intPtr(10),
 	}
-	
+
 	assert.Equal(t, "General Voice", voiceParams.Name)
 	assert.Equal(t, 2, voiceParams.Type)
 	assert.Equal(t, "123456789", voiceParams.GuildID)
@@ -246,7 +246,7 @@ func TestChannelParametersValidation(t *testing.T) {
 		GuildID:  "123456789",
 		Position: intPtr(0),
 	}
-	
+
 	assert.Equal(t, "General Category", categoryParams.Name)
 	assert.Equal(t, 4, categoryParams.Type)
 	assert.Equal(t, "123456789", categoryParams.GuildID)

@@ -169,7 +169,7 @@ func (h *HealthChecker) ServeReadyz(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	if allHealthy {
 		status.Status = "ready"
 		status.Message = "All components are healthy"
@@ -205,7 +205,7 @@ func CreateDiscordHealthCheck() func(context.Context) error {
 		// 1. Create a Discord client with the configured credentials
 		// 2. Make a lightweight API call (e.g., get current user)
 		// 3. Return any errors from the API call
-		
+
 		// For now, just return nil (healthy)
 		return nil
 	}

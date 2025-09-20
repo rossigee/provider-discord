@@ -82,7 +82,7 @@ func (m *MockGuildClient) ListGuilds(ctx context.Context) ([]discordclient.Guild
 func TestObserve(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789"
-	
+
 	tests := []struct {
 		name                string
 		guild               *guildv1alpha1.Guild
@@ -264,7 +264,7 @@ func TestCreate(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789"
-	
+
 	tests := []struct {
 		name        string
 		guild       *guildv1alpha1.Guild
@@ -489,7 +489,7 @@ func TestDelete(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "delete non-existent guild", 
+			name: "delete non-existent guild",
 			guild: &guildv1alpha1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
@@ -559,7 +559,7 @@ func TestTypeAssertions(t *testing.T) {
 			method: "Update",
 		},
 		{
-			name:   "invalid resource type in Delete", 
+			name:   "invalid resource type in Delete",
 			method: "Delete",
 		},
 	}

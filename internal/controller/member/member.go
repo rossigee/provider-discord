@@ -213,27 +213,27 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	// Build modify request
 	req := &discordclient.ModifyGuildMemberRequest{}
-	
+
 	if cr.Spec.ForProvider.Nick != nil {
 		req.Nick = cr.Spec.ForProvider.Nick
 	}
-	
+
 	if len(cr.Spec.ForProvider.Roles) > 0 {
 		req.Roles = cr.Spec.ForProvider.Roles
 	}
-	
+
 	if cr.Spec.ForProvider.Mute != nil {
 		req.Mute = cr.Spec.ForProvider.Mute
 	}
-	
+
 	if cr.Spec.ForProvider.Deaf != nil {
 		req.Deaf = cr.Spec.ForProvider.Deaf
 	}
-	
+
 	if cr.Spec.ForProvider.ChannelID != nil {
 		req.ChannelID = cr.Spec.ForProvider.ChannelID
 	}
-	
+
 	if cr.Spec.ForProvider.CommunicationDisabledUntil != nil {
 		req.CommunicationDisabledUntil = cr.Spec.ForProvider.CommunicationDisabledUntil
 	}

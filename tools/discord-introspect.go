@@ -82,7 +82,7 @@ func main() {
 		guildFlag       = flag.String("guild", "", "Specific guild ID to introspect (optional)")
 		outputDir       = flag.String("output", "discord-resources", "Output directory for generated manifests")
 		includeRoles    = flag.Bool("roles", true, "Include roles in introspection")
-		includeChannels = flag.Bool("channels", true, "Include channels in introspection") 
+		includeChannels = flag.Bool("channels", true, "Include channels in introspection")
 		includeGuilds   = flag.Bool("guilds", true, "Include guilds in introspection")
 		includeWebhooks = flag.Bool("webhooks", true, "Include webhooks in introspection (future provider support)")
 		includeInvites  = flag.Bool("invites", true, "Include invites in introspection (future provider support)")
@@ -98,7 +98,7 @@ func main() {
 	// Get all guilds the bot is a member of
 	guilds := getGuilds(token)
 	fmt.Printf("Found %d guilds\n", len(guilds))
-	
+
 	// Filter by specific guild if requested
 	if *guildFlag != "" {
 		filtered := []Guild{}
@@ -113,26 +113,26 @@ func main() {
 			log.Fatalf("Guild with ID %s not found or bot not a member", *guildFlag)
 		}
 	}
-	
+
 	// Create output directory
 	os.MkdirAll(*outputDir, 0755)
-	
+
 	for _, guild := range guilds {
 		fmt.Printf("Processing guild: %s (%s)\n", guild.Name, guild.ID)
-		
+
 		// Generate Guild CR
 		if *includeGuilds {
 			guildCR := generateGuildCR(guild)
 			writeFile(fmt.Sprintf("%s/guild-%s.yaml", *outputDir, sanitizeName(guild.Name)), guildCR)
 		}
-		
+
 		// Get channels for this guild with proper ordering
 		if *includeChannels {
 			channels := getChannels(token, guild.ID)
 			generateChannelManifests(channels, guild.Name, *outputDir)
 		}
-		
-		// Get roles for this guild  
+
+		// Get roles for this guild
 		if *includeRoles {
 			roles := getRoles(token, guild.ID)
 			for _, role := range roles {
@@ -143,7 +143,7 @@ func main() {
 				writeFile(fmt.Sprintf("%s/role-%s-%s.yaml", *outputDir, sanitizeName(guild.Name), sanitizeName(role.Name)), roleCR)
 			}
 		}
-		
+
 		// Get webhooks for this guild
 		if *includeWebhooks && (*discoveryMode || checkProviderSupport("webhooks")) {
 			webhooks := getWebhooks(token, guild.ID)
@@ -152,7 +152,7 @@ func main() {
 				writeFile(fmt.Sprintf("%s/webhook-%s-%s.yaml", *outputDir, sanitizeName(guild.Name), sanitizeName(webhook.Name)), webhookCR)
 			}
 		}
-		
+
 		// Get invites for this guild
 		if *includeInvites && (*discoveryMode || checkProviderSupport("invites")) {
 			invites := getInvites(token, guild.ID)
@@ -162,7 +162,7 @@ func main() {
 			}
 		}
 	}
-	
+
 	fmt.Printf("Resource generation complete! Check %s/ directory\n", *outputDir)
 	if *discoveryMode {
 		fmt.Println("Note: Discovery mode enabled - all Discord resources discovered")
@@ -173,10 +173,10 @@ func main() {
 func getGuilds(token string) []Guild {
 	resp := makeRequest("GET", "https://discord.com/api/v10/users/@me/guilds", token)
 	defer resp.Body.Close()
-	
+
 	body, _ := io.ReadAll(resp.Body)
 	fmt.Printf("Guilds response: %s\n", string(body))
-	
+
 	var guilds []Guild
 	json.Unmarshal(body, &guilds)
 	return guilds
@@ -185,7 +185,7 @@ func getGuilds(token string) []Guild {
 func getChannels(token, guildID string) []Channel {
 	resp := makeRequest("GET", fmt.Sprintf("https://discord.com/api/v10/guilds/%s/channels", guildID), token)
 	defer resp.Body.Close()
-	
+
 	var channels []Channel
 	json.NewDecoder(resp.Body).Decode(&channels)
 	return channels
@@ -194,7 +194,7 @@ func getChannels(token, guildID string) []Channel {
 func getRoles(token, guildID string) []Role {
 	resp := makeRequest("GET", fmt.Sprintf("https://discord.com/api/v10/guilds/%s/roles", guildID), token)
 	defer resp.Body.Close()
-	
+
 	var roles []Role
 	json.NewDecoder(resp.Body).Decode(&roles)
 	return roles
@@ -203,7 +203,7 @@ func getRoles(token, guildID string) []Role {
 func getWebhooks(token, guildID string) []Webhook {
 	resp := makeRequest("GET", fmt.Sprintf("https://discord.com/api/v10/guilds/%s/webhooks", guildID), token)
 	defer resp.Body.Close()
-	
+
 	var webhooks []Webhook
 	if err := json.NewDecoder(resp.Body).Decode(&webhooks); err != nil {
 		log.Printf("Warning: Failed to decode webhooks for guild %s: %v", guildID, err)
@@ -215,7 +215,7 @@ func getWebhooks(token, guildID string) []Webhook {
 func getInvites(token, guildID string) []Invite {
 	resp := makeRequest("GET", fmt.Sprintf("https://discord.com/api/v10/guilds/%s/invites", guildID), token)
 	defer resp.Body.Close()
-	
+
 	var invites []Invite
 	if err := json.NewDecoder(resp.Body).Decode(&invites); err != nil {
 		log.Printf("Warning: Failed to decode invites for guild %s: %v", guildID, err)
@@ -239,18 +239,18 @@ func checkProviderSupport(resourceType string) bool {
 func makeRequest(method, url, token string) *http.Response {
 	req, _ := http.NewRequest(method, url, nil)
 	req.Header.Set("Authorization", "Bot "+token)
-	
+
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
 		log.Fatalf("Discord API error: %d - %s", resp.StatusCode, string(body))
 	}
-	
+
 	return resp
 }
 
@@ -274,7 +274,7 @@ func generateChannelManifests(channels []Channel, guildName, outputDir string) {
 	// Separate categories from regular channels
 	categories := []Channel{}
 	regularChannels := []Channel{}
-	
+
 	for _, channel := range channels {
 		if channel.Type == 4 { // Category
 			categories = append(categories, channel)
@@ -282,23 +282,23 @@ func generateChannelManifests(channels []Channel, guildName, outputDir string) {
 			regularChannels = append(regularChannels, channel)
 		}
 	}
-	
+
 	// Sort categories by position
 	sort.Slice(categories, func(i, j int) bool {
 		return categories[i].Position < categories[j].Position
 	})
-	
-	// Sort regular channels by position  
+
+	// Sort regular channels by position
 	sort.Slice(regularChannels, func(i, j int) bool {
 		return regularChannels[i].Position < regularChannels[j].Position
 	})
-	
+
 	// Create category manifests first
 	for _, category := range categories {
 		channelCR := generateChannelCR(category, guildName)
 		writeFile(fmt.Sprintf("%s/channel-%s-%s.yaml", outputDir, sanitizeName(guildName), sanitizeName(category.Name)), channelCR)
 	}
-	
+
 	// Create regular channel manifests
 	for _, channel := range regularChannels {
 		channelCR := generateChannelCR(channel, guildName)
@@ -308,7 +308,7 @@ func generateChannelManifests(channels []Channel, guildName, outputDir string) {
 
 func generateChannelCR(channel Channel, guildName string) string {
 	channelTypeName := getChannelTypeName(channel.Type)
-	
+
 	cr := fmt.Sprintf(`apiVersion: channel.discord.crossplane.io/v1alpha1
 kind: Channel
 metadata:
@@ -325,19 +325,19 @@ spec:
 		sanitizeName(guildName), sanitizeName(channel.Name),
 		channel.ID, channelTypeName, channel.Name, channel.Type,
 		channel.GuildID, channel.Position)
-	
+
 	// Add parent_id for channels under categories
 	if channel.ParentID != nil && *channel.ParentID != "" {
 		cr += fmt.Sprintf(`
     parentId: "%s"`, *channel.ParentID)
 	}
-	
+
 	// Add optional fields based on channel type
 	if channel.Topic != "" && (channel.Type == 0 || channel.Type == 5) { // Text or News channels
 		cr += fmt.Sprintf(`
     topic: "%s"`, strings.ReplaceAll(channel.Topic, `"`, `\"`))
 	}
-	
+
 	if channel.Type == 0 || channel.Type == 5 { // Text or News channels
 		if channel.NSFW {
 			cr += `
@@ -352,7 +352,7 @@ spec:
     defaultAutoArchiveDuration: %d`, channel.DefaultAutoArchiveDuration)
 		}
 	}
-	
+
 	if channel.Type == 2 || channel.Type == 13 { // Voice or Stage channels
 		if channel.Bitrate > 0 {
 			cr += fmt.Sprintf(`
@@ -363,7 +363,7 @@ spec:
     userLimit: %d`, channel.UserLimit)
 		}
 	}
-	
+
 	cr += `
   providerConfigRef:
     name: discord-provider-config
@@ -409,7 +409,7 @@ spec:
   providerConfigRef:
     name: discord-provider-config
 `, sanitizeName(guildName), sanitizeName(role.Name), role.ID,
-		role.Name, guildID, role.Color, 
+		role.Name, guildID, role.Color,
 		role.Hoist, role.Mentionable, role.Permissions, role.Position)
 }
 
@@ -419,7 +419,7 @@ func sanitizeName(name string) string {
 	name = strings.ReplaceAll(name, "_", "-")
 	name = strings.ReplaceAll(name, "/", "-")
 	name = strings.ReplaceAll(name, ".", "-")
-	
+
 	// Remove non-ASCII characters for Kubernetes compliance
 	result := ""
 	for _, r := range name {
@@ -427,13 +427,13 @@ func sanitizeName(name string) string {
 			result += string(r)
 		}
 	}
-	
+
 	// Ensure it doesn't start or end with hyphen
 	result = strings.Trim(result, "-")
 	if result == "" {
 		result = "unnamed"
 	}
-	
+
 	return result
 }
 
@@ -444,7 +444,7 @@ func generateWebhookCR(webhook Webhook, guildName string, discoveryMode bool) st
 # This manifest is ready for deployment
 # `
 	}
-	
+
 	return fmt.Sprintf(`%sapiVersion: webhook.discord.crossplane.io/v1alpha1
 kind: Webhook
 metadata:
@@ -460,7 +460,7 @@ spec:
   providerConfigRef:
     name: discord-provider-config
 `, comment, sanitizeName(guildName), sanitizeName(webhook.Name),
-		webhook.ID, getWebhookTypeName(webhook.Type), webhook.Name, 
+		webhook.ID, getWebhookTypeName(webhook.Type), webhook.Name,
 		webhook.ChannelID, webhook.GuildID)
 }
 
@@ -478,7 +478,7 @@ func generateInviteCR(invite Invite, guildName string, discoveryMode bool) strin
 		channelName = invite.Channel.Name
 		channelID = invite.Channel.ID
 	}
-	
+
 	return fmt.Sprintf(`%sapiVersion: invite.discord.crossplane.io/v1alpha1
 kind: Invite
 metadata:

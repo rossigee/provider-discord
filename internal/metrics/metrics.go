@@ -29,18 +29,18 @@ import (
 const (
 	// Metric namespaces
 	ProviderNamespace = "discord"
-	
+
 	// Resource types
 	ResourceGuild   = "guild"
 	ResourceChannel = "channel"
 	ResourceRole    = "role"
-	
+
 	// Operation types
 	OpCreate = "create"
 	OpUpdate = "update"
 	OpDelete = "delete"
 	OpObserve = "observe"
-	
+
 	// Status types
 	StatusSuccess = "success"
 	StatusError   = "error"
@@ -178,7 +178,7 @@ func NewMetricsRecorder() *MetricsRecorder {
 func (m *MetricsRecorder) RecordAPIOperation(resourceType, operation, status string, duration time.Duration) {
 	discordAPIOperations.WithLabelValues(resourceType, operation, status).Inc()
 	discordAPIOperationDuration.WithLabelValues(resourceType, operation).Observe(duration.Seconds())
-	
+
 	m.logger.V(1).Info("Recorded API operation",
 		"resource_type", resourceType,
 		"operation", operation,
@@ -192,7 +192,7 @@ func (m *MetricsRecorder) RecordRateLimit(resourceType, endpoint string, remaini
 	discordRateLimits.WithLabelValues(resourceType, endpoint).Inc()
 	discordRateLimitRemaining.WithLabelValues(resourceType, endpoint).Set(float64(remaining))
 	discordRateLimitResetTime.WithLabelValues(resourceType, endpoint).Set(float64(resetTime.Unix()))
-	
+
 	m.logger.Info("Recorded rate limit hit",
 		"resource_type", resourceType,
 		"endpoint", endpoint,
@@ -210,7 +210,7 @@ func (m *MetricsRecorder) UpdateRateLimitStatus(resourceType, endpoint string, r
 // RecordManagedResource updates the count of managed resources
 func (m *MetricsRecorder) RecordManagedResource(resourceType, status string, delta int) {
 	managedResources.WithLabelValues(resourceType, status).Add(float64(delta))
-	
+
 	m.logger.V(1).Info("Updated managed resource count",
 		"resource_type", resourceType,
 		"status", status,
@@ -222,7 +222,7 @@ func (m *MetricsRecorder) RecordManagedResource(resourceType, status string, del
 func (m *MetricsRecorder) RecordReconciliation(resourceType, result string, duration time.Duration) {
 	resourceReconciliations.WithLabelValues(resourceType, result).Inc()
 	resourceReconciliationDuration.WithLabelValues(resourceType).Observe(duration.Seconds())
-	
+
 	m.logger.V(1).Info("Recorded reconciliation",
 		"resource_type", resourceType,
 		"result", result,
@@ -233,7 +233,7 @@ func (m *MetricsRecorder) RecordReconciliation(resourceType, result string, dura
 // RecordAPIError records a Discord API error
 func (m *MetricsRecorder) RecordAPIError(resourceType, errorCode, errorType string) {
 	discordAPIErrors.WithLabelValues(resourceType, errorCode, errorType).Inc()
-	
+
 	m.logger.Info("Recorded API error",
 		"resource_type", resourceType,
 		"error_code", errorCode,
@@ -248,7 +248,7 @@ func (m *MetricsRecorder) SetProviderHealth(component string, healthy bool) {
 		value = 1.0
 	}
 	providerHealth.WithLabelValues(component).Set(value)
-	
+
 	m.logger.Info("Updated provider health",
 		"component", component,
 		"healthy", healthy,

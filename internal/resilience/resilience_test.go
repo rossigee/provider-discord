@@ -28,7 +28,7 @@ import (
 
 func TestDefaultRetryConfig(t *testing.T) {
 	config := DefaultRetryConfig()
-	
+
 	assert.Equal(t, DefaultMaxRetries, config.MaxRetries)
 	assert.Equal(t, DefaultBaseDelay, config.BaseDelay)
 	assert.Equal(t, DefaultMaxDelay, config.MaxDelay)
@@ -38,7 +38,7 @@ func TestDefaultRetryConfig(t *testing.T) {
 
 func TestDefaultCircuitBreakerConfig(t *testing.T) {
 	config := DefaultCircuitBreakerConfig()
-	
+
 	assert.Equal(t, DefaultFailureThreshold, config.FailureThreshold)
 	assert.Equal(t, DefaultRecoveryTimeout, config.RecoveryTimeout)
 	assert.Equal(t, DefaultSuccessThreshold, config.SuccessThreshold)
@@ -55,7 +55,7 @@ func TestDiscordError(t *testing.T) {
 		ResourceType: "guild",
 		Operation:    "create",
 	}
-	
+
 	assert.True(t, err.IsRetryable())
 	assert.Equal(t, 30*time.Second, err.GetRetryAfter())
 	assert.Contains(t, err.Error(), "Discord API error [429]")
@@ -67,7 +67,7 @@ func TestDiscordError(t *testing.T) {
 func TestCircuitBreaker_NewCircuitBreaker(t *testing.T) {
 	config := DefaultCircuitBreakerConfig()
 	cb := NewCircuitBreaker(config, "test")
-	
+
 	assert.Equal(t, StateClosed, cb.GetState())
 	assert.Equal(t, config, cb.config)
 	assert.Equal(t, "test", cb.resourceType)
@@ -82,14 +82,14 @@ func TestCircuitBreaker_SuccessfulCalls(t *testing.T) {
 		SuccessThreshold: 2,
 	}
 	cb := NewCircuitBreaker(config, "test")
-	
+
 	// Successful calls should keep circuit closed
 	err := cb.Call(context.Background(), "test", func() error {
 		return nil
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, StateClosed, cb.GetState())
-	
+
 	err = cb.Call(context.Background(), "test", func() error {
 		return nil
 	})
@@ -104,23 +104,23 @@ func TestCircuitBreaker_FailuresOpenCircuit(t *testing.T) {
 		SuccessThreshold: 2,
 	}
 	cb := NewCircuitBreaker(config, "test")
-	
+
 	testErr := errors.New("test error")
-	
+
 	// First failure
 	err := cb.Call(context.Background(), "test", func() error {
 		return testErr
 	})
 	assert.Equal(t, testErr, err)
 	assert.Equal(t, StateClosed, cb.GetState())
-	
+
 	// Second failure should open circuit
 	err = cb.Call(context.Background(), "test", func() error {
 		return testErr
 	})
 	assert.Equal(t, testErr, err)
 	assert.Equal(t, StateOpen, cb.GetState())
-	
+
 	// Circuit should now reject calls
 	err = cb.Call(context.Background(), "test", func() error {
 		return nil
@@ -136,7 +136,7 @@ func TestCircuitBreaker_RecoveryAfterTimeout(t *testing.T) {
 		SuccessThreshold: 1,
 	}
 	cb := NewCircuitBreaker(config, "test")
-	
+
 	// Cause failure to open circuit
 	testErr := errors.New("test error")
 	err := cb.Call(context.Background(), "test", func() error {
@@ -144,10 +144,10 @@ func TestCircuitBreaker_RecoveryAfterTimeout(t *testing.T) {
 	})
 	assert.Equal(t, testErr, err)
 	assert.Equal(t, StateOpen, cb.GetState())
-	
+
 	// Wait for recovery timeout
 	time.Sleep(15 * time.Millisecond)
-	
+
 	// Next call should transition to half-open
 	err = cb.Call(context.Background(), "test", func() error {
 		return nil
@@ -164,15 +164,15 @@ func TestResilientClient_SuccessfulOperation(t *testing.T) {
 		JitterFactor: 0.1,
 		Multiplier:   2.0,
 	}
-	
+
 	client := NewResilientClient("test", retryConfig, nil)
-	
+
 	callCount := 0
 	err := client.Do(context.Background(), "test_op", func() error {
 		callCount++
 		return nil
 	})
-	
+
 	assert.NoError(t, err)
 	assert.Equal(t, 1, callCount)
 }
@@ -185,9 +185,9 @@ func TestResilientClient_RetryOnRetryableError(t *testing.T) {
 		JitterFactor: 0.1,
 		Multiplier:   2.0,
 	}
-	
+
 	client := NewResilientClient("test", retryConfig, nil)
-	
+
 	callCount := 0
 	err := client.Do(context.Background(), "test_op", func() error {
 		callCount++
@@ -196,7 +196,7 @@ func TestResilientClient_RetryOnRetryableError(t *testing.T) {
 		}
 		return nil
 	})
-	
+
 	assert.NoError(t, err)
 	assert.Equal(t, 3, callCount)
 }
@@ -209,15 +209,15 @@ func TestResilientClient_NoRetryOnNonRetryableError(t *testing.T) {
 		JitterFactor: 0.1,
 		Multiplier:   2.0,
 	}
-	
+
 	client := NewResilientClient("test", retryConfig, nil)
-	
+
 	callCount := 0
 	err := client.Do(context.Background(), "test_op", func() error {
 		callCount++
 		return errors.New("unauthorized") // Should not trigger retry
 	})
-	
+
 	assert.Error(t, err)
 	assert.Equal(t, 1, callCount)
 }
@@ -230,16 +230,16 @@ func TestResilientClient_ExhaustRetries(t *testing.T) {
 		JitterFactor: 0.1,
 		Multiplier:   2.0,
 	}
-	
+
 	client := NewResilientClient("test", retryConfig, nil)
-	
+
 	callCount := 0
 	testErr := errors.New("rate limit exceeded")
 	err := client.Do(context.Background(), "test_op", func() error {
 		callCount++
 		return testErr
 	})
-	
+
 	assert.Equal(t, testErr, err)
 	assert.Equal(t, 3, callCount) // Initial call + 2 retries
 }
@@ -255,7 +255,7 @@ func TestParseDiscordError_ExistingDiscordError(t *testing.T) {
 		ResourceType: "guild",
 		Operation:    "create",
 	}
-	
+
 	parsed := ParseDiscordError(originalErr, "test", "test_op")
 	assert.Equal(t, originalErr, parsed)
 }
@@ -318,12 +318,12 @@ func TestParseDiscordError_GenericError(t *testing.T) {
 			expectedStatus: 500,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := errors.New(tt.errorMessage)
 			parsed := ParseDiscordError(err, "test", "test_op")
-			
+
 			assert.Equal(t, tt.expectedType, parsed.ErrorType)
 			assert.Equal(t, tt.expectedRetryable, parsed.Retryable)
 			assert.Equal(t, tt.expectedStatus, parsed.StatusCode)
@@ -337,9 +337,9 @@ func TestParseRateLimitHeaders(t *testing.T) {
 	headers := http.Header{}
 	headers.Set(DiscordRateLimitHeader, "5")
 	headers.Set(DiscordRateLimitReset, "1.5")
-	
+
 	remaining, resetAfter, err := ParseRateLimitHeaders(headers)
-	
+
 	assert.NoError(t, err)
 	assert.Equal(t, 5, remaining)
 	assert.Equal(t, time.Duration(1.5*float64(time.Second)), resetAfter)
@@ -349,9 +349,9 @@ func TestParseRateLimitHeaders_RetryAfter(t *testing.T) {
 	headers := http.Header{}
 	headers.Set(DiscordRateLimitHeader, "0")
 	headers.Set(DiscordRetryAfterHeader, "30.0")
-	
+
 	remaining, resetAfter, err := ParseRateLimitHeaders(headers)
-	
+
 	assert.NoError(t, err)
 	assert.Equal(t, 0, remaining)
 	assert.Equal(t, 30*time.Second, resetAfter)
@@ -360,7 +360,7 @@ func TestParseRateLimitHeaders_RetryAfter(t *testing.T) {
 func TestParseRateLimitHeaders_InvalidValues(t *testing.T) {
 	headers := http.Header{}
 	headers.Set(DiscordRateLimitHeader, "invalid")
-	
+
 	_, _, err := ParseRateLimitHeaders(headers)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "failed to parse rate limit remaining")
@@ -398,7 +398,7 @@ func TestContainsAny(t *testing.T) {
 			expected:   false,
 		},
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := containsAny(tt.s, tt.substrings)
@@ -414,18 +414,18 @@ func TestResilientClient_CalculateDelay(t *testing.T) {
 		JitterFactor: 0.1,
 		Multiplier:   2.0,
 	}
-	
+
 	client := NewResilientClient("test", retryConfig, nil)
-	
+
 	// Test with server retry-after
 	delay := client.calculateDelay(0, 2*time.Second)
 	assert.True(t, delay >= 1800*time.Millisecond) // Should be around 2s ± 10%
 	assert.True(t, delay <= 2200*time.Millisecond)
-	
+
 	// Test exponential backoff
 	delay1 := client.calculateDelay(0, 0)
 	delay2 := client.calculateDelay(1, 0)
-	
+
 	// Second delay should be roughly double the first (with jitter)
 	assert.True(t, delay2 > delay1)
 	assert.True(t, delay1 >= 90*time.Millisecond)   // Should be around 100ms ± 10%
@@ -434,7 +434,7 @@ func TestResilientClient_CalculateDelay(t *testing.T) {
 
 func TestNewResilientClient_WithDefaults(t *testing.T) {
 	client := NewResilientClient("test", nil, nil)
-	
+
 	assert.NotNil(t, client.retryConfig)
 	assert.NotNil(t, client.circuitBreaker)
 	assert.Equal(t, DefaultMaxRetries, client.retryConfig.MaxRetries)

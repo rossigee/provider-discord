@@ -62,16 +62,16 @@ func TestRoleDeepCopy(t *testing.T) {
 
 	// Test DeepCopy
 	copied := original.DeepCopy()
-	
+
 	// Verify they're not the same object
 	assert.NotSame(t, original, copied)
-	
+
 	// Verify the content is the same
 	assert.Equal(t, original.TypeMeta, copied.TypeMeta)
 	assert.Equal(t, original.ObjectMeta, copied.ObjectMeta)
 	assert.Equal(t, original.Spec, copied.Spec)
 	assert.Equal(t, original.Status, copied.Status)
-	
+
 	// Verify deep copy - modifying one shouldn't affect the other
 	copied.Spec.ForProvider.Name = "Modified Role"
 	assert.NotEqual(t, original.Spec.ForProvider.Name, copied.Spec.ForProvider.Name)
@@ -118,15 +118,15 @@ func TestRoleListDeepCopy(t *testing.T) {
 	obj := original.DeepCopyObject()
 	copied, ok := obj.(*RoleList)
 	require.True(t, ok)
-	
+
 	// Verify they're not the same object
 	assert.NotSame(t, original, copied)
-	
+
 	// Verify the content is the same
 	assert.Equal(t, original.TypeMeta, copied.TypeMeta)
 	assert.Equal(t, original.ListMeta, copied.ListMeta)
 	assert.Len(t, copied.Items, len(original.Items))
-	
+
 	// Verify deep copy - modifying one shouldn't affect the other
 	copied.Items[0].Spec.ForProvider.Name = "Super Admin"
 	assert.NotEqual(t, original.Items[0].Spec.ForProvider.Name, copied.Items[0].Spec.ForProvider.Name)
@@ -171,14 +171,14 @@ func TestRoleJSONMarshaling(t *testing.T) {
 	var unmarshaled Role
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
-	
+
 	// Verify the unmarshaled object matches
 	assert.Equal(t, role.TypeMeta, unmarshaled.TypeMeta)
 	assert.Equal(t, role.Name, unmarshaled.Name)
 	assert.Equal(t, role.Spec.ForProvider.Name, unmarshaled.Spec.ForProvider.Name)
 	assert.Equal(t, role.Spec.ForProvider.GuildID, unmarshaled.Spec.ForProvider.GuildID)
 	assert.Equal(t, role.Status.AtProvider.ID, unmarshaled.Status.AtProvider.ID)
-	
+
 	// Verify pointer fields are handled correctly
 	require.NotNil(t, unmarshaled.Spec.ForProvider.Color)
 	assert.Equal(t, 255, *unmarshaled.Spec.ForProvider.Color)
@@ -194,7 +194,7 @@ func TestRoleJSONMarshaling(t *testing.T) {
 
 func TestRoleParametersValidation(t *testing.T) {
 	// Test creating valid role parameters for different role types
-	
+
 	// Admin role with all permissions
 	adminParams := RoleParameters{
 		Name:        "Administrator",
@@ -205,7 +205,7 @@ func TestRoleParametersValidation(t *testing.T) {
 		Permissions: stringPtr("8"), // Administrator permission
 		Mentionable: boolPtr(false),
 	}
-	
+
 	assert.Equal(t, "Administrator", adminParams.Name)
 	assert.Equal(t, "123456789", adminParams.GuildID)
 	assert.Equal(t, 16711680, *adminParams.Color)
@@ -224,7 +224,7 @@ func TestRoleParametersValidation(t *testing.T) {
 		Permissions: stringPtr("104197632"), // Basic read/send messages
 		Mentionable: boolPtr(true),
 	}
-	
+
 	assert.Equal(t, "Member", memberParams.Name)
 	assert.Equal(t, "123456789", memberParams.GuildID)
 	assert.Equal(t, 0, *memberParams.Color)
@@ -238,7 +238,7 @@ func TestRoleParametersValidation(t *testing.T) {
 		Name:    "Basic Role",
 		GuildID: "123456789",
 	}
-	
+
 	assert.Equal(t, "Basic Role", minimalParams.Name)
 	assert.Equal(t, "123456789", minimalParams.GuildID)
 	assert.Nil(t, minimalParams.Color)

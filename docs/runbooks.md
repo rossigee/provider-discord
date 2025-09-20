@@ -66,7 +66,7 @@ This document contains operational runbooks for managing and troubleshooting the
    # Check configuration
    kubectl get providerconfig
    kubectl describe providerconfig <config-name>
-   
+
    # Check secrets
    kubectl get secret -n crossplane-system discord-credentials
    kubectl describe secret -n crossplane-system discord-credentials
@@ -76,7 +76,7 @@ This document contains operational runbooks for managing and troubleshooting the
    ```bash
    # Check image availability
    docker pull ghcr.io/rossigee/provider-discord:v0.2.0
-   
+
    # Update deployment if needed
    kubectl set image deployment/provider-discord -n crossplane-system \
      provider=ghcr.io/rossigee/provider-discord:v0.2.0
@@ -132,11 +132,11 @@ If provider continues to fail after above steps:
    ```bash
    # Verify bot token
    kubectl get secret -n crossplane-system discord-credentials -o yaml
-   
+
    # Test token validity
    curl -H "Authorization: Bot $DISCORD_BOT_TOKEN" \
         https://discord.com/api/v10/users/@me
-   
+
    # Update token if needed
    kubectl create secret generic discord-credentials \
      --from-literal=token=$NEW_BOT_TOKEN \
@@ -147,7 +147,7 @@ If provider continues to fail after above steps:
    ```bash
    # Check current request rate
    sum(rate(provider_discord_api_operations_total[1m])) * 60
-   
+
    # Implement backoff (restart provider to reset state)
    kubectl rollout restart deployment/provider-discord -n crossplane-system
    ```
@@ -167,7 +167,7 @@ If provider continues to fail after above steps:
    # Test connectivity from pod
    kubectl exec -n crossplane-system deployment/provider-discord -- \
      curl -s https://discord.com/api/v10
-   
+
    # Check network policies
    kubectl get networkpolicy -n crossplane-system
    ```
@@ -212,7 +212,7 @@ If provider continues to fail after above steps:
 1. **If DNS Issues**
    ```bash
    kubectl exec -n crossplane-system deployment/provider-discord -- nslookup discord.com
-   
+
    # Check CoreDNS
    kubectl get pods -n kube-system -l k8s-app=kube-dns
    ```
@@ -221,10 +221,10 @@ If provider continues to fail after above steps:
    ```bash
    # Temporarily remove network policies for testing
    kubectl delete networkpolicy -n crossplane-system provider-discord-netpol
-   
+
    # Test connectivity
    curl http://localhost:8080/healthz
-   
+
    # Restore network policy with correct rules
    ```
 
@@ -256,7 +256,7 @@ If provider continues to fail after above steps:
    ```bash
    # 95th percentile latency
    histogram_quantile(0.95, rate(provider_discord_api_duration_seconds_bucket[5m]))
-   
+
    # By operation type
    histogram_quantile(0.95, rate(provider_discord_api_duration_seconds_bucket[5m])) by (operation)
    ```
@@ -286,7 +286,7 @@ If provider continues to fail after above steps:
    ```bash
    # Check if Discord API is slow
    curl -w "@curl-format.txt" -s https://discord.com/api/v10
-   
+
    # Consider regional Discord API endpoints if available
    ```
 
@@ -573,10 +573,10 @@ If provider continues to fail after above steps:
    ```bash
    # Backup all Discord resources
    kubectl get guilds,channels,roles -A -o yaml > discord-resources-backup.yaml
-   
+
    # Backup provider configuration
    kubectl get providerconfig -o yaml > provider-config-backup.yaml
-   
+
    # Backup secrets (encrypted)
    kubectl get secret discord-credentials -n crossplane-system -o yaml > discord-secrets-backup.yaml
    ```
@@ -593,7 +593,7 @@ If provider continues to fail after above steps:
    ```bash
    # Reinstall provider
    helm install provider-discord ./chart/provider-discord
-   
+
    # Restore configuration
    kubectl apply -f provider-config-backup.yaml
    kubectl apply -f discord-secrets-backup.yaml
@@ -603,7 +603,7 @@ If provider continues to fail after above steps:
    ```bash
    # Restore Discord resources
    kubectl apply -f discord-resources-backup.yaml
-   
+
    # Monitor reconciliation
    kubectl get guilds,channels,roles -A -w
    ```
@@ -612,7 +612,7 @@ If provider continues to fail after above steps:
    ```bash
    # Check all resources are ready
    kubectl get guilds,channels,roles -A
-   
+
    # Verify Discord server state matches expectations
    # Manual verification in Discord UI may be required
    ```

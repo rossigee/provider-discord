@@ -75,7 +75,7 @@ func TestObserve(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789"
 	roleID := "987654321"
-	
+
 	tests := []struct {
 		name           string
 		role           *v1alpha1.Role
@@ -194,16 +194,16 @@ func TestObserve(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockClient := &MockDiscordClient{}
 			tt.mockSetup(mockClient)
-			
+
 			e := &external{discord: mockClient}
-			
+
 			obs, err := e.Observe(ctx, tt.role)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 				return
 			}
-			
+
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedExists, obs.ResourceExists)
 			assert.Equal(t, tt.expectedUpToDate, obs.ResourceUpToDate)
@@ -237,7 +237,7 @@ func TestCreate(t *testing.T) {
 			assert.Equal(t, true, *req.Hoist)
 			assert.Equal(t, false, *req.Mentionable)
 			assert.Equal(t, "1234567890", *req.Permissions)
-			
+
 			return &discordclient.Role{
 				ID:          roleID,
 				Name:        "Test Role",
@@ -287,7 +287,7 @@ func TestUpdate(t *testing.T) {
 			assert.Equal(t, "Updated Role", *req.Name)
 			assert.Equal(t, 255, *req.Color)
 			assert.Equal(t, 2, *req.Position)
-			
+
 			return &discordclient.Role{
 				ID:       roleID,
 				Name:     "Updated Role",
@@ -378,11 +378,11 @@ func TestDelete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockClient := &MockDiscordClient{}
 			tt.mockSetup(mockClient)
-			
+
 			e := &external{discord: mockClient}
-			
+
 			_, err := e.Delete(ctx, tt.role)
-			
+
 			if tt.expectError {
 				assert.Error(t, err)
 			} else {
@@ -414,24 +414,24 @@ func stringPtr(s string) *string {
 // Test type assertions
 func TestTypeAssertions(t *testing.T) {
 	ctx := context.Background()
-	
+
 	// Test with wrong type
 	wrongType := &guildv1alpha1.Guild{}
-	
+
 	e := &external{discord: &MockDiscordClient{}}
-	
+
 	_, err := e.Observe(ctx, wrongType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), errNotRole)
-	
+
 	_, err = e.Create(ctx, wrongType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), errNotRole)
-	
+
 	_, err = e.Update(ctx, wrongType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), errNotRole)
-	
+
 	_, err = e.Delete(ctx, wrongType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), errNotRole)

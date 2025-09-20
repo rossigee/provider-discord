@@ -60,16 +60,16 @@ func TestProviderConfigDeepCopy(t *testing.T) {
 
 	// Test DeepCopy
 	copied := original.DeepCopy()
-	
+
 	// Verify they're not the same object
 	assert.NotSame(t, original, copied)
-	
+
 	// Verify the content is the same
 	assert.Equal(t, original.TypeMeta, copied.TypeMeta)
 	assert.Equal(t, original.ObjectMeta, copied.ObjectMeta)
 	assert.Equal(t, original.Spec, copied.Spec)
 	assert.Equal(t, original.Status, copied.Status)
-	
+
 	// Verify deep copy - modifying one shouldn't affect the other
 	copied.Spec.Credentials.SecretRef.Name = "modified-secret"
 	assert.NotEqual(t, original.Spec.Credentials.SecretRef.Name, copied.Spec.Credentials.SecretRef.Name)
@@ -98,10 +98,10 @@ func TestProviderConfigUsageDeepCopy(t *testing.T) {
 
 	// Test DeepCopy
 	copied := original.DeepCopy()
-	
+
 	// Verify they're not the same object
 	assert.NotSame(t, original, copied)
-	
+
 	// Verify the content is the same
 	assert.Equal(t, original.TypeMeta, copied.TypeMeta)
 	assert.Equal(t, original.ObjectMeta, copied.ObjectMeta)
@@ -146,7 +146,7 @@ func TestProviderConfigJSONMarshaling(t *testing.T) {
 	var unmarshaled ProviderConfig
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
-	
+
 	// Verify the unmarshaled object matches
 	assert.Equal(t, config.TypeMeta, unmarshaled.TypeMeta)
 	assert.Equal(t, config.Name, unmarshaled.Name)
@@ -191,7 +191,7 @@ func TestProviderConfigUsageJSONMarshaling(t *testing.T) {
 	var unmarshaled ProviderConfigUsage
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
-	
+
 	// Verify the unmarshaled object matches
 	assert.Equal(t, usage.TypeMeta, unmarshaled.TypeMeta)
 	assert.Equal(t, usage.Name, unmarshaled.Name)
@@ -214,7 +214,7 @@ func TestProviderCredentialsValidation(t *testing.T) {
 			},
 		},
 	}
-	
+
 	// Verify credentials can be created and accessed
 	assert.Equal(t, xpv1.CredentialsSourceSecret, creds.Source)
 	require.NotNil(t, creds.SecretRef)
@@ -240,7 +240,7 @@ func TestProviderConfigSpecValidation(t *testing.T) {
 		},
 		// BaseURL is optional and can be nil for default
 	}
-	
+
 	assert.Equal(t, xpv1.CredentialsSourceSecret, spec.Credentials.Source)
 	assert.Nil(t, spec.BaseURL) // Should be nil for default
 
@@ -249,7 +249,7 @@ func TestProviderConfigSpecValidation(t *testing.T) {
 		Credentials: spec.Credentials,
 		BaseURL:     stringPtr("https://discord.com/api/v9"),
 	}
-	
+
 	require.NotNil(t, customSpec.BaseURL)
 	assert.Equal(t, "https://discord.com/api/v9", *customSpec.BaseURL)
 }

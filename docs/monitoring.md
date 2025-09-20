@@ -184,8 +184,8 @@ groups:
   - alert: DiscordAPIHighErrorRate
     expr: |
       (
-        rate(provider_discord_discord_api_errors_total[5m]) 
-        / 
+        rate(provider_discord_discord_api_errors_total[5m])
+        /
         rate(provider_discord_discord_api_operations_total[5m])
       ) > 0.1
     for: 3m
@@ -209,8 +209,8 @@ groups:
   - alert: ProviderDiscordHighMemoryUsage
     expr: |
       (
-        container_memory_working_set_bytes{pod=~"provider-discord-.*",container="package-runtime"} 
-        / 
+        container_memory_working_set_bytes{pod=~"provider-discord-.*",container="package-runtime"}
+        /
         container_spec_memory_limit_bytes{pod=~"provider-discord-.*",container="package-runtime"}
       ) > 0.8
     for: 5m
@@ -223,7 +223,7 @@ groups:
 
   - alert: ProviderDiscordSlowReconciliation
     expr: |
-      histogram_quantile(0.95, 
+      histogram_quantile(0.95,
         rate(provider_discord_resource_reconciliation_duration_seconds_bucket[5m])
       ) > 30
     for: 5m

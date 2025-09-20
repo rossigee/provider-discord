@@ -42,9 +42,9 @@ func TestDefaultConfig(t *testing.T) {
 	if err := os.Unsetenv("OTEL_SAMPLING_RATIO"); err != nil {
 		t.Errorf("Failed to unset OTEL_SAMPLING_RATIO: %v", err)
 	}
-	
+
 	config := DefaultConfig()
-	
+
 	assert.False(t, config.Enabled)
 	assert.Equal(t, "provider-discord", config.ServiceName)
 	assert.Equal(t, "unknown", config.ServiceVersion)
@@ -70,19 +70,19 @@ func TestDefaultConfigWithEnvVars(t *testing.T) {
 	if err := os.Setenv("OTEL_SAMPLING_RATIO", "0.5"); err != nil {
 		t.Errorf("Failed to set OTEL_SAMPLING_RATIO: %v", err)
 	}
-	
+
 	defer func() {
 		if err := os.Unsetenv("OTEL_TRACING_ENABLED"); err != nil {
 			t.Errorf("Failed to unset OTEL_TRACING_ENABLED: %v", err)
 		}
 		_ = os.Unsetenv("OTEL_SERVICE_NAME")
-		_ = os.Unsetenv("OTEL_SERVICE_VERSION") 
+		_ = os.Unsetenv("OTEL_SERVICE_VERSION")
 		_ = os.Unsetenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 		_ = os.Unsetenv("OTEL_SAMPLING_RATIO")
 	}()
-	
+
 	config := DefaultConfig()
-	
+
 	assert.False(t, config.Enabled)
 	assert.Equal(t, "test-service", config.ServiceName)
 	assert.Equal(t, "v1.0.0", config.ServiceVersion)
@@ -94,10 +94,10 @@ func TestInitializeDisabled(t *testing.T) {
 	config := &Config{
 		Enabled: false,
 	}
-	
+
 	err := Initialize(context.Background(), config)
 	assert.NoError(t, err)
-	
+
 	tracer := GetTracer()
 	assert.NotNil(t, tracer)
 }
@@ -107,10 +107,10 @@ func TestInitializeNoEndpoint(t *testing.T) {
 		Enabled:  true,
 		Endpoint: "",
 	}
-	
+
 	err := Initialize(context.Background(), config)
 	assert.NoError(t, err)
-	
+
 	tracer := GetTracer()
 	assert.NotNil(t, tracer)
 }
@@ -118,29 +118,29 @@ func TestInitializeNoEndpoint(t *testing.T) {
 func TestGetTracerBeforeInit(t *testing.T) {
 	// Reset global tracer
 	tracer = nil
-	
+
 	tr := GetTracer()
 	assert.NotNil(t, tr)
 }
 
 func TestStartSpan(t *testing.T) {
 	ctx := context.Background()
-	
+
 	_, span := StartSpan(ctx, "test-span")
 	assert.NotNil(t, span)
-	
+
 	span.End()
 }
 
 func TestRecordError(t *testing.T) {
 	ctx := context.Background()
 	_, span := StartSpan(ctx, "test-span")
-	
+
 	testErr := errors.New("test error")
 	RecordError(span, testErr, "test_error")
-	
+
 	span.End()
-	
+
 	// Test with nil error
 	RecordError(span, nil, "no_error")
 }
@@ -148,43 +148,43 @@ func TestRecordError(t *testing.T) {
 func TestRecordSuccess(t *testing.T) {
 	ctx := context.Background()
 	_, span := StartSpan(ctx, "test-span")
-	
+
 	RecordSuccess(span)
-	
+
 	span.End()
 }
 
 func TestTraceReconciliation(t *testing.T) {
 	ctx := context.Background()
-	
+
 	_, span := TraceReconciliation(ctx, "guild", "test-guild", "create")
 	assert.NotNil(t, span)
-	
+
 	span.End()
 }
 
 func TestTraceAPICall(t *testing.T) {
 	ctx := context.Background()
-	
+
 	_, span := TraceAPICall(ctx, "POST", "/guilds")
 	assert.NotNil(t, span)
-	
+
 	span.End()
 }
 
 func TestTraceResourceOperation(t *testing.T) {
 	ctx := context.Background()
-	
+
 	_, span := TraceResourceOperation(ctx, "channel", "update", "123456789")
 	assert.NotNil(t, span)
-	
+
 	span.End()
 }
 
 func TestSetDiscordAttributes(t *testing.T) {
 	ctx := context.Background()
 	_, span := StartSpan(ctx, "test-span")
-	
+
 	attrs := map[string]interface{}{
 		"string_attr":  "test_value",
 		"int_attr":     42,
@@ -193,58 +193,58 @@ func TestSetDiscordAttributes(t *testing.T) {
 		"float64_attr": 3.14,
 		"other_attr":   struct{ Name string }{Name: "test"},
 	}
-	
+
 	SetDiscordAttributes(span, attrs)
-	
+
 	span.End()
 }
 
 func TestAddGuildContext(t *testing.T) {
 	ctx := context.Background()
 	_, span := StartSpan(ctx, "test-span")
-	
+
 	AddGuildContext(span, "123456789", "Test Guild")
-	
+
 	span.End()
 }
 
 func TestAddChannelContext(t *testing.T) {
 	ctx := context.Background()
 	_, span := StartSpan(ctx, "test-span")
-	
+
 	AddChannelContext(span, "987654321", "general", 0)
-	
+
 	span.End()
 }
 
 func TestAddRoleContext(t *testing.T) {
 	ctx := context.Background()
 	_, span := StartSpan(ctx, "test-span")
-	
+
 	AddRoleContext(span, "555666777", "Admin")
-	
+
 	span.End()
 }
 
 func TestRecordAPIResponse(t *testing.T) {
 	ctx := context.Background()
 	_, span := StartSpan(ctx, "test-span")
-	
+
 	// Test successful response
 	RecordAPIResponse(span, 200, false)
-	
+
 	// Test error response
 	RecordAPIResponse(span, 429, true)
-	
+
 	span.End()
 }
 
 func TestRecordRetryAttempt(t *testing.T) {
 	ctx := context.Background()
 	_, span := StartSpan(ctx, "test-span")
-	
+
 	RecordRetryAttempt(span, 2, "500ms")
-	
+
 	span.End()
 }
 
@@ -266,7 +266,7 @@ func TestGetEnvHelpers(t *testing.T) {
 	assert.Equal(t, "test_value", getEnv("TEST_STRING", "default"))
 	assert.Equal(t, "default", getEnv("NON_EXISTENT", "default"))
 	_ = os.Unsetenv("TEST_STRING")
-	
+
 	// Test getEnvBool
 	if err := os.Setenv("TEST_BOOL_TRUE", "true"); err != nil {
 		t.Errorf("Failed to set TEST_BOOL_TRUE: %v", err)
@@ -284,7 +284,7 @@ func TestGetEnvHelpers(t *testing.T) {
 	_ = os.Unsetenv("TEST_BOOL_TRUE")
 	_ = os.Unsetenv("TEST_BOOL_1")
 	_ = os.Unsetenv("TEST_BOOL_FALSE")
-	
+
 	// Test getEnvFloat
 	if err := os.Setenv("TEST_FLOAT", "0.5"); err != nil {
 		t.Errorf("Failed to set TEST_FLOAT: %v", err)
@@ -309,7 +309,7 @@ func TestParseFloat(t *testing.T) {
 		{"invalid", 0.0, true},
 		{"2.5", 0.0, true}, // Not supported in simple implementation
 	}
-	
+
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
 			result, err := parseFloat(tt.input)

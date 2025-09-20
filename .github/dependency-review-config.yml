@@ -65,9 +65,9 @@ config-file: |
   go:
     # Check for updates to Go modules
     check-for-updates: true
-    
+
     # Allow pre-release versions
     allow-prerelease: false
-    
+
     # Check licenses in vendor directory
     check-vendor: true

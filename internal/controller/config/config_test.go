@@ -26,11 +26,11 @@ import (
 
 func TestSetup(t *testing.T) {
 	t.Skip("Setup function requires integration testing with a real Kubernetes environment")
-	
+
 	// This test would require a real Kubernetes environment to properly test
 	// the controller setup. For unit testing purposes, we can verify that
 	// the Setup function exists and has the correct signature.
-	
+
 	// Test that Setup function doesn't panic when called with nil manager
 	// (this will error, but shouldn't panic)
 	defer func() {
@@ -38,10 +38,10 @@ func TestSetup(t *testing.T) {
 			t.Errorf("Setup function panicked: %v", r)
 		}
 	}()
-	
+
 	opts := controller.Options{}
 	err := Setup(nil, opts)
-	
+
 	// We expect an error since we passed nil manager, but no panic
 	assert.Error(t, err)
 }

@@ -346,7 +346,7 @@ spec:
       annotations:
         summary: "Provider Discord is down"
         description: "Provider Discord has been down for more than 5 minutes"
-    
+
     - alert: DiscordAPIHighErrorRate
       expr: rate(provider_discord_discord_api_errors_total[5m]) > 0.1
       for: 2m
@@ -355,7 +355,7 @@ spec:
       annotations:
         summary: "High Discord API error rate"
         description: "Discord API error rate is {{ $value }} errors/second"
-    
+
     - alert: DiscordRateLimitHit
       expr: rate(provider_discord_discord_rate_limits_total[5m]) > 0.05
       for: 1m
@@ -364,7 +364,7 @@ spec:
       annotations:
         summary: "Discord rate limits being hit"
         description: "Rate limit hits: {{ $value }}/second"
-    
+
     - alert: ProviderDiscordHighMemory
       expr: container_memory_usage_bytes{pod=~"provider-discord-.*"} / container_spec_memory_limit_bytes > 0.8
       for: 5m
@@ -394,25 +394,25 @@ data:
             endpoint: 0.0.0.0:4317
           http:
             endpoint: 0.0.0.0:4318
-    
+
     processors:
       batch:
         timeout: 1s
         send_batch_size: 1024
         send_batch_max_size: 2048
-      
+
       resource:
         attributes:
         - key: environment
           value: production
           action: upsert
-    
+
     exporters:
       jaeger:
         endpoint: jaeger-collector:14250
         tls:
           insecure: true
-    
+
     service:
       pipelines:
         traces:

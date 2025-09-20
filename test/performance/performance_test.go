@@ -345,10 +345,10 @@ func runPerformanceTest(t *testing.T, client *clients.DiscordClient, guildID str
 		wg.Add(1)
 		go func(workerID int) {
 			defer wg.Done()
-			
+
 			// Stagger worker start times
 			time.Sleep(time.Duration(workerID) * workerInterval)
-			
+
 			runWorker(ctx, client, guildID, config.RequestsPerWorker, errors, durations)
 		}(i)
 	}
@@ -408,7 +408,7 @@ func runWorker(ctx context.Context, client *clients.DiscordClient, guildID strin
 func runConcurrentOperations(ctx context.Context, client *clients.DiscordClient, guildID string, workerID, operations int, errors chan<- error, durations chan<- time.Duration) {
 	for i := 0; i < operations; i++ {
 		start := time.Now()
-		
+
 		// Vary operations to test different endpoints
 		var err error
 		switch i % 3 {
@@ -420,7 +420,7 @@ func runConcurrentOperations(ctx context.Context, client *clients.DiscordClient,
 			// Test channel listing if implemented
 			_, err = client.GetGuild(ctx, guildID) // Fallback to guild get
 		}
-		
+
 		duration := time.Since(start)
 		errors <- err
 		durations <- duration
@@ -470,7 +470,7 @@ func logPerformanceResults(t *testing.T, scenarioName string, result Performance
 	t.Logf("  Min Latency: %v", result.MinLatency)
 	t.Logf("  Max Latency: %v", result.MaxLatency)
 	t.Logf("  Requests per Second: %.2f", result.RequestsPerSecond)
-	
+
 	if len(result.Errors) > 0 {
 		t.Logf("  Error Sample (first 5):")
 		for i, err := range result.Errors {
@@ -486,7 +486,7 @@ func calculateAverageDuration(durations []time.Duration) time.Duration {
 	if len(durations) == 0 {
 		return 0
 	}
-	
+
 	var total time.Duration
 	for _, d := range durations {
 		total += d
@@ -498,7 +498,7 @@ func findMinDuration(durations []time.Duration) time.Duration {
 	if len(durations) == 0 {
 		return 0
 	}
-	
+
 	min := durations[0]
 	for _, d := range durations[1:] {
 		if d < min {
@@ -512,7 +512,7 @@ func findMaxDuration(durations []time.Duration) time.Duration {
 	if len(durations) == 0 {
 		return 0
 	}
-	
+
 	max := durations[0]
 	for _, d := range durations[1:] {
 		if d > max {
@@ -529,10 +529,10 @@ func isRateLimitError(err error) bool {
 }
 
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && 
-		   (s == substr || 
-		    (len(s) > len(substr) && 
-		     (s[:len(substr)] == substr || 
+	return len(s) >= len(substr) &&
+		   (s == substr ||
+		    (len(s) > len(substr) &&
+		     (s[:len(substr)] == substr ||
 		      s[len(s)-len(substr):] == substr ||
 		      func() bool {
 		      	for i := 0; i <= len(s)-len(substr); i++ {

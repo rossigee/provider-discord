@@ -94,7 +94,7 @@ func TestCreateRole(t *testing.T) {
 func TestGetRole(t *testing.T) {
 	guildID := "123456789"
 	roleID := "987654321"
-	
+
 	roles := []Role{
 		{
 			ID:          "987654321",
@@ -143,7 +143,7 @@ func TestGetRole(t *testing.T) {
 func TestGetRoleNotFound(t *testing.T) {
 	guildID := "123456789"
 	roleID := "nonexistent"
-	
+
 	roles := []Role{
 		{
 			ID:   "987654321",
@@ -171,7 +171,7 @@ func TestGetRoleNotFound(t *testing.T) {
 func TestModifyRole(t *testing.T) {
 	guildID := "123456789"
 	roleID := "987654321"
-	
+
 	expectedRole := Role{
 		ID:          roleID,
 		Name:        "Modified Role",
@@ -281,7 +281,7 @@ func TestRoleErrorHandling(t *testing.T) {
 		{
 			name:       "GetRole 404 error",
 			statusCode: http.StatusNotFound,
-			method:     "GET", 
+			method:     "GET",
 			endpoint:   "/guilds/" + guildID + "/roles",
 			operation: func(c *DiscordClient) error {
 				_, err := c.GetRole(context.Background(), guildID, roleID)
@@ -315,7 +315,7 @@ func TestRoleErrorHandling(t *testing.T) {
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				assert.Equal(t, tt.method, r.Method)
 				assert.True(t, strings.HasPrefix(r.URL.Path, tt.endpoint) || r.URL.Path == tt.endpoint)
-				
+
 				w.WriteHeader(tt.statusCode)
 				if _, err := w.Write([]byte(`{"message": "Error occurred", "code": 50013}`)); err != nil {
 					t.Errorf("Failed to write error response: %v", err)

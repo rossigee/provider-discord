@@ -123,7 +123,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	externalName := meta.GetExternalName(cr)
-	
+
 	// If external-name is empty or not a valid Discord ID, this is a new resource to be created
 	// Crossplane runtime defaults external-name to metadata.name for new resources
 	if externalName == "" || !isValidDiscordID(externalName) {
@@ -158,7 +158,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		GuildID:   webhook.GuildID,
 		UpdatedAt: now,
 	}
-	
+
 	// Handle optional fields
 	if webhook.Avatar != nil {
 		observation.Avatar = *webhook.Avatar
@@ -166,7 +166,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	if webhook.ApplicationID != nil {
 		observation.ApplicationID = *webhook.ApplicationID
 	}
-	
+
 	cr.Status.AtProvider = observation
 
 	// Store sensitive fields in connection secret

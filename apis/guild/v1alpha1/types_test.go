@@ -64,16 +64,16 @@ func TestGuildDeepCopy(t *testing.T) {
 
 	// Test DeepCopy
 	copied := original.DeepCopy()
-	
+
 	// Verify they're not the same object
 	assert.NotSame(t, original, copied)
-	
+
 	// Verify the content is the same
 	assert.Equal(t, original.TypeMeta, copied.TypeMeta)
 	assert.Equal(t, original.ObjectMeta, copied.ObjectMeta)
 	assert.Equal(t, original.Spec, copied.Spec)
 	assert.Equal(t, original.Status, copied.Status)
-	
+
 	// Verify deep copy - modifying one shouldn't affect the other
 	copied.Spec.ForProvider.Name = "Modified Guild"
 	assert.NotEqual(t, original.Spec.ForProvider.Name, copied.Spec.ForProvider.Name)
@@ -116,15 +116,15 @@ func TestGuildListDeepCopy(t *testing.T) {
 	obj := original.DeepCopyObject()
 	copied, ok := obj.(*GuildList)
 	require.True(t, ok)
-	
+
 	// Verify they're not the same object
 	assert.NotSame(t, original, copied)
-	
+
 	// Verify the content is the same
 	assert.Equal(t, original.TypeMeta, copied.TypeMeta)
 	assert.Equal(t, original.ListMeta, copied.ListMeta)
 	assert.Len(t, copied.Items, len(original.Items))
-	
+
 	// Verify deep copy - modifying one shouldn't affect the other
 	copied.Items[0].Spec.ForProvider.Name = "Modified Guild"
 	assert.NotEqual(t, original.Items[0].Spec.ForProvider.Name, copied.Items[0].Spec.ForProvider.Name)
@@ -170,13 +170,13 @@ func TestGuildJSONMarshaling(t *testing.T) {
 	var unmarshaled Guild
 	err = json.Unmarshal(data, &unmarshaled)
 	require.NoError(t, err)
-	
+
 	// Verify the unmarshaled object matches
 	assert.Equal(t, guild.TypeMeta, unmarshaled.TypeMeta)
 	assert.Equal(t, guild.Name, unmarshaled.Name)
 	assert.Equal(t, guild.Spec.ForProvider.Name, unmarshaled.Spec.ForProvider.Name)
 	assert.Equal(t, guild.Status.AtProvider.ID, unmarshaled.Status.AtProvider.ID)
-	
+
 	// Verify pointer fields are handled correctly
 	require.NotNil(t, unmarshaled.Spec.ForProvider.Region)
 	assert.Equal(t, "us-east", *unmarshaled.Spec.ForProvider.Region)
@@ -195,7 +195,7 @@ func TestGuildParametersValidation(t *testing.T) {
 		AFKTimeout:                  intPtr(300),
 		SystemChannelFlags:          intPtr(0),
 	}
-	
+
 	// Verify parameters can be created and accessed
 	assert.Equal(t, "Valid Guild Name", params.Name)
 	assert.Equal(t, "us-west", *params.Region)

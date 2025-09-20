@@ -81,7 +81,7 @@ func testGuildOperations(t *testing.T, client *clients.DiscordClient, ctx contex
 
 	// Test ModifyGuild - limited to safe changes only
 	// We avoid changing name as it's more disruptive
-	
+
 	// Just test that GetGuild works properly
 	originalGuild := guild
 	t.Logf("Guild has %d verification level", originalGuild.VerificationLevel)
@@ -184,7 +184,7 @@ func testRoleOperations(t *testing.T, client *clients.DiscordClient, ctx context
 	hoist := false
 	mentionable := false
 	permissions := "0"
-	
+
 	createParams := clients.CreateRoleRequest{
 		Name:         roleName,
 		Color:        &color,
@@ -285,7 +285,7 @@ func testErrorHandling(t *testing.T, client *clients.DiscordClient, ctx context.
 func testRateLimiting(t *testing.T, client *clients.DiscordClient, ctx context.Context, guildID string) {
 	// Test rate limiting by making many requests quickly
 	// This should trigger rate limiting and test the client's handling
-	
+
 	const numRequests = 20
 	const requestDelay = 10 * time.Millisecond
 
@@ -312,7 +312,7 @@ func testRateLimiting(t *testing.T, client *clients.DiscordClient, ctx context.C
 	}
 
 	duration := time.Since(start)
-	
+
 	t.Logf("Rate limiting test completed in %v", duration)
 	t.Logf("Successful requests: %d/%d", successCount, numRequests)
 	t.Logf("Rate limited requests: %d/%d", rateLimitCount, numRequests)
@@ -373,7 +373,7 @@ func TestDiscordAPIConfiguration(t *testing.T) {
 
 	t.Run("TestDefaultConfiguration", func(t *testing.T) {
 		client := clients.NewDiscordClient(token)
-		
+
 		// Should use default base URL
 		guilds, err := client.ListGuilds(ctx)
 		if err != nil {
@@ -384,7 +384,7 @@ func TestDiscordAPIConfiguration(t *testing.T) {
 
 	t.Run("TestCustomBaseURL", func(t *testing.T) {
 		client := clients.NewDiscordClient(token)
-		
+
 		// Should work with explicit base URL
 		guilds, err := client.ListGuilds(ctx)
 		if err != nil {
@@ -395,7 +395,7 @@ func TestDiscordAPIConfiguration(t *testing.T) {
 
 	t.Run("TestInvalidToken", func(t *testing.T) {
 		client := clients.NewDiscordClient("invalid-token")
-		
+
 		// Should fail with invalid token
 		_, err := client.ListGuilds(ctx)
 		if err == nil {
@@ -447,7 +447,7 @@ func TestDiscordAPIPerformance(t *testing.T) {
 // TestDiscordWebhookIntegration tests webhook functionality (if implemented)
 func TestDiscordWebhookIntegration(t *testing.T) {
 	t.Skip("Webhook integration tests not yet implemented")
-	
+
 	// This would test webhook creation, configuration, and deletion
 	// when webhook functionality is added to the provider
 }

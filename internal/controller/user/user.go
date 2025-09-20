@@ -214,15 +214,15 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	// Build modify current user request
 	req := &discordclient.ModifyCurrentUserRequest{}
-	
+
 	if cr.Spec.ForProvider.Username != nil {
 		req.Username = cr.Spec.ForProvider.Username
 	}
-	
+
 	if cr.Spec.ForProvider.Avatar != nil {
 		req.Avatar = cr.Spec.ForProvider.Avatar
 	}
-	
+
 	if cr.Spec.ForProvider.Banner != nil {
 		req.Banner = cr.Spec.ForProvider.Banner
 	}

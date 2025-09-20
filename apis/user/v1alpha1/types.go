@@ -40,7 +40,7 @@ type UserParameters struct {
 	// +optional
 	Avatar *string `json:"avatar,omitempty"`
 
-	// Banner is the user's banner image data (base64 encoded) 
+	// Banner is the user's banner image data (base64 encoded)
 	// Only applicable when modifying current user
 	// +optional
 	Banner *string `json:"banner,omitempty"`

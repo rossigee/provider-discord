@@ -126,7 +126,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	externalName := meta.GetExternalName(cr)
-	
+
 	// If external-name is empty or not a valid Discord invite code, this is a new resource to be created
 	// Crossplane runtime defaults external-name to metadata.name for new resources
 	if externalName == "" || !isValidDiscordInviteCode(externalName) {

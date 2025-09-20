@@ -503,9 +503,9 @@ func verifyAllResourcesReady(ctx context.Context, t *testing.T, k8sClient client
 
 // Helper function to check if a string contains a substring
 func contains(s, substr string) bool {
-	return len(s) >= len(substr) && s[len(s)-len(substr):] == substr || 
+	return len(s) >= len(substr) && s[len(s)-len(substr):] == substr ||
 		   len(s) > len(substr) && s[:len(substr)] == substr ||
-		   (len(s) > len(substr) && len(substr) > 0 && 
+		   (len(s) > len(substr) && len(substr) > 0 &&
 		    func() bool {
 		    	for i := 0; i <= len(s)-len(substr); i++ {
 		    		if s[i:i+len(substr)] == substr {
@@ -530,7 +530,7 @@ func getKubernetesClient() (client.Client, error) {
 // TestE2EWithEnvTest demonstrates how to set up proper integration testing with envtest
 func TestE2EWithEnvTest(t *testing.T) {
 	t.Skip("envtest setup not implemented yet - would use sigs.k8s.io/controller-runtime/pkg/envtest")
-	
+
 	// This test would:
 	// 1. Start a test Kubernetes API server using envtest
 	// 2. Install provider CRDs
@@ -549,7 +549,7 @@ func TestE2EProviderHealth(t *testing.T) {
 	// 1. Provider health endpoints (/healthz, /readyz)
 	// 2. Metrics endpoint (/metrics)
 	// 3. Provider status and logs
-	
+
 	t.Skip("Provider health testing not implemented - requires cluster access")
 }
 
@@ -566,7 +566,7 @@ func TestE2EProviderUpgrade(t *testing.T) {
 	// 4. Verify resources still work
 	// 5. Create new resources with new version
 	// 6. Verify backward compatibility
-	
+
 	t.Skip("Provider upgrade testing not implemented - requires complex test setup")
 }
 
@@ -582,6 +582,6 @@ func TestE2EResourceReconciliation(t *testing.T) {
 	// 3. Verify provider detects drift
 	// 4. Verify provider corrects drift
 	// 5. Test various reconciliation scenarios
-	
+
 	t.Skip("Resource reconciliation testing not implemented - requires Discord API access and test guild")
 }

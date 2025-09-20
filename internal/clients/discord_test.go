@@ -356,7 +356,7 @@ func TestCreateChannel(t *testing.T) {
 		// GuildID is not sent in body, it's in URL
 		expectedRequest := mockRequest
 		expectedRequest.GuildID = ""
-		
+
 		if diff := cmp.Diff(expectedRequest, receivedRequest); diff != "" {
 			t.Errorf("Request mismatch (-want +got):\n%s", diff)
 		}
