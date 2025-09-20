@@ -22,8 +22,6 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
-//+kubebuilder:object:generate=true
-
 // ApplicationParameters defines the desired state of a Discord application
 type ApplicationParameters struct {
 	// ApplicationID is the Discord application ID to retrieve/manage

@@ -22,8 +22,6 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
-//+kubebuilder:object:generate=true
-
 // IntegrationParameters defines the desired state of a Discord guild integration
 type IntegrationParameters struct {
 	// GuildID is the ID of the Discord guild
