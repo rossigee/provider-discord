@@ -55,15 +55,7 @@ jobs:
       - name: Build Packages
         run: |
           make generate
-          # Temporarily move package.yaml to avoid crossplane CLI conflict
-          if [ -f package/package.yaml ]; then
-            mv package/package.yaml package/package.yaml.tmp
-          fi
           make build PLATFORMS=linux_amd64
-          # Restore package.yaml for final package
-          if [ -f package/package.yaml.tmp ]; then
-            mv package/package.yaml.tmp package/package.yaml
-          fi
 
       - name: Debug Registry Configuration
         run: |
