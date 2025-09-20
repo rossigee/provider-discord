@@ -44,20 +44,11 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 // SetupWithMetrics creates all Discord controllers with metrics support and adds them to
 // the supplied manager.
 func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *metrics.MetricsRecorder) error {
-	// Create a Discord client factory function that includes metrics
-	newDiscordClientFn := func(token string) *clients.DiscordClient {
-		return clients.NewDiscordClientWithMetrics(token, metricsRecorder)
-	}
-
-	// For now, just update the controllers that use the managed approach (using function pointers)
-	// Start with the channel controller as a test
-	if err := channel.SetupWithClient(mgr, o, newDiscordClientFn); err != nil {
-		return err
-	}
-
-	// Use regular setup for other controllers for now
+	// Setup all controllers using regular Setup functions
+	// The metrics will be integrated at the client level
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
 		config.Setup,
+		channel.Setup,
 		guild.Setup,
 		role.Setup,
 		webhook.Setup,
@@ -71,5 +62,11 @@ func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *m
 			return err
 		}
 	}
+
+	// Set the global metrics recorder for client use
+	if metricsRecorder != nil {
+		clients.SetGlobalMetricsRecorder(metricsRecorder)
+	}
+
 	return nil
 }

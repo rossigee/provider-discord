@@ -138,9 +138,16 @@ var _ UserClient = (*DiscordClient)(nil)
 var _ ApplicationClient = (*DiscordClient)(nil)
 var _ IntegrationClient = (*DiscordClient)(nil)
 
+var globalMetricsRecorder *metrics.MetricsRecorder
+
+// SetGlobalMetricsRecorder sets the global metrics recorder for all Discord clients
+func SetGlobalMetricsRecorder(recorder *metrics.MetricsRecorder) {
+	globalMetricsRecorder = recorder
+}
+
 // NewDiscordClient creates a new Discord API client
 func NewDiscordClient(token string) *DiscordClient {
-	return NewDiscordClientWithMetrics(token, nil)
+	return NewDiscordClientWithMetrics(token, globalMetricsRecorder)
 }
 
 // NewDiscordClientWithMetrics creates a new Discord API client with metrics recorder
