@@ -36,15 +36,15 @@ func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(AddToSchemes,
 		v1beta1.AddToScheme,
-		guildv1alpha1.SchemeBuilder.AddToScheme,
-		channelv1alpha1.SchemeBuilder.AddToScheme,
-		rolev1alpha1.SchemeBuilder.AddToScheme,
-		webhookv1alpha1.SchemeBuilder.AddToScheme,
-		invitev1alpha1.SchemeBuilder.AddToScheme,
-		memberv1alpha1.SchemeBuilder.AddToScheme,
-		userv1alpha1.SchemeBuilder.AddToScheme,
-		applicationv1alpha1.SchemeBuilder.AddToScheme,
-		integrationv1alpha1.SchemeBuilder.AddToScheme,
+		guildv1alpha1.AddToScheme,
+		channelv1alpha1.AddToScheme,
+		rolev1alpha1.AddToScheme,
+		webhookv1alpha1.AddToScheme,
+		invitev1alpha1.AddToScheme,
+		memberv1alpha1.AddToScheme,
+		userv1alpha1.AddToScheme,
+		applicationv1alpha1.AddToScheme,
+		integrationv1alpha1.AddToScheme,
 	)
 }
 
