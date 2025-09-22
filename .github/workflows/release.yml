@@ -59,8 +59,11 @@ jobs:
 
       - name: Build Packages (Multi-Platform)
         run: |
+          echo "=== Starting generate step ==="
           make generate
+          echo "=== Generate completed, starting build ==="
           make build PLATFORMS="linux_amd64,linux_arm64"
+          echo "=== Build completed successfully ==="
 
       - name: Debug Registry Configuration
         run: |
