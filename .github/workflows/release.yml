@@ -62,30 +62,34 @@ jobs:
           echo "=== Starting generate step ==="
           make generate
           echo "=== Generate completed, starting build ==="
-          make build
+          make build.all
           echo "=== Build completed successfully ==="
 
-      - name: Debug Registry Configuration
+      - name: Verify Build Artifacts
         run: |
-          echo "REGISTRY_ORGS: ghcr.io/${{ github.repository_owner }}"
-          echo "XPKG_REG_ORGS: ghcr.io/${{ github.repository_owner }}"
-          echo "VERSION: ${{ steps.version.outputs.version }}"
-          echo "PLATFORMS: linux_amd64 linux_arm64"
-          echo "BRANCH_NAME: ${GITHUB_REF#refs/heads/}"
-          echo "GITHUB_REF: $GITHUB_REF"
-          echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
-          echo "GITHUB_REF_TYPE: $GITHUB_REF_TYPE"
+          # Verify provider binaries exist for all platforms
           echo "=== Checking build artifacts ==="
-          ls -la _output/ || echo "No _output directory"
-          ls -la _output/bin/ || echo "No bin directory"
-          ls -la _output/bin/linux_amd64/ || echo "No linux_amd64 directory"
-          ls -la _output/xpkg/linux_amd64/ || echo "No amd64 packages found"
-          ls -la _output/xpkg/linux_arm64/ || echo "No arm64 packages found"
-          echo "=== Checking root package.yaml ==="
-          ls -la package.yaml || echo "No package.yaml in root"
-          echo "=== Working directory ==="
-          pwd
-          ls -la
+          ls -la _output/bin/
+
+          # Check amd64 binary
+          if [ ! -f _output/bin/linux_amd64/provider ]; then
+            echo "ERROR: linux_amd64 provider binary not found!"
+            exit 1
+          fi
+          ls -la _output/bin/linux_amd64/provider
+          file _output/bin/linux_amd64/provider
+          echo "✅ linux_amd64 provider binary verified"
+
+          # Check arm64 binary
+          if [ ! -f _output/bin/linux_arm64/provider ]; then
+            echo "ERROR: linux_arm64 provider binary not found!"
+            exit 1
+          fi
+          ls -la _output/bin/linux_arm64/provider
+          file _output/bin/linux_arm64/provider
+          echo "✅ linux_arm64 provider binary verified"
+
+          echo "✅ All platform binaries verification successful"
 
       - name: Publish to Registry (Multi-Platform)
         run: |
