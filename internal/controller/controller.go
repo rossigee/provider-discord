@@ -47,7 +47,8 @@ func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *m
 	// Setup all controllers using regular Setup functions
 	// The metrics will be integrated at the client level
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
-		config.Setup,
+		// HOTFIX: Temporarily disable config.Setup to resolve production crash
+		// config.Setup,
 		// v1alpha1 controllers (cluster-scoped)
 		channel.Setup,
 		guild.Setup,
