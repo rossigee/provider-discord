@@ -62,7 +62,7 @@ jobs:
           echo "=== Starting generate step ==="
           make generate
           echo "=== Generate completed, starting build ==="
-          make build PLATFORMS="linux_amd64 linux_arm64"
+          make build
           echo "=== Build completed successfully ==="
 
       - name: Debug Registry Configuration
@@ -70,7 +70,7 @@ jobs:
           echo "REGISTRY_ORGS: ghcr.io/${{ github.repository_owner }}"
           echo "XPKG_REG_ORGS: ghcr.io/${{ github.repository_owner }}"
           echo "VERSION: ${{ steps.version.outputs.version }}"
-          echo "PLATFORMS: linux_amd64,linux_arm64"
+          echo "PLATFORMS: linux_amd64 linux_arm64"
           echo "BRANCH_NAME: ${GITHUB_REF#refs/heads/}"
           echo "GITHUB_REF: $GITHUB_REF"
           echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
@@ -90,8 +90,9 @@ jobs:
       - name: Publish to Registry (Multi-Platform)
         run: |
           set -x
-          make publish VERSION=${{ steps.version.outputs.version }} PLATFORMS="linux_amd64 linux_arm64" BRANCH_NAME=master
+          make publish BRANCH_NAME=master
         env:
+          VERSION: ${{ steps.version.outputs.version }}
           REGISTRY_ORGS: "ghcr.io/${{ github.repository_owner }}"
           XPKG_REG_ORGS: "ghcr.io/${{ github.repository_owner }}"
 
