@@ -24,7 +24,7 @@ import (
 	"github.com/rossigee/provider-discord/internal/clients"
 	"github.com/rossigee/provider-discord/internal/controller/application"
 	"github.com/rossigee/provider-discord/internal/controller/channel"
-	"github.com/rossigee/provider-discord/internal/controller/config"
+	// "github.com/rossigee/provider-discord/internal/controller/config" // Removed - not needed, crossplane-runtime handles ProviderConfig
 	"github.com/rossigee/provider-discord/internal/controller/guild"
 	"github.com/rossigee/provider-discord/internal/controller/integration"
 	"github.com/rossigee/provider-discord/internal/controller/invite"
@@ -47,7 +47,8 @@ func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *m
 	// Setup all controllers using regular Setup functions
 	// The metrics will be integrated at the client level
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
-		config.Setup,
+		// NOTE: ProviderConfig controller removed - crossplane-runtime handles this automatically
+		// config.Setup,
 		// v1alpha1 controllers (cluster-scoped)
 		channel.Setup,
 		guild.Setup,
