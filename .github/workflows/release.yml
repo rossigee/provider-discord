@@ -72,8 +72,17 @@ jobs:
           echo "GITHUB_REF: $GITHUB_REF"
           echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
           echo "GITHUB_REF_TYPE: $GITHUB_REF_TYPE"
+          echo "=== Checking build artifacts ==="
+          ls -la _output/ || echo "No _output directory"
+          ls -la _output/bin/ || echo "No bin directory"
+          ls -la _output/bin/linux_amd64/ || echo "No linux_amd64 directory"
           ls -la _output/xpkg/linux_amd64/ || echo "No amd64 packages found"
           ls -la _output/xpkg/linux_arm64/ || echo "No arm64 packages found"
+          echo "=== Checking root package.yaml ==="
+          ls -la package.yaml || echo "No package.yaml in root"
+          echo "=== Working directory ==="
+          pwd
+          ls -la
 
       - name: Publish to Registry (Multi-Platform)
         run: |
