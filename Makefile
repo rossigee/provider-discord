@@ -23,6 +23,7 @@ GOLANGCILINT_VERSION ?= 2.4.0
 UP_VERSION = v0.28.0
 UP_CHANNEL = stable
 UPTEST_VERSION = v0.11.1
+CROSSPLANE_CLI_VERSION = v2.0.2
 -include build/makelib/k8s_tools.mk
 
 # Setup Images
@@ -47,7 +48,7 @@ XPKGS = provider-discord
 xpkg.build.provider-discord: do.build.images
 
 # Setup Package Metadata
-CROSSPLANE_VERSION = 1.20.0
+CROSSPLANE_VERSION = 2.0.2
 -include build/makelib/local.xpkg.mk
 -include build/makelib/controlplane.mk
 
