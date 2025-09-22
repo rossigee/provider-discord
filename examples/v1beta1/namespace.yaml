@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: discord-resources
+  labels:
+    provider: discord
+    scope: v1beta1-namespaced

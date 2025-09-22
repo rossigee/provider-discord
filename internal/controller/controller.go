@@ -48,6 +48,7 @@ func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *m
 	// The metrics will be integrated at the client level
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{
 		config.Setup,
+		// v1alpha1 controllers (cluster-scoped)
 		channel.Setup,
 		guild.Setup,
 		role.Setup,
@@ -57,6 +58,8 @@ func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *m
 		user.Setup,
 		application.Setup,
 		integration.Setup,
+		// v1beta1 controllers (namespaced) - Planned for v2 migration
+		// Will be added once v1beta1 APIs are properly generated
 	} {
 		if err := setup(mgr, o); err != nil {
 			return err

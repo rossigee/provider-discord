@@ -1,0 +1,20 @@
+apiVersion: guild.discord.m.crossplane.io/v1beta1
+kind: Guild
+metadata:
+  name: example-guild-v2
+  namespace: discord-resources
+  annotations:
+    crossplane.io/external-name: ""  # Will be set to Discord guild ID after creation
+spec:
+  forProvider:
+    name: "My Crossplane Server v2"
+    region: "us-west"
+    verificationLevel: 1  # Low verification
+    defaultMessageNotifications: 0  # All messages
+    explicitContentFilter: 1  # Members without roles
+  providerConfigRef:
+    name: default
+  deletionPolicy: Delete
+  writeConnectionSecretsToRef:
+    name: guild-connection-details
+    namespace: discord-resources

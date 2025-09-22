@@ -112,28 +112,53 @@ spec:
   controller:
     image: ghcr.io/rossigee/provider-discord:v0.5.9-debug
     permissionRequests:
-      - apiGroups:
-          - discord.crossplane.io
-        resources:
-          - providerconfigs
-          - providerconfigusages
-        verbs:
-          - "*"
-      - apiGroups:
-          - guild.discord.crossplane.io
-        resources:
-          - guilds
-        verbs:
-          - "*"
-      - apiGroups:
-          - channel.discord.crossplane.io
-        resources:
-          - channels
-        verbs:
-          - "*"
-      - apiGroups:
-          - role.discord.crossplane.io
-        resources:
-          - roles
-        verbs:
-          - "*"
+    - apiGroups:
+      - discord.crossplane.io
+      resources:
+      - providerconfigs
+      - providerconfigusages
+      verbs:
+      - "*"
+    - apiGroups:
+      - guild.discord.crossplane.io
+      resources:
+      - guilds
+      verbs:
+      - "*"
+    - apiGroups:
+      - channel.discord.crossplane.io
+      resources:
+      - channels
+      verbs:
+      - "*"
+    - apiGroups:
+      - role.discord.crossplane.io
+      resources:
+      - roles
+      verbs:
+      - "*"
+    # v1beta1 permissions (namespaced resources)
+    - apiGroups:
+      - guild.discord.m.crossplane.io
+      resources:
+      - guilds
+      verbs:
+      - "*"
+    - apiGroups:
+      - channel.discord.m.crossplane.io
+      resources:
+      - channels
+      verbs:
+      - "*"
+    - apiGroups:
+      - role.discord.m.crossplane.io
+      resources:
+      - roles
+      verbs:
+      - "*"
+    - apiGroups:
+      - webhook.discord.m.crossplane.io
+      resources:
+      - webhooks
+      verbs:
+      - "*"

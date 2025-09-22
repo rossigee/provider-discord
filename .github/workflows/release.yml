@@ -52,27 +52,33 @@ jobs:
           curl -fsSLo .cache/tools/linux_x86_64/crossplane-cli-v1.20.0 --create-dirs https://releases.crossplane.io/stable/v1.20.0/bin/linux_amd64/crank?source=build
           chmod +x .cache/tools/linux_x86_64/crossplane-cli-v1.20.0
 
-      - name: Build Packages
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Build Packages (Multi-Platform)
         run: |
           make generate
-          make build PLATFORMS=linux_amd64
+          make build PLATFORMS="linux_amd64,linux_arm64"
 
       - name: Debug Registry Configuration
         run: |
           echo "REGISTRY_ORGS: ghcr.io/${{ github.repository_owner }}"
           echo "XPKG_REG_ORGS: ghcr.io/${{ github.repository_owner }}"
           echo "VERSION: ${{ steps.version.outputs.version }}"
-          echo "PLATFORMS: linux_amd64"
+          echo "PLATFORMS: linux_amd64,linux_arm64"
           echo "BRANCH_NAME: ${GITHUB_REF#refs/heads/}"
           echo "GITHUB_REF: $GITHUB_REF"
           echo "GITHUB_REF_NAME: $GITHUB_REF_NAME"
           echo "GITHUB_REF_TYPE: $GITHUB_REF_TYPE"
-          ls -la _output/xpkg/linux_amd64/ || echo "No packages found"
+          ls -la _output/xpkg/linux_amd64/ || echo "No amd64 packages found"
+          ls -la _output/xpkg/linux_arm64/ || echo "No arm64 packages found"
 
-      - name: Publish to Registry
+      - name: Publish to Registry (Multi-Platform)
         run: |
           set -x
-          make publish VERSION=${{ steps.version.outputs.version }} PLATFORMS=linux_amd64 BRANCH_NAME=master
+          make publish VERSION=${{ steps.version.outputs.version }} PLATFORMS="linux_amd64,linux_arm64" BRANCH_NAME=master
         env:
           REGISTRY_ORGS: "ghcr.io/${{ github.repository_owner }}"
           XPKG_REG_ORGS: "ghcr.io/${{ github.repository_owner }}"

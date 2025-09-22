@@ -19,6 +19,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
@@ -37,6 +38,7 @@ import (
 	"github.com/rossigee/provider-discord/internal/controller"
 	"github.com/rossigee/provider-discord/internal/features"
 	"github.com/rossigee/provider-discord/internal/metrics"
+	"github.com/rossigee/provider-discord/internal/version"
 )
 
 func main() {
@@ -69,7 +71,18 @@ func main() {
 	// Use info level to avoid excessive verbosity while still showing important operations
 	ctrl.SetLogger(zl.WithName("controller-runtime"))
 
-	log.Debug("Starting", "sync-period", syncPeriod.String())
+	log.Info("Provider starting up",
+		"provider", "provider-discord",
+		"version", version.Version,
+		"go-version", runtime.Version(),
+		"platform", runtime.GOOS+"/"+runtime.GOARCH,
+		"sync-period", syncPeriod.String(),
+		"poll-interval", pollInterval.String(),
+		"max-reconcile-rate", *maxReconcileRate,
+		"leader-election", *leaderElection,
+		"leader-election-namespace", *leaderElectionNS,
+		"management-policies", *enableManagementPolicies,
+		"debug-mode", *debug)
 
 	cfg, err := ctrl.GetConfig()
 	if err != nil {

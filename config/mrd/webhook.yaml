@@ -1,0 +1,31 @@
+apiVersion: apiextensions.crossplane.io/v1
+kind: ManagedResourceDefinition
+metadata:
+  name: webhooks.webhook.discord.m.crossplane.io
+  labels:
+    provider: discord
+    resource: webhook
+spec:
+  # Reference to the CRD that defines the schema for this resource
+  crdRef:
+    apiVersion: apiextensions.k8s.io/v1
+    kind: CustomResourceDefinition
+    name: webhooks.webhook.discord.m.crossplane.io
+  # Activation policy for this resource type
+  activationPolicy: Automatic
+  # Resource scope - namespaced for v1beta1
+  resourceScope: Namespaced
+  # Resource categories for kubectl grouping
+  categories:
+  - crossplane
+  - managed
+  - discord
+  # Provider information
+  provider:
+    name: provider-discord
+    namespace: crossplane-system
+  # Connection secret configuration
+  connectionSecretKeys:
+  - webhookId
+  - webhookUrl
+  - webhookToken

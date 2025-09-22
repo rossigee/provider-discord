@@ -36,6 +36,7 @@ func init() {
 	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(AddToSchemes,
 		v1beta1.AddToScheme,
+		// v1alpha1 APIs (cluster-scoped)
 		guildv1alpha1.AddToScheme,
 		channelv1alpha1.AddToScheme,
 		rolev1alpha1.AddToScheme,
@@ -45,6 +46,9 @@ func init() {
 		userv1alpha1.AddToScheme,
 		applicationv1alpha1.AddToScheme,
 		integrationv1alpha1.AddToScheme,
+		// v1beta1 APIs (namespaced) - Added in v2 migration
+		// Note: v1beta1 APIs removed to fix code generation issues
+		// Will be re-added once DeepCopy methods are properly generated
 	)
 }
 

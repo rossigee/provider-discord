@@ -46,7 +46,7 @@ metadata:
          metadata:
            name: provider-discord
          spec:
-           package: ghcr.io/rossigee/provider-discord:v0.5.9-debug
+           package: ghcr.io/rossigee/provider-discord:v0.6.0
          ```
 
       2. **Create Bot Token Secret**:
@@ -135,5 +135,30 @@ spec:
       - role.discord.crossplane.io
       resources:
       - roles
+      verbs:
+      - "*"
+    # v1beta1 permissions (namespaced resources)
+    - apiGroups:
+      - guild.discord.m.crossplane.io
+      resources:
+      - guilds
+      verbs:
+      - "*"
+    - apiGroups:
+      - channel.discord.m.crossplane.io
+      resources:
+      - channels
+      verbs:
+      - "*"
+    - apiGroups:
+      - role.discord.m.crossplane.io
+      resources:
+      - roles
+      verbs:
+      - "*"
+    - apiGroups:
+      - webhook.discord.m.crossplane.io
+      resources:
+      - webhooks
       verbs:
       - "*"
