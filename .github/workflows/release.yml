@@ -112,6 +112,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.version }}
           REGISTRY_ORGS: ghcr.io/rossigee
           XPKG_REG_ORGS: ghcr.io/rossigee
+          BRANCH_NAME: master
 
       - name: List Build Artifacts
         run: |
