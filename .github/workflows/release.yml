@@ -49,7 +49,8 @@ jobs:
       - name: Install Crossplane CLI
         run: |
           mkdir -p .cache/tools/linux_x86_64
-          curl -fsSLo .cache/tools/linux_x86_64/crossplane-cli-v2.0.2 --create-dirs https://releases.crossplane.io/stable/v2.0.2/bin/linux_amd64/crank?source=build
+          curl -fsSLo .cache/tools/linux_x86_64/crossplane-cli-v2.0.2 --create-dirs \
+            https://releases.crossplane.io/stable/v2.0.2/bin/linux_amd64/crank?source=build
           chmod +x .cache/tools/linux_x86_64/crossplane-cli-v2.0.2
 
       - name: Set up QEMU
@@ -57,13 +58,18 @@ jobs:
         with:
           platforms: arm64
 
-      - name: Build Packages (Multi-Platform)
+      - name: Vendor Dependencies
+        run: make vendor vendor.check
+
+      - name: Build Multi-Platform Binaries and Packages
         run: |
           echo "=== Starting generate step ==="
           make generate
           echo "=== Generate completed, starting build ==="
           make build.all
           echo "=== Build completed successfully ==="
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
 
       - name: Verify Build Artifacts
         run: |
@@ -91,21 +97,29 @@ jobs:
 
           echo "✅ All platform binaries verification successful"
 
-      - name: Publish to Registry (Multi-Platform)
+          # Verify xpkg packages were built for all platforms
+          echo "=== Checking xpkg package artifacts ==="
+          ls -la _output/xpkg/ || echo "No xpkg directory found"
+          find _output -name "*.xpkg" -exec ls -la {} \; || echo "No .xpkg files found"
+
+      - name: Publish Crossplane Packages
         run: |
-          set -x
-          make publish BRANCH_NAME=master
+          # Publish versioned package
+          make publish
+          # Publish latest package
+          make publish VERSION=latest
         env:
           VERSION: ${{ steps.version.outputs.version }}
-          REGISTRY_ORGS: "ghcr.io/${{ github.repository_owner }}"
-          XPKG_REG_ORGS: "ghcr.io/${{ github.repository_owner }}"
+          REGISTRY_ORGS: ghcr.io/rossigee
+          XPKG_REG_ORGS: ghcr.io/rossigee
 
       - name: List Build Artifacts
         run: |
           echo "=== Build artifacts created ==="
           find _output -name "*.xpkg" -o -name "provider-discord*" | head -20
           echo "=== Checking specific package file ==="
-          ls -la _output/xpkg/linux_amd64/provider-discord-${{ steps.version.outputs.version }}.xpkg || echo "Package file not found"
+          ls -la _output/xpkg/linux_amd64/provider-discord-${{ steps.version.outputs.version }}.xpkg || \
+            echo "Package file not found"
 
       - name: Generate Changelog
         id: changelog
@@ -135,6 +149,7 @@ jobs:
           body_path: changelog.txt
           files: |
             _output/xpkg/linux_amd64/provider-discord-${{ steps.version.outputs.version }}.xpkg
+            _output/xpkg/linux_arm64/provider-discord-${{ steps.version.outputs.version }}.xpkg
           draft: false
           prerelease: false
           fail_on_unmatched_files: false
