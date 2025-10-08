@@ -27,7 +27,7 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
-	"github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
 	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 )
@@ -78,7 +78,7 @@ func TestObserve(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		role           *v1alpha1.Role
+		role           *rolev1alpha1.Role
 		mockSetup      func(*MockDiscordClient)
 		expectedExists bool
 		expectedUpToDate bool
@@ -86,14 +86,14 @@ func TestObserve(t *testing.T) {
 	}{
 		{
 			name: "role exists and up to date",
-			role: &v1alpha1.Role{
+			role: &rolev1alpha1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: v1alpha1.RoleSpec{
-					ForProvider: v1alpha1.RoleParameters{
+				Spec: rolev1alpha1.RoleSpec{
+					ForProvider: rolev1alpha1.RoleParameters{
 						Name:    "Test Role",
 						GuildID: guildID,
 						Color:   intPtr(16711680),
@@ -120,14 +120,14 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "role exists but needs update",
-			role: &v1alpha1.Role{
+			role: &rolev1alpha1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: v1alpha1.RoleSpec{
-					ForProvider: v1alpha1.RoleParameters{
+				Spec: rolev1alpha1.RoleSpec{
+					ForProvider: rolev1alpha1.RoleParameters{
 						Name:    "Updated Role",
 						GuildID: guildID,
 						Color:   intPtr(255),
@@ -149,14 +149,14 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "role does not exist",
-			role: &v1alpha1.Role{
+			role: &rolev1alpha1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: v1alpha1.RoleSpec{
-					ForProvider: v1alpha1.RoleParameters{
+				Spec: rolev1alpha1.RoleSpec{
+					ForProvider: rolev1alpha1.RoleParameters{
 						Name:    "Test Role",
 						GuildID: guildID,
 					},
@@ -173,9 +173,9 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "no external name set",
-			role: &v1alpha1.Role{
-				Spec: v1alpha1.RoleSpec{
-					ForProvider: v1alpha1.RoleParameters{
+			role: &rolev1alpha1.Role{
+				Spec: rolev1alpha1.RoleSpec{
+					ForProvider: rolev1alpha1.RoleParameters{
 						Name:    "Test Role",
 						GuildID: guildID,
 					},
@@ -216,9 +216,9 @@ func TestCreate(t *testing.T) {
 	guildID := "123456789"
 	roleID := "987654321"
 
-	role := &v1alpha1.Role{
-		Spec: v1alpha1.RoleSpec{
-			ForProvider: v1alpha1.RoleParameters{
+	role := &rolev1alpha1.Role{
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
 				Name:        "Test Role",
 				GuildID:     guildID,
 				Color:       intPtr(16711680),
@@ -264,14 +264,14 @@ func TestUpdate(t *testing.T) {
 	guildID := "123456789"
 	roleID := "987654321"
 
-	role := &v1alpha1.Role{
+	role := &rolev1alpha1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: roleID,
 			},
 		},
-		Spec: v1alpha1.RoleSpec{
-			ForProvider: v1alpha1.RoleParameters{
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
 				Name:     "Updated Role",
 				GuildID:  guildID,
 				Color:    intPtr(255),
@@ -310,20 +310,20 @@ func TestDelete(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		role        *v1alpha1.Role
+		role        *rolev1alpha1.Role
 		mockSetup   func(*MockDiscordClient)
 		expectError bool
 	}{
 		{
 			name: "successful delete",
-			role: &v1alpha1.Role{
+			role: &rolev1alpha1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: v1alpha1.RoleSpec{
-					ForProvider: v1alpha1.RoleParameters{
+				Spec: rolev1alpha1.RoleSpec{
+					ForProvider: rolev1alpha1.RoleParameters{
 						GuildID: guildID,
 					},
 				},
@@ -339,14 +339,14 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name: "delete non-existent role",
-			role: &v1alpha1.Role{
+			role: &rolev1alpha1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: v1alpha1.RoleSpec{
-					ForProvider: v1alpha1.RoleParameters{
+				Spec: rolev1alpha1.RoleSpec{
+					ForProvider: rolev1alpha1.RoleParameters{
 						GuildID: guildID,
 					},
 				},
@@ -360,9 +360,9 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name: "no external name",
-			role: &v1alpha1.Role{
-				Spec: v1alpha1.RoleSpec{
-					ForProvider: v1alpha1.RoleParameters{
+			role: &rolev1alpha1.Role{
+				Spec: rolev1alpha1.RoleSpec{
+					ForProvider: rolev1alpha1.RoleParameters{
 						GuildID: guildID,
 					},
 				},

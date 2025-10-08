@@ -34,7 +34,7 @@ import (
 	"github.com/rossigee/provider-discord/apis"
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
 	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1beta1"
+	"github.com/rossigee/provider-discord/apis/v1alpha1"
 )
 
 func TestGuildLifecycle(t *testing.T) {
@@ -230,12 +230,12 @@ func TestProviderConfigResourceLifecycle(t *testing.T) {
 	ctx := context.Background()
 
 	// Test ProviderConfig creation
-	providerConfig := &v1beta1.ProviderConfig{
+	providerConfig := &v1alpha1.ProviderConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-provider-config",
 		},
-		Spec: v1beta1.ProviderConfigSpec{
-			Credentials: v1beta1.ProviderCredentials{
+		Spec: v1alpha1.ProviderConfigSpec{
+			Credentials: v1alpha1.ProviderCredentials{
 				Source: xpv1.CredentialsSourceSecret,
 				CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
 					SecretRef: &xpv1.SecretKeySelector{
@@ -256,7 +256,7 @@ func TestProviderConfigResourceLifecycle(t *testing.T) {
 	}
 
 	// Verify it was created
-	var createdProviderConfig v1beta1.ProviderConfig
+	var createdProviderConfig v1alpha1.ProviderConfig
 	if err := fakeClient.Get(ctx, client.ObjectKeyFromObject(providerConfig), &createdProviderConfig); err != nil {
 		t.Fatalf("Failed to get created provider config: %v", err)
 	}

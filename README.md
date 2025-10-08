@@ -38,33 +38,27 @@ An **enterprise-grade** Crossplane provider for managing Discord resources throu
 
 ## Supported Resources
 
-### Core Resources
-
-| Resource | v1alpha1 (Cluster-scoped) | v1beta1 (Namespaced) | Description | Status |
-|----------|---------------------------|----------------------|-------------|---------|
-| Guild | `guild.discord.crossplane.io/v1alpha1` | `guild.discord.m.crossplane.io/v1beta1` | Discord servers with full configuration | ✅ v2-Native |
-| Channel | `channel.discord.crossplane.io/v1alpha1` | `channel.discord.m.crossplane.io/v1beta1` | Text, voice, and category channels | ✅ v2-Native |
-| Role | `role.discord.crossplane.io/v1alpha1` | `role.discord.m.crossplane.io/v1beta1` | Permission management and role hierarchy | ✅ v2-Native |
-| Webhook | `webhook.discord.crossplane.io/v1alpha1` | `webhook.discord.m.crossplane.io/v1beta1` | Automated messaging and CI/CD integration | ✅ v2-Native |
-
-### Additional Resources (v1alpha1 only)
+### Supported Resources
 
 | Resource | API Version | Description | Status |
 |----------|-------------|-------------|---------|
+| Guild | `guild.discord.crossplane.io/v1alpha1` | Discord servers with full configuration | ✅ v2-Native |
+| Channel | `channel.discord.crossplane.io/v1alpha1` | Text, voice, and category channels | ✅ v2-Native |
+| Role | `role.discord.crossplane.io/v1alpha1` | Permission management and role hierarchy | ✅ v2-Native |
+| Webhook | `webhook.discord.crossplane.io/v1alpha1` | Automated messaging and CI/CD integration | ✅ v2-Native |
 | Member | `member.discord.crossplane.io/v1alpha1` | Guild member management and role assignments | ✅ Production Ready |
 | User | `user.discord.crossplane.io/v1alpha1` | User profile management and current user operations | ✅ Production Ready |
 | Application | `application.discord.crossplane.io/v1alpha1` | Discord bot application configuration | ✅ Production Ready |
 | Integration | `integration.discord.crossplane.io/v1alpha1` | Third-party service integrations (Twitch, YouTube, etc.) | ✅ Production Ready |
 | Invite | `invite.discord.crossplane.io/v1alpha1` | Server invitations with expiration control | ✅ Production Ready |
-| ProviderConfig | `discord.crossplane.io/v1beta1` | Provider authentication and configuration | ✅ Production Ready |
+| ProviderConfig | `discord.crossplane.io/v1alpha1` | Provider authentication and configuration | ✅ Production Ready |
 
-### 🎯 Crossplane v2 Support
+### 🎯 Crossplane v2 Native
 
-**Full v2-Native Implementation**:
-- **Dual-Scope Support**: Both cluster-scoped (v1alpha1) and namespaced (v1beta1) resources
-- **Namespace Isolation**: v1beta1 resources provide multi-tenancy with namespace boundaries
-- **Backward Compatibility**: All existing v1alpha1 resources continue working unchanged
-- **Migration Path**: Gradual migration supported - use both APIs simultaneously
+**Fully v2-Native Implementation**:
+- **Modern Architecture**: Built exclusively for Crossplane v2 with runtime configuration
+- **Enterprise Features**: Comprehensive observability, resilience, and security
+- **Production Ready**: Health monitoring, metrics, tracing, and circuit breakers
 
 ## Quick Start
 
@@ -110,7 +104,7 @@ kubectl create secret generic discord-creds \
 
 2. **Create ProviderConfig**:
 ```yaml
-apiVersion: discord.crossplane.io/v1beta1
+apiVersion: discord.crossplane.io/v1alpha1
 kind: ProviderConfig
 metadata:
   name: default
@@ -414,7 +408,7 @@ Distributed tracing with correlation IDs for:
 The provider supports secure authentication through Kubernetes secrets:
 
 ```yaml
-apiVersion: discord.crossplane.io/v1beta1
+apiVersion: discord.crossplane.io/v1alpha1
 kind: ProviderConfig
 metadata:
   name: production

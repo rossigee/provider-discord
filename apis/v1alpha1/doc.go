@@ -14,8 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1beta1 contains the core resources of the Discord provider.
+// Package v1alpha1 contains the core resources of the discord provider.
 // +kubebuilder:object:generate=true
-// +groupName=discord.crossplane.io
-// +versionName=v1beta1
-package v1beta1
+package v1alpha1

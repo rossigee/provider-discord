@@ -16,8 +16,8 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-discord/apis/integration/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1beta1"
+	integrationv1alpha1 "github.com/rossigee/provider-discord/apis/integration/v1alpha1"
+	v1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 )
 
@@ -30,10 +30,10 @@ const (
 
 // Setup adds a controller that reconciles Integration managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(v1alpha1.IntegrationGroupKind)
+	name := managed.ControllerName(integrationv1alpha1.IntegrationGroupKind)
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(v1alpha1.IntegrationGroupVersionKind),
+		resource.ManagedKind(integrationv1alpha1.IntegrationGroupVersionKind),
 		managed.WithExternalConnecter(&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.TrackerFn(func(ctx context.Context, mg resource.Managed) error { return nil }),
@@ -46,7 +46,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
-		For(&v1alpha1.Integration{}).
+		For(&integrationv1alpha1.Integration{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -63,7 +63,7 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*v1alpha1.Integration)
+	_, ok := mg.(*integrationv1alpha1.Integration)
 	if !ok {
 		return nil, errors.New(errNotIntegration)
 	}
@@ -87,7 +87,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.New(errGetPC)
 	}
 
-	pc := &v1beta1.ProviderConfig{}
+	pc := &v1alpha1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: pcRef.Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
@@ -119,7 +119,7 @@ func (e *external) Disconnect(_ context.Context) error {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*v1alpha1.Integration)
+	cr, ok := mg.(*integrationv1alpha1.Integration)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotIntegration)
 	}
@@ -193,7 +193,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	_, ok := mg.(*v1alpha1.Integration)
+	_, ok := mg.(*integrationv1alpha1.Integration)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotIntegration)
 	}
@@ -205,7 +205,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	_, ok := mg.(*v1alpha1.Integration)
+	_, ok := mg.(*integrationv1alpha1.Integration)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotIntegration)
 	}
@@ -216,7 +216,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*v1alpha1.Integration)
+	cr, ok := mg.(*integrationv1alpha1.Integration)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotIntegration)
 	}

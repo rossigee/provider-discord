@@ -58,7 +58,7 @@ metadata:
 
       3. **Configure Provider**:
          ```yaml
-         apiVersion: discord.crossplane.io/v1beta1
+         apiVersion: discord.crossplane.io/v1alpha1
          kind: ProviderConfig
          metadata:
            name: default
@@ -137,28 +137,4 @@ spec:
       - roles
       verbs:
       - "*"
-    # v1beta1 permissions (namespaced resources)
-    - apiGroups:
-      - guild.discord.m.crossplane.io
-      resources:
-      - guilds
-      verbs:
-      - "*"
-    - apiGroups:
-      - channel.discord.m.crossplane.io
-      resources:
-      - channels
-      verbs:
-      - "*"
-    - apiGroups:
-      - role.discord.m.crossplane.io
-      resources:
-      - roles
-      verbs:
-      - "*"
-    - apiGroups:
-      - webhook.discord.m.crossplane.io
-      resources:
-      - webhooks
-      verbs:
-      - "*"
+

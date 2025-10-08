@@ -127,7 +127,7 @@ kubectl create secret generic discord-creds \
 ### Create ProviderConfig
 
 ```yaml
-apiVersion: discord.crossplane.io/v1beta1
+apiVersion: discord.crossplane.io/v1alpha1
 kind: ProviderConfig
 metadata:
   name: default

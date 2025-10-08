@@ -34,7 +34,7 @@ import (
 
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
 	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1beta1"
+	"github.com/rossigee/provider-discord/apis/v1alpha1"
 )
 
 // Helper functions
@@ -194,13 +194,13 @@ func createDiscordSecret(namespace, suffix, token string) *corev1.Secret {
 	}
 }
 
-func createProviderConfig(suffix, secretName, secretNamespace string) *v1beta1.ProviderConfig {
-	return &v1beta1.ProviderConfig{
+func createProviderConfig(suffix, secretName, secretNamespace string) *v1alpha1.ProviderConfig {
+	return &v1alpha1.ProviderConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("provider-config-%s", suffix),
 		},
-		Spec: v1beta1.ProviderConfigSpec{
-			Credentials: v1beta1.ProviderCredentials{
+		Spec: v1alpha1.ProviderConfigSpec{
+			Credentials: v1alpha1.ProviderCredentials{
 				Source: xpv1.CredentialsSourceSecret,
 				CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
 					SecretRef: &xpv1.SecretKeySelector{
@@ -310,7 +310,7 @@ func createTestRoles(namespace, suffix, guildID, providerConfigName string) []*r
 
 func waitForProviderConfigReady(ctx context.Context, k8sClient client.Client, name string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(ctx, 2*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-		var pc v1beta1.ProviderConfig
+		var pc v1alpha1.ProviderConfig
 		err := k8sClient.Get(ctx, types.NamespacedName{Name: name}, &pc)
 		if err != nil {
 			return false, err

@@ -1,3 +1,6 @@
+//go:generate go run sigs.k8s.io/controller-tools/cmd/controller-gen crd:allowDangerousTypes=true paths="./..." output:crd:artifacts:config=../../package/crds object:headerFile=../../hack/boilerplate.go.txt
+//go:generate go run sigs.k8s.io/controller-tools/cmd/controller-gen object:headerFile=../../hack/boilerplate.go.txt paths="./..."
+
 /*
 Copyright 2025 The Crossplane Authors.
 
@@ -14,7 +17,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package v1beta1
+package v1alpha1
 
 import (
 	"reflect"
@@ -26,15 +29,15 @@ import (
 // Package type metadata.
 const (
 	Group   = "discord.crossplane.io"
-	Version = "v1beta1"
+	Version = "v1alpha1"
 )
 
 var (
-	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: Group, Version: Version}
+	// GroupVersion is group version used to register these objects
+	GroupVersion = schema.GroupVersion{Group: Group, Version: Version}
 
 	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = &scheme.Builder{GroupVersion: SchemeGroupVersion}
+	SchemeBuilder = &scheme.Builder{GroupVersion: GroupVersion}
 
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
@@ -44,21 +47,18 @@ var (
 var (
 	ProviderConfigKind             = reflect.TypeOf(ProviderConfig{}).Name()
 	ProviderConfigGroupKind        = schema.GroupKind{Group: Group, Kind: ProviderConfigKind}.String()
-	ProviderConfigKindAPIVersion   = ProviderConfigKind + "." + SchemeGroupVersion.String()
-	ProviderConfigGroupVersionKind = SchemeGroupVersion.WithKind(ProviderConfigKind)
-)
+	ProviderConfigKindAPIVersion   = ProviderConfigKind + "." + GroupVersion.String()
+	ProviderConfigGroupVersionKind = GroupVersion.WithKind(ProviderConfigKind)
 
-// ProviderConfigUsage type metadata.
-var (
 	ProviderConfigUsageKind             = reflect.TypeOf(ProviderConfigUsage{}).Name()
 	ProviderConfigUsageGroupKind        = schema.GroupKind{Group: Group, Kind: ProviderConfigUsageKind}.String()
-	ProviderConfigUsageKindAPIVersion   = ProviderConfigUsageKind + "." + SchemeGroupVersion.String()
-	ProviderConfigUsageGroupVersionKind = SchemeGroupVersion.WithKind(ProviderConfigUsageKind)
+	ProviderConfigUsageKindAPIVersion   = ProviderConfigUsageKind + "." + GroupVersion.String()
+	ProviderConfigUsageGroupVersionKind = GroupVersion.WithKind(ProviderConfigUsageKind)
 
 	ProviderConfigUsageListKind             = reflect.TypeOf(ProviderConfigUsageList{}).Name()
 	ProviderConfigUsageListGroupKind        = schema.GroupKind{Group: Group, Kind: ProviderConfigUsageListKind}.String()
-	ProviderConfigUsageListKindAPIVersion   = ProviderConfigUsageListKind + "." + SchemeGroupVersion.String()
-	ProviderConfigUsageListGroupVersionKind = SchemeGroupVersion.WithKind(ProviderConfigUsageListKind)
+	ProviderConfigUsageListKindAPIVersion   = ProviderConfigUsageListKind + "." + GroupVersion.String()
+	ProviderConfigUsageListGroupVersionKind = GroupVersion.WithKind(ProviderConfigUsageListKind)
 )
 
 func init() {

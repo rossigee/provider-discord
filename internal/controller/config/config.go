@@ -25,23 +25,23 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/providerconfig"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-discord/apis/v1beta1"
+	"github.com/rossigee/provider-discord/apis/v1alpha1"
 )
 
 // Setup adds a controller that reconciles ProviderConfigs.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := providerconfig.ControllerName(v1beta1.ProviderConfigGroupKind)
+	name := providerconfig.ControllerName(v1alpha1.ProviderConfigGroupKind)
 
 	// Debug logging for scheme registration issue
 	o.Logger.Info("Setting up provider config controller",
-		"configGVK", v1beta1.ProviderConfigGroupVersionKind,
-		"usageListGVK", v1beta1.ProviderConfigUsageListGroupVersionKind,
-		"group", v1beta1.Group,
-		"version", v1beta1.Version)
+		"configGVK", v1alpha1.ProviderConfigGroupVersionKind,
+		"usageListGVK", v1alpha1.ProviderConfigUsageListGroupVersionKind,
+		"group", v1alpha1.Group,
+		"version", v1alpha1.Version)
 
 	of := resource.ProviderConfigKinds{
-		Config:    v1beta1.ProviderConfigGroupVersionKind,
-		UsageList: v1beta1.ProviderConfigUsageListGroupVersionKind,
+		Config:    v1alpha1.ProviderConfigGroupVersionKind,
+		UsageList: v1alpha1.ProviderConfigUsageListGroupVersionKind,
 	}
 
 	r := providerconfig.NewReconciler(mgr, of,
@@ -51,7 +51,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
-		For(&v1beta1.ProviderConfig{}).
-		Watches(&v1beta1.ProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{}).
+		For(&v1alpha1.ProviderConfig{}).
+		Watches(&v1alpha1.ProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }

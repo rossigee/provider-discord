@@ -1,21 +1,35 @@
+# Standardized Release Template for Crossplane Providers
+# Version: 2025-09-26 - Updated for Go 1.25.1
+#
+# This template handles ALL publishing for releases
+# - Only runs on version tag creation to avoid conflicts with CI
+# - Builds from source and publishes to primary registry
+# - Creates GitHub release with auto-generated notes
+# - Single source of truth for version and latest tags
+
 name: Release
 
 on:
   push:
     tags:
-      - 'v*'
-
-permissions:
-  contents: write
-  packages: write
-  id-token: write
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to release (e.g., v1.0.0)'
+        required: true
+        type: string
 
 env:
   GO_VERSION: '1.25.1'
 
 jobs:
-  build-and-release:
+  release:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      packages: write
+      id-token: write
 
     steps:
       - name: Checkout
@@ -29,6 +43,20 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
+      - name: Vendor Dependencies
+        run: go mod vendor
+
+      - name: Determine Version
+        id: version
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "Detected version: $VERSION"
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
@@ -39,118 +67,61 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.PAT_TOKEN }}
 
-      - name: Get Version
-        id: version
+      - name: Build and Publish All Artifacts
         run: |
-          VERSION=${GITHUB_REF#refs/tags/}
-          echo "version=${VERSION}" >> $GITHUB_OUTPUT
-          echo "version_no_v=${VERSION#v}" >> $GITHUB_OUTPUT
+          # Use the standardized build system to handle everything
+          export VERSION="${{ steps.version.outputs.version }}"
 
-      - name: Install Crossplane CLI
-        run: |
-          mkdir -p .cache/tools/linux_x86_64
-          curl -fsSLo .cache/tools/linux_x86_64/crossplane-cli-v2.0.2 --create-dirs \
-            https://releases.crossplane.io/stable/v2.0.2/bin/linux_amd64/crank?source=build
-          chmod +x .cache/tools/linux_x86_64/crossplane-cli-v2.0.2
+          echo "Repository: ${{ github.repository }}"
+          echo "Repository owner: ${{ github.repository_owner }}"
+          echo "Version: ${VERSION}"
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
+          # Build and publish using make targets that handle Docker + Crossplane packages
+          make publish REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}" XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}"
 
-      - name: Vendor Dependencies
-        run: make vendor vendor.check
-
-      - name: Build Multi-Platform Binaries and Packages
-        run: |
-          echo "=== Starting generate step ==="
-          make generate
-          echo "=== Generate completed, starting build ==="
-          make build.all
-          echo "=== Build completed successfully ==="
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-
-      - name: Verify Build Artifacts
-        run: |
-          # Verify provider binaries exist for all platforms
-          echo "=== Checking build artifacts ==="
-          ls -la _output/bin/
-
-          # Check amd64 binary
-          if [ ! -f _output/bin/linux_amd64/provider ]; then
-            echo "ERROR: linux_amd64 provider binary not found!"
-            exit 1
-          fi
-          ls -la _output/bin/linux_amd64/provider
-          file _output/bin/linux_amd64/provider
-          echo "✅ linux_amd64 provider binary verified"
-
-          # Check arm64 binary
-          if [ ! -f _output/bin/linux_arm64/provider ]; then
-            echo "ERROR: linux_arm64 provider binary not found!"
-            exit 1
-          fi
-          ls -la _output/bin/linux_arm64/provider
-          file _output/bin/linux_arm64/provider
-          echo "✅ linux_arm64 provider binary verified"
-
-          echo "✅ All platform binaries verification successful"
-
-          # Verify xpkg packages were built for all platforms
-          echo "=== Checking xpkg package artifacts ==="
-          ls -la _output/xpkg/ || echo "No xpkg directory found"
-          find _output -name "*.xpkg" -exec ls -la {} \; || echo "No .xpkg files found"
-
-      - name: Publish Crossplane Packages
-        run: |
-          # Publish versioned package
-          make publish
-          # Publish latest package
-          make publish VERSION=latest
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-          REGISTRY_ORGS: ghcr.io/rossigee
-          XPKG_REG_ORGS: ghcr.io/rossigee
-          BRANCH_NAME: master
-
-      - name: List Build Artifacts
-        run: |
-          echo "=== Build artifacts created ==="
-          find _output -name "*.xpkg" -o -name "provider-discord*" | head -20
-          echo "=== Checking specific package file ==="
-          ls -la _output/xpkg/linux_amd64/provider-discord-${{ steps.version.outputs.version }}.xpkg || \
-            echo "Package file not found"
-
-      - name: Generate Changelog
-        id: changelog
-        run: |
-          # Simple changelog generation
-          PREVIOUS_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
-          if [ -n "$PREVIOUS_TAG" ]; then
-            echo "## Changes since $PREVIOUS_TAG" > changelog.txt
-            git log --oneline $PREVIOUS_TAG..HEAD >> changelog.txt
-          else
-            echo "## Initial Release" > changelog.txt
-            echo "First release of provider-discord for Crossplane" >> changelog.txt
-            echo "" >> changelog.txt
-            echo "### Features" >> changelog.txt
-            echo "- Discord guild (server) management" >> changelog.txt
-            echo "- Channel creation and configuration" >> changelog.txt
-            echo "- Role and permission management" >> changelog.txt
-            echo "- Webhook support for automation" >> changelog.txt
-            echo "- GitOps-ready Discord infrastructure management" >> changelog.txt
-          fi
+          echo "✅ Published to ghcr.io/${{ github.repository_owner }}"
+          echo "🏷️  Tags: ${VERSION}, latest"
 
       - name: Create GitHub Release
-        id: create_release
         uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ steps.version.outputs.version }}
-          body_path: changelog.txt
-          files: |
-            _output/xpkg/linux_amd64/provider-discord-${{ steps.version.outputs.version }}.xpkg
-            _output/xpkg/linux_arm64/provider-discord-${{ steps.version.outputs.version }}.xpkg
           draft: false
           prerelease: false
-          fail_on_unmatched_files: false
+          generate_release_notes: true
+
+# Key Principles for this Template:
+#
+# 1. SINGLE SOURCE OF TRUTH FOR PUBLISHING
+#    - Only this workflow publishes to registries
+#    - CI workflow only validates builds
+#    - Eliminates tag conflicts
+#
+# 2. IDENTICAL VERSION AND LATEST TAGS
+#    - Build image once with version tag
+#    - Tag the SAME image as latest (line 87-88)
+#    - Push both tags (they're identical)
+#    - No separate builds = no image differences
+#
+# 3. STANDARDIZED REGISTRY PUBLISHING
+#    - Primary: ghcr.io/rossigee/provider-{name}
+#    - Version tag: v1.2.3
+#    - Latest tag: latest
+#    - Both Crossplane packages and container images
+#
+# 4. BUILD FROM SOURCE
+#    - Always build from the tagged source
+#    - No dependency on pre-built artifacts
+#    - Ensures reproducible builds
+#
+# 5. PROPER AUTHENTICATION
+#    - Uses PAT_TOKEN for registry authentication
+#    - Proper permissions for package publishing
+#    - GitHub release creation
+#
+# To apply this template:
+# 1. Copy this structure to .github/workflows/release.yml
+# 2. Replace PROVIDER_NAME with actual provider name (e.g., provider-mailgun)
+# 3. Ensure Dockerfile path is correct
+# 4. Test with a version tag (should publish both tags identically)
+# 5. Verify latest and version tags point to same image digest

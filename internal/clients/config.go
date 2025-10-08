@@ -27,7 +27,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
-	"github.com/rossigee/provider-discord/apis/v1beta1"
+	"github.com/rossigee/provider-discord/apis/v1alpha1"
 )
 
 const (
@@ -100,7 +100,7 @@ func GetConfig(ctx context.Context, c client.Client, mg resource.Managed) (*stri
 		return nil, errors.New(errGetProviderConfig)
 	}
 
-	pc := &v1beta1.ProviderConfig{}
+	pc := &v1alpha1.ProviderConfig{}
 	if err := c.Get(ctx, types.NamespacedName{Name: pcRef.Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetProviderConfig)
 	}
