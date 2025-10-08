@@ -62,6 +62,7 @@ type ChannelClient interface {
 	GetChannel(ctx context.Context, channelID string) (*Channel, error)
 	ModifyChannel(ctx context.Context, channelID string, req *ModifyChannelRequest) (*Channel, error)
 	DeleteChannel(ctx context.Context, channelID string) error
+	ListGuildChannels(ctx context.Context, guildID string) ([]Channel, error)
 }
 
 // WebhookClient defines the interface for webhook-related Discord operations
@@ -120,10 +121,10 @@ type IntegrationClient interface {
 
 // DiscordClient is a client for the Discord API
 type DiscordClient struct {
-	httpClient     *http.Client
-	token          string
-	baseURL        string
-	logger         logr.Logger
+	httpClient      *http.Client
+	token           string
+	baseURL         string
+	logger          logr.Logger
 	metricsRecorder *metrics.MetricsRecorder
 }
 
@@ -165,73 +166,73 @@ func NewDiscordClientWithMetrics(token string, metricsRecorder *metrics.MetricsR
 
 // Guild represents a Discord guild
 type Guild struct {
-	ID                          string    `json:"id"`
-	Name                        string    `json:"name"`
-	Icon                        *string   `json:"icon"`
-	IconHash                    *string   `json:"icon_hash"`
-	Splash                      *string   `json:"splash"`
-	DiscoverySplash             *string   `json:"discovery_splash"`
-	Owner                       *bool     `json:"owner,omitempty"`
-	OwnerID                     string    `json:"owner_id"`
-	Permissions                 *string   `json:"permissions,omitempty"`
-	Region                      *string   `json:"region"`
-	AFKChannelID                *string   `json:"afk_channel_id"`
-	AFKTimeout                  int       `json:"afk_timeout"`
-	WidgetEnabled               *bool     `json:"widget_enabled,omitempty"`
-	WidgetChannelID             *string   `json:"widget_channel_id,omitempty"`
-	VerificationLevel           int       `json:"verification_level"`
-	DefaultMessageNotifications int       `json:"default_message_notifications"`
-	ExplicitContentFilter       int       `json:"explicit_content_filter"`
-	Roles                       []Role    `json:"roles,omitempty"`
-	Emojis                      []Emoji   `json:"emojis,omitempty"`
-	Features                    []string  `json:"features"`
-	MFALevel                    int       `json:"mfa_level"`
-	ApplicationID               *string   `json:"application_id"`
-	SystemChannelID             *string   `json:"system_channel_id"`
-	SystemChannelFlags          int       `json:"system_channel_flags"`
-	RulesChannelID              *string   `json:"rules_channel_id"`
-	MaxPresences                *int      `json:"max_presences,omitempty"`
-	MaxMembers                  *int      `json:"max_members,omitempty"`
-	VanityURLCode               *string   `json:"vanity_url_code"`
-	Description                 *string   `json:"description"`
-	Banner                      *string   `json:"banner"`
-	PremiumTier                 int       `json:"premium_tier"`
-	PremiumSubscriptionCount    *int      `json:"premium_subscription_count,omitempty"`
-	PreferredLocale             string    `json:"preferred_locale"`
-	PublicUpdatesChannelID      *string   `json:"public_updates_channel_id"`
-	MaxVideoChannelUsers        *int      `json:"max_video_channel_users,omitempty"`
-	ApproximateMemberCount      *int      `json:"approximate_member_count,omitempty"`
-	ApproximatePresenceCount    *int      `json:"approximate_presence_count,omitempty"`
-	WelcomeScreen               *struct{} `json:"welcome_screen,omitempty"`
-	NSFWLevel                   int       `json:"nsfw_level"`
+	ID                          string     `json:"id"`
+	Name                        string     `json:"name"`
+	Icon                        *string    `json:"icon"`
+	IconHash                    *string    `json:"icon_hash"`
+	Splash                      *string    `json:"splash"`
+	DiscoverySplash             *string    `json:"discovery_splash"`
+	Owner                       *bool      `json:"owner,omitempty"`
+	OwnerID                     string     `json:"owner_id"`
+	Permissions                 *string    `json:"permissions,omitempty"`
+	Region                      *string    `json:"region"`
+	AFKChannelID                *string    `json:"afk_channel_id"`
+	AFKTimeout                  int        `json:"afk_timeout"`
+	WidgetEnabled               *bool      `json:"widget_enabled,omitempty"`
+	WidgetChannelID             *string    `json:"widget_channel_id,omitempty"`
+	VerificationLevel           int        `json:"verification_level"`
+	DefaultMessageNotifications int        `json:"default_message_notifications"`
+	ExplicitContentFilter       int        `json:"explicit_content_filter"`
+	Roles                       []Role     `json:"roles,omitempty"`
+	Emojis                      []Emoji    `json:"emojis,omitempty"`
+	Features                    []string   `json:"features"`
+	MFALevel                    int        `json:"mfa_level"`
+	ApplicationID               *string    `json:"application_id"`
+	SystemChannelID             *string    `json:"system_channel_id"`
+	SystemChannelFlags          int        `json:"system_channel_flags"`
+	RulesChannelID              *string    `json:"rules_channel_id"`
+	MaxPresences                *int       `json:"max_presences,omitempty"`
+	MaxMembers                  *int       `json:"max_members,omitempty"`
+	VanityURLCode               *string    `json:"vanity_url_code"`
+	Description                 *string    `json:"description"`
+	Banner                      *string    `json:"banner"`
+	PremiumTier                 int        `json:"premium_tier"`
+	PremiumSubscriptionCount    *int       `json:"premium_subscription_count,omitempty"`
+	PreferredLocale             string     `json:"preferred_locale"`
+	PublicUpdatesChannelID      *string    `json:"public_updates_channel_id"`
+	MaxVideoChannelUsers        *int       `json:"max_video_channel_users,omitempty"`
+	ApproximateMemberCount      *int       `json:"approximate_member_count,omitempty"`
+	ApproximatePresenceCount    *int       `json:"approximate_presence_count,omitempty"`
+	WelcomeScreen               *struct{}  `json:"welcome_screen,omitempty"`
+	NSFWLevel                   int        `json:"nsfw_level"`
 	Stickers                    []struct{} `json:"stickers,omitempty"`
-	PremiumProgressBarEnabled   bool      `json:"premium_progress_bar_enabled"`
+	PremiumProgressBarEnabled   bool       `json:"premium_progress_bar_enabled"`
 }
 
 // Role represents a Discord role
 type Role struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	Color       int    `json:"color"`
-	Hoist       bool   `json:"hoist"`
-	Icon        string `json:"icon,omitempty"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Color        int    `json:"color"`
+	Hoist        bool   `json:"hoist"`
+	Icon         string `json:"icon,omitempty"`
 	UnicodeEmoji string `json:"unicode_emoji,omitempty"`
-	Position    int    `json:"position"`
-	Permissions string `json:"permissions"`
-	Managed     bool   `json:"managed"`
-	Mentionable bool   `json:"mentionable"`
+	Position     int    `json:"position"`
+	Permissions  string `json:"permissions"`
+	Managed      bool   `json:"managed"`
+	Mentionable  bool   `json:"mentionable"`
 }
 
 // Emoji represents a Discord emoji
 type Emoji struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	Roles         []string `json:"roles,omitempty"`
+	ID            string    `json:"id"`
+	Name          string    `json:"name"`
+	Roles         []string  `json:"roles,omitempty"`
 	User          *struct{} `json:"user,omitempty"`
-	RequireColons bool     `json:"require_colons,omitempty"`
-	Managed       bool     `json:"managed,omitempty"`
-	Animated      bool     `json:"animated,omitempty"`
-	Available     bool     `json:"available,omitempty"`
+	RequireColons bool      `json:"require_colons,omitempty"`
+	Managed       bool      `json:"managed,omitempty"`
+	Animated      bool      `json:"animated,omitempty"`
+	Available     bool      `json:"available,omitempty"`
 }
 
 // CreateGuildRequest represents a request to create a guild
@@ -262,26 +263,26 @@ type Channel struct {
 
 // ModifyGuildRequest represents a request to modify a guild
 type ModifyGuildRequest struct {
-	Name                        *string `json:"name,omitempty"`
-	Region                      *string `json:"region,omitempty"`
-	VerificationLevel           *int    `json:"verification_level,omitempty"`
-	DefaultMessageNotifications *int    `json:"default_message_notifications,omitempty"`
-	ExplicitContentFilter       *int    `json:"explicit_content_filter,omitempty"`
-	AFKChannelID                *string `json:"afk_channel_id,omitempty"`
-	AFKTimeout                  *int    `json:"afk_timeout,omitempty"`
-	Icon                        *string `json:"icon,omitempty"`
-	OwnerID                     *string `json:"owner_id,omitempty"`
-	Splash                      *string `json:"splash,omitempty"`
-	DiscoverySplash             *string `json:"discovery_splash,omitempty"`
-	Banner                      *string `json:"banner,omitempty"`
-	SystemChannelID             *string `json:"system_channel_id,omitempty"`
-	SystemChannelFlags          *int    `json:"system_channel_flags,omitempty"`
-	RulesChannelID              *string `json:"rules_channel_id,omitempty"`
-	PublicUpdatesChannelID      *string `json:"public_updates_channel_id,omitempty"`
-	PreferredLocale             *string `json:"preferred_locale,omitempty"`
+	Name                        *string  `json:"name,omitempty"`
+	Region                      *string  `json:"region,omitempty"`
+	VerificationLevel           *int     `json:"verification_level,omitempty"`
+	DefaultMessageNotifications *int     `json:"default_message_notifications,omitempty"`
+	ExplicitContentFilter       *int     `json:"explicit_content_filter,omitempty"`
+	AFKChannelID                *string  `json:"afk_channel_id,omitempty"`
+	AFKTimeout                  *int     `json:"afk_timeout,omitempty"`
+	Icon                        *string  `json:"icon,omitempty"`
+	OwnerID                     *string  `json:"owner_id,omitempty"`
+	Splash                      *string  `json:"splash,omitempty"`
+	DiscoverySplash             *string  `json:"discovery_splash,omitempty"`
+	Banner                      *string  `json:"banner,omitempty"`
+	SystemChannelID             *string  `json:"system_channel_id,omitempty"`
+	SystemChannelFlags          *int     `json:"system_channel_flags,omitempty"`
+	RulesChannelID              *string  `json:"rules_channel_id,omitempty"`
+	PublicUpdatesChannelID      *string  `json:"public_updates_channel_id,omitempty"`
+	PreferredLocale             *string  `json:"preferred_locale,omitempty"`
 	Features                    []string `json:"features,omitempty"`
-	Description                 *string `json:"description,omitempty"`
-	PremiumProgressBarEnabled   *bool   `json:"premium_progress_bar_enabled,omitempty"`
+	Description                 *string  `json:"description,omitempty"`
+	PremiumProgressBarEnabled   *bool    `json:"premium_progress_bar_enabled,omitempty"`
 }
 
 // makeRequest performs an HTTP request to the Discord API
@@ -546,18 +547,18 @@ type ModifyChannelRequest struct {
 
 // Webhook represents a Discord webhook
 type Webhook struct {
-	ID            string  `json:"id,omitempty"`
-	Type          int     `json:"type,omitempty"`
-	GuildID       string  `json:"guild_id,omitempty"`
-	ChannelID     string  `json:"channel_id,omitempty"`
-	User          *User   `json:"user,omitempty"`
-	Name          string  `json:"name,omitempty"`
-	Avatar        *string `json:"avatar,omitempty"`
-	Token         string  `json:"token,omitempty"`
-	ApplicationID *string `json:"application_id,omitempty"`
-	SourceGuild   *Guild  `json:"source_guild,omitempty"`
+	ID            string   `json:"id,omitempty"`
+	Type          int      `json:"type,omitempty"`
+	GuildID       string   `json:"guild_id,omitempty"`
+	ChannelID     string   `json:"channel_id,omitempty"`
+	User          *User    `json:"user,omitempty"`
+	Name          string   `json:"name,omitempty"`
+	Avatar        *string  `json:"avatar,omitempty"`
+	Token         string   `json:"token,omitempty"`
+	ApplicationID *string  `json:"application_id,omitempty"`
+	SourceGuild   *Guild   `json:"source_guild,omitempty"`
 	SourceChannel *Channel `json:"source_channel,omitempty"`
-	URL           string  `json:"url,omitempty"`
+	URL           string   `json:"url,omitempty"`
 }
 
 // CreateWebhookRequest represents a request to create a webhook
@@ -575,23 +576,23 @@ type ModifyWebhookRequest struct {
 
 // Invite represents a Discord invite
 type Invite struct {
-	Code                     string     `json:"code"`
-	Guild                    *Guild     `json:"guild,omitempty"`
-	Channel                  *Channel   `json:"channel,omitempty"`
-	Inviter                  *User      `json:"inviter,omitempty"`
-	TargetType               *int       `json:"target_type,omitempty"`
-	TargetUser               *User      `json:"target_user,omitempty"`
-	TargetApplication        *Application `json:"target_application,omitempty"`
-	ApproximatePresenceCount *int       `json:"approximate_presence_count,omitempty"`
-	ApproximateMemberCount   *int       `json:"approximate_member_count,omitempty"`
-	ExpiresAt                *string    `json:"expires_at,omitempty"`
-	StageInstance            *StageInstance `json:"stage_instance,omitempty"`
+	Code                     string               `json:"code"`
+	Guild                    *Guild               `json:"guild,omitempty"`
+	Channel                  *Channel             `json:"channel,omitempty"`
+	Inviter                  *User                `json:"inviter,omitempty"`
+	TargetType               *int                 `json:"target_type,omitempty"`
+	TargetUser               *User                `json:"target_user,omitempty"`
+	TargetApplication        *Application         `json:"target_application,omitempty"`
+	ApproximatePresenceCount *int                 `json:"approximate_presence_count,omitempty"`
+	ApproximateMemberCount   *int                 `json:"approximate_member_count,omitempty"`
+	ExpiresAt                *string              `json:"expires_at,omitempty"`
+	StageInstance            *StageInstance       `json:"stage_instance,omitempty"`
 	GuildScheduledEvent      *GuildScheduledEvent `json:"guild_scheduled_event,omitempty"`
-	Uses                     int        `json:"uses"`
-	MaxUses                  int        `json:"max_uses"`
-	MaxAge                   int        `json:"max_age"`
-	Temporary                bool       `json:"temporary"`
-	CreatedAt                string     `json:"created_at"`
+	Uses                     int                  `json:"uses"`
+	MaxUses                  int                  `json:"max_uses"`
+	MaxAge                   int                  `json:"max_age"`
+	Temporary                bool                 `json:"temporary"`
+	CreatedAt                string               `json:"created_at"`
 }
 
 // CreateInviteRequest represents a request to create an invite
@@ -621,11 +622,11 @@ type SearchGuildMembersRequest struct {
 
 // AddGuildMemberRequest represents a request to add a guild member
 type AddGuildMemberRequest struct {
-	AccessToken string    `json:"access_token"`
-	Nick        *string   `json:"nick,omitempty"`
-	Roles       []string  `json:"roles,omitempty"`
-	Mute        *bool     `json:"mute,omitempty"`
-	Deaf        *bool     `json:"deaf,omitempty"`
+	AccessToken string   `json:"access_token"`
+	Nick        *string  `json:"nick,omitempty"`
+	Roles       []string `json:"roles,omitempty"`
+	Mute        *bool    `json:"mute,omitempty"`
+	Deaf        *bool    `json:"deaf,omitempty"`
 }
 
 // ModifyGuildMemberRequest represents a request to modify a guild member
@@ -665,24 +666,24 @@ type GetCurrentUserGuildsRequest struct {
 
 // ModifyCurrentApplicationRequest represents a request to modify the current application
 type ModifyCurrentApplicationRequest struct {
-	Name                  *string  `json:"name,omitempty"`
-	Description           *string  `json:"description,omitempty"`
-	Icon                  *string  `json:"icon,omitempty"`
-	CoverImage            *string  `json:"cover_image,omitempty"`
-	RPCOrigins            []string `json:"rpc_origins,omitempty"`
-	BotPublic             *bool    `json:"bot_public,omitempty"`
-	BotRequireCodeGrant   *bool    `json:"bot_require_code_grant,omitempty"`
-	TermsOfServiceURL     *string  `json:"terms_of_service_url,omitempty"`
-	PrivacyPolicyURL      *string  `json:"privacy_policy_url,omitempty"`
-	CustomInstallURL      *string  `json:"custom_install_url,omitempty"`
-	Tags                  []string `json:"tags,omitempty"`
+	Name                *string  `json:"name,omitempty"`
+	Description         *string  `json:"description,omitempty"`
+	Icon                *string  `json:"icon,omitempty"`
+	CoverImage          *string  `json:"cover_image,omitempty"`
+	RPCOrigins          []string `json:"rpc_origins,omitempty"`
+	BotPublic           *bool    `json:"bot_public,omitempty"`
+	BotRequireCodeGrant *bool    `json:"bot_require_code_grant,omitempty"`
+	TermsOfServiceURL   *string  `json:"terms_of_service_url,omitempty"`
+	PrivacyPolicyURL    *string  `json:"privacy_policy_url,omitempty"`
+	CustomInstallURL    *string  `json:"custom_install_url,omitempty"`
+	Tags                []string `json:"tags,omitempty"`
 }
 
 // User represents a Discord user (basic fields for webhook/invite context)
 type User struct {
-	ID            string `json:"id"`
-	Username      string `json:"username"`
-	Discriminator string `json:"discriminator"`
+	ID            string  `json:"id"`
+	Username      string  `json:"username"`
+	Discriminator string  `json:"discriminator"`
 	Avatar        *string `json:"avatar"`
 }
 
@@ -785,12 +786,12 @@ type Application struct {
 
 // StageInstance represents a Discord stage instance (basic fields for invite context)
 type StageInstance struct {
-	ID                    string `json:"id"`
-	GuildID               string `json:"guild_id"`
-	ChannelID             string `json:"channel_id"`
-	Topic                 string `json:"topic"`
-	PrivacyLevel          int    `json:"privacy_level"`
-	DiscoverableDisabled  bool   `json:"discoverable_disabled"`
+	ID                    string  `json:"id"`
+	GuildID               string  `json:"guild_id"`
+	ChannelID             string  `json:"channel_id"`
+	Topic                 string  `json:"topic"`
+	PrivacyLevel          int     `json:"privacy_level"`
+	DiscoverableDisabled  bool    `json:"discoverable_disabled"`
 	GuildScheduledEventID *string `json:"guild_scheduled_event_id"`
 }
 
@@ -867,6 +868,22 @@ func (c *DiscordClient) DeleteChannel(ctx context.Context, channelID string) err
 	defer func() { _ = resp.Body.Close() }()
 
 	return nil
+}
+
+// ListGuildChannels lists all channels in a guild
+func (c *DiscordClient) ListGuildChannels(ctx context.Context, guildID string) ([]Channel, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/guilds/"+guildID+"/channels", nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list guild channels")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var channels []Channel
+	if err := json.NewDecoder(resp.Body).Decode(&channels); err != nil {
+		return nil, errors.Wrap(err, "failed to decode guild channels response")
+	}
+
+	return channels, nil
 }
 
 // Webhook methods

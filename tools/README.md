@@ -219,3 +219,172 @@ This tool provides comprehensive Discord infrastructure introspection:
 3. **Infrastructure Migration**: Import existing Discord servers into Crossplane management
 
 The introspection tool enables seamless migration of existing Discord infrastructure to GitOps-managed workflows.
+
+# Discord Channel Deduplication Tool
+
+A safe tool for analyzing and removing duplicate channels created by the previous bug in provider-discord.
+
+## Features
+
+### ✅ Duplicate Analysis
+- **Identify Duplicates**: Finds channels with identical names in the same guild
+- **Safe Planning**: Generates detailed reports before any deletions
+- **Preserve History**: Keeps the oldest channel (by position) with all message history
+- **Dry Run Mode**: Analyze without making any changes
+
+### ✅ Safe Deletion Strategy
+- **Position-Based**: Keeps channel with lowest position (oldest/highest priority)
+- **Confirmation Required**: Must explicitly enable `--confirm` to perform deletions
+- **Detailed Logging**: Shows exactly what will be deleted
+- **Backup Planning**: Generates migration reports for review
+
+## Usage
+
+### Analyze Duplicates (Safe)
+
+```bash
+# Set your Discord bot token
+export DISCORD_BOT_TOKEN=your_bot_token_here
+
+# Analyze all guilds for duplicates (dry run by default)
+go run tools/discord-channel-dedupe.go
+
+# Analyze a specific guild
+go run tools/discord-channel-dedupe.go -guild="123456789012345678"
+
+# Save analysis to file
+go run tools/discord-channel-dedupe.go -guild="123456789012345678" -output="dedupe-plan.md"
+```
+
+### Perform Deletions (Dangerous)
+
+```bash
+# ⚠️  WARNING: This will actually delete channels!
+
+# Perform actual deletions after review
+go run tools/discord-channel-dedupe.go -guild="123456789012345678" -confirm
+
+# Or use the compiled binary
+./discord-channel-dedupe -guild="123456789012345678" -confirm
+```
+
+### CLI Flags
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-guild` | "" | Specific guild ID to analyze (required for deletions) |
+| `-dry-run` | true | Dry run mode - analyze only, don't delete |
+| `-confirm` | false | Actually perform deletions (DANGER - requires review) |
+| `-output` | "" | Output file for deletion plan (optional) |
+
+## Safety Features
+
+### 🛡️ Multiple Safeguards
+1. **Dry Run Default**: All analysis is safe by default
+2. **Explicit Confirmation**: Must use `--confirm` to delete anything
+3. **Detailed Reports**: Shows exactly what will be kept vs deleted
+4. **Position Priority**: Keeps oldest channel with message history
+5. **Guild-Specific**: Only affects specified guild
+
+### 📋 Deletion Strategy
+- **Keep Oldest**: Preserves channel with lowest position number
+- **Preserve History**: Maintains all messages, permissions, and settings
+- **Clean References**: Removes duplicate Crossplane resources
+- **Audit Trail**: Logs all deletions for rollback if needed
+
+## Example Output
+
+```
+🔍 Analyzing guild: My Server (123456789012345678)
+  Found 25 total channels
+  ⚠️  Found 3 duplicate channel groups with 6 total duplicate channels
+
+## Duplicate Group: 'general'
+# Found 2 channels with this name
+
+- KEEP ✅ (oldest position) Channel ID: 987654321098765432, Position: 0, Type: text
+- DELETE ❌ Channel ID: 876543210987654321, Position: 5, Type: text
+
+## Duplicate Group: 'development'
+# Found 3 channels with this name
+
+- KEEP ✅ (oldest position) Channel ID: 765432109876543210, Position: 1, Type: category
+- DELETE ❌ Channel ID: 654321098765432109, Position: 3, Type: category
+- DELETE ❌ Channel ID: 543210987654321098, Position: 7, Type: category
+```
+
+## Migration Steps
+
+### Phase 1: Analysis (Safe)
+```bash
+# 1. Analyze your Discord server
+go run tools/discord-channel-dedupe.go -guild="YOUR_GUILD_ID" -output="dedupe-plan.md"
+
+# 2. Review the plan carefully
+cat dedupe-plan.md
+
+# 3. Verify no important channels will be deleted
+```
+
+### Phase 2: Backup (Recommended)
+```bash
+# Backup important channel data if needed
+# Note: Discord channels contain message history that cannot be recovered
+```
+
+### Phase 3: Execute (Careful)
+```bash
+# Execute the deduplication
+go run tools/discord-channel-dedupe.go -guild="YOUR_GUILD_ID" -confirm
+
+# Verify results
+go run tools/discord-channel-dedupe.go -guild="YOUR_GUILD_ID"
+```
+
+## Recovery
+
+### If Wrong Channels Deleted
+1. **Check Audit Log**: Discord keeps logs of deleted channels
+2. **Recreate Manually**: Use Discord UI to recreate important channels
+3. **Update Crossplane**: Remove duplicate resources from your manifests
+
+### Crossplane Resource Cleanup
+After channel deletion, remove duplicate Crossplane resources:
+
+```bash
+# Find resources pointing to deleted channels
+kubectl get channels -o wide
+
+# Delete Crossplane resources for deleted channels
+kubectl delete channel duplicate-channel-name
+```
+
+## Bot Permissions Required
+
+Your Discord bot needs these permissions for deduplication:
+- **View Channels**: To analyze channel structure
+- **Manage Channels**: To delete duplicate channels
+- **Read Message History**: To understand channel usage (optional)
+
+## Integration with Provider Fix
+
+This tool is designed to work with the provider-discord v0.5.5+ fix that prevents future duplicates:
+
+1. **Run this tool** to clean up existing duplicates
+2. **Deploy provider-discord v0.5.5+** to prevent new duplicates
+3. **Monitor** for any remaining issues
+
+## Technical Details
+
+### Position-Based Selection
+Discord channels have position numbers that determine display order. Lower position = higher in the list = older/more important. The tool keeps the channel with the lowest position number to preserve history and importance.
+
+### Duplicate Detection
+- Groups channels by exact name match (case-sensitive)
+- Ignores system channels (@everyone, etc.)
+- Considers all channel types (text, voice, category, etc.)
+
+### Error Handling
+- Safe failure: Stops on first API error
+- Detailed logging: Shows progress and errors
+- Rollback hints: Provides recovery guidance

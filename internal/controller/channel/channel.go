@@ -23,9 +23,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
@@ -40,7 +40,7 @@ import (
 )
 
 const (
-	errNotChannel = "managed resource is not a Channel custom resource"
+	errNotChannel   = "managed resource is not a Channel custom resource"
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
@@ -57,6 +57,64 @@ func isValidDiscordID(id string) bool {
 	// Debug logging to understand validation behavior
 	fmt.Printf("DEBUG: Validating ID '%s' - isValid: %t\n", id, isValid)
 	return isValid
+}
+
+// checkChannelExistsByName checks if a channel with the same name already exists in the guild
+func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1alpha1.Channel) (managed.ExternalObservation, error) {
+	fmt.Printf("DEBUG: Checking if channel '%s' exists in guild '%s'\n", cr.Spec.ForProvider.Name, cr.Spec.ForProvider.GuildID)
+
+	// List all channels in the guild
+	channels, err := c.service.ListGuildChannels(ctx, cr.Spec.ForProvider.GuildID)
+	if err != nil {
+		fmt.Printf("DEBUG: Failed to list guild channels: %v\n", err)
+		// If we can't list channels, assume it doesn't exist to allow creation
+		return managed.ExternalObservation{
+			ResourceExists: false,
+		}, nil
+	}
+
+	// Check if any existing channel has the same name
+	for _, channel := range channels {
+		if channel.Name == cr.Spec.ForProvider.Name {
+			fmt.Printf("DEBUG: Found existing channel '%s' with ID '%s' - setting external name\n", channel.Name, channel.ID)
+
+			// Set the external name to the existing channel's ID
+			meta.SetExternalName(cr, channel.ID)
+
+			// Update status with observed values
+			now := &metav1.Time{Time: time.Now()}
+			cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
+				ID:        channel.ID,
+				Name:      channel.Name,
+				Type:      channel.Type,
+				GuildID:   channel.GuildID,
+				Position:  channel.Position,
+				ParentID:  channel.ParentID,
+				UpdatedAt: now,
+			}
+
+			// Check if we need to update
+			needsUpdate := cr.Spec.ForProvider.Name != channel.Name
+			if cr.Spec.ForProvider.Position != nil && *cr.Spec.ForProvider.Position != channel.Position {
+				needsUpdate = true
+			}
+			if cr.Spec.ForProvider.ParentID != nil && *cr.Spec.ForProvider.ParentID != channel.ParentID {
+				needsUpdate = true
+			}
+
+			return managed.ExternalObservation{
+				ResourceExists:   true,
+				ResourceUpToDate: !needsUpdate,
+			}, nil
+		}
+	}
+
+	fmt.Printf("DEBUG: Channel '%s' does not exist in guild - will create new channel\n", cr.Spec.ForProvider.Name)
+
+	// Channel doesn't exist, needs to be created
+	return managed.ExternalObservation{
+		ResourceExists: false,
+	}, nil
 }
 
 // Setup adds a controller that reconciles Channel managed resources.
@@ -136,22 +194,18 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// DEBUG: Always log what we're checking
 	fmt.Printf("OBSERVE DEBUG: External name='%s', Channel name='%s'\n", externalName, cr.Spec.ForProvider.Name)
 
-	// If external-name is empty or not a valid Discord ID, this is a new resource to be created
+	// If external-name is empty or not a valid Discord ID, check if channel exists by name
 	// Crossplane runtime defaults external-name to metadata.name for new resources
 	if externalName == "" {
-		fmt.Printf("OBSERVE DEBUG: External name is empty - returning ResourceExists=false\n")
-		return managed.ExternalObservation{
-			ResourceExists: false,
-		}, nil
+		fmt.Printf("OBSERVE DEBUG: External name is empty - checking for existing channel by name\n")
+		return c.checkChannelExistsByName(ctx, cr)
 	}
 
 	// Check if external-name is a valid Discord snowflake ID (18-19 digits)
 	if !isValidDiscordID(externalName) {
-		// Force creation for non-snowflake external names
-		fmt.Printf("OBSERVE DEBUG: External name '%s' is not valid snowflake - returning ResourceExists=false\n", externalName)
-		return managed.ExternalObservation{
-			ResourceExists: false,
-		}, nil
+		// For non-snowflake external names, check if channel exists by name
+		fmt.Printf("OBSERVE DEBUG: External name '%s' is not valid snowflake - checking for existing channel by name\n", externalName)
+		return c.checkChannelExistsByName(ctx, cr)
 	}
 
 	fmt.Printf("OBSERVE DEBUG: External name '%s' is valid snowflake - calling GetChannel\n", externalName)
@@ -175,23 +229,23 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// Update status with observed values
 	now := &metav1.Time{Time: time.Now()}
 	cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
-			ID:       channel.ID,
-			Name:     channel.Name,
-			Type:     channel.Type,
-			GuildID:  channel.GuildID,
-			Position: channel.Position,
-			ParentID: channel.ParentID,
-			UpdatedAt: now,
-		}
+		ID:        channel.ID,
+		Name:      channel.Name,
+		Type:      channel.Type,
+		GuildID:   channel.GuildID,
+		Position:  channel.Position,
+		ParentID:  channel.ParentID,
+		UpdatedAt: now,
+	}
 
-		// Check if we need to update
-		needsUpdate := cr.Spec.ForProvider.Name != channel.Name
-		if cr.Spec.ForProvider.Position != nil && *cr.Spec.ForProvider.Position != channel.Position {
-			needsUpdate = true
-		}
-		if cr.Spec.ForProvider.ParentID != nil && *cr.Spec.ForProvider.ParentID != channel.ParentID {
-			needsUpdate = true
-		}
+	// Check if we need to update
+	needsUpdate := cr.Spec.ForProvider.Name != channel.Name
+	if cr.Spec.ForProvider.Position != nil && *cr.Spec.ForProvider.Position != channel.Position {
+		needsUpdate = true
+	}
+	if cr.Spec.ForProvider.ParentID != nil && *cr.Spec.ForProvider.ParentID != channel.ParentID {
+		needsUpdate = true
+	}
 
 	return managed.ExternalObservation{
 		ResourceExists:   true,

@@ -34,10 +34,11 @@ import (
 
 // MockChannelClient implements a mock Discord client for testing
 type MockChannelClient struct {
-	CreateChannelFunc func(ctx context.Context, req *discordclient.CreateChannelRequest) (*discordclient.Channel, error)
-	GetChannelFunc    func(ctx context.Context, channelID string) (*discordclient.Channel, error)
-	ModifyChannelFunc func(ctx context.Context, channelID string, req *discordclient.ModifyChannelRequest) (*discordclient.Channel, error)
-	DeleteChannelFunc func(ctx context.Context, channelID string) error
+	CreateChannelFunc     func(ctx context.Context, req *discordclient.CreateChannelRequest) (*discordclient.Channel, error)
+	GetChannelFunc        func(ctx context.Context, channelID string) (*discordclient.Channel, error)
+	ModifyChannelFunc     func(ctx context.Context, channelID string, req *discordclient.ModifyChannelRequest) (*discordclient.Channel, error)
+	DeleteChannelFunc     func(ctx context.Context, channelID string) error
+	ListGuildChannelsFunc func(ctx context.Context, guildID string) ([]discordclient.Channel, error)
 }
 
 // Ensure MockChannelClient implements ChannelClient interface
@@ -71,18 +72,25 @@ func (m *MockChannelClient) DeleteChannel(ctx context.Context, channelID string)
 	return errors.New("not implemented")
 }
 
+func (m *MockChannelClient) ListGuildChannels(ctx context.Context, guildID string) ([]discordclient.Channel, error) {
+	if m.ListGuildChannelsFunc != nil {
+		return m.ListGuildChannelsFunc(ctx, guildID)
+	}
+	return nil, errors.New("not implemented")
+}
+
 func TestObserve(t *testing.T) {
 	ctx := context.Background()
-	guildID := "123456789012345678"  // Valid Discord snowflake ID (18 digits)
+	guildID := "123456789012345678"   // Valid Discord snowflake ID (18 digits)
 	channelID := "987654321098765432" // Valid Discord snowflake ID (18 digits)
 
 	tests := []struct {
-		name                string
-		channel             *channelv1alpha1.Channel
-		mockSetup           func(*MockChannelClient)
-		expectedExists      bool
-		expectedUpToDate    bool
-		expectError         bool
+		name             string
+		channel          *channelv1alpha1.Channel
+		mockSetup        func(*MockChannelClient)
+		expectedExists   bool
+		expectedUpToDate bool
+		expectError      bool
 	}{
 		{
 			name: "channel exists and up to date",
@@ -170,7 +178,7 @@ func TestObserve(t *testing.T) {
 			expectError:      false,
 		},
 		{
-			name: "no external name set",
+			name: "no external name set - channel does not exist",
 			channel: &channelv1alpha1.Channel{
 				Spec: channelv1alpha1.ChannelSpec{
 					ForProvider: channelv1alpha1.ChannelParameters{
@@ -181,14 +189,16 @@ func TestObserve(t *testing.T) {
 				},
 			},
 			mockSetup: func(m *MockChannelClient) {
-				// No setup needed for this test
+				m.ListGuildChannelsFunc = func(ctx context.Context, guildID string) ([]discordclient.Channel, error) {
+					return []discordclient.Channel{}, nil // No channels exist
+				}
 			},
 			expectedExists:   false,
 			expectedUpToDate: false,
 			expectError:      false,
 		},
 		{
-			name: "invalid external name (not Discord ID)",
+			name: "invalid external name (not Discord ID) - channel does not exist",
 			channel: &channelv1alpha1.Channel{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-resource-name",
@@ -205,10 +215,39 @@ func TestObserve(t *testing.T) {
 				},
 			},
 			mockSetup: func(m *MockChannelClient) {
-				// No setup needed - should not call GetChannel for invalid IDs
+				m.ListGuildChannelsFunc = func(ctx context.Context, guildID string) ([]discordclient.Channel, error) {
+					return []discordclient.Channel{}, nil // No channels exist
+				}
 			},
 			expectedExists:   false,
 			expectedUpToDate: false,
+			expectError:      false,
+		},
+		{
+			name: "channel exists by name (no external name set)",
+			channel: &channelv1alpha1.Channel{
+				Spec: channelv1alpha1.ChannelSpec{
+					ForProvider: channelv1alpha1.ChannelParameters{
+						Name:    "existing-channel",
+						Type:    0,
+						GuildID: guildID,
+					},
+				},
+			},
+			mockSetup: func(m *MockChannelClient) {
+				m.ListGuildChannelsFunc = func(ctx context.Context, guildID string) ([]discordclient.Channel, error) {
+					return []discordclient.Channel{
+						{
+							ID:      channelID,
+							Name:    "existing-channel",
+							Type:    0,
+							GuildID: guildID,
+						},
+					}, nil
+				}
+			},
+			expectedExists:   true,
+			expectedUpToDate: true,
 			expectError:      false,
 		},
 	}
@@ -234,7 +273,7 @@ func TestObserve(t *testing.T) {
 
 func TestCreate(t *testing.T) {
 	ctx := context.Background()
-	guildID := "123456789012345678"  // Valid Discord snowflake ID
+	guildID := "123456789012345678"   // Valid Discord snowflake ID
 	channelID := "987654321098765432" // Valid Discord snowflake ID
 
 	mockClient := &MockChannelClient{
@@ -267,7 +306,7 @@ func TestCreate(t *testing.T) {
 
 func TestUpdate(t *testing.T) {
 	ctx := context.Background()
-	guildID := "123456789012345678"  // Valid Discord snowflake ID
+	guildID := "123456789012345678"   // Valid Discord snowflake ID
 	channelID := "987654321098765432" // Valid Discord snowflake ID
 
 	mockClient := &MockChannelClient{
