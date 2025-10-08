@@ -504,16 +504,16 @@ func verifyAllResourcesReady(ctx context.Context, t *testing.T, k8sClient client
 // Helper function to check if a string contains a substring
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) && s[len(s)-len(substr):] == substr ||
-		   len(s) > len(substr) && s[:len(substr)] == substr ||
-		   (len(s) > len(substr) && len(substr) > 0 &&
-		    func() bool {
-		    	for i := 0; i <= len(s)-len(substr); i++ {
-		    		if s[i:i+len(substr)] == substr {
-		    			return true
-		    		}
-		    	}
-		    	return false
-		    }())
+		len(s) > len(substr) && s[:len(substr)] == substr ||
+		(len(s) > len(substr) && len(substr) > 0 &&
+			func() bool {
+				for i := 0; i <= len(s)-len(substr); i++ {
+					if s[i:i+len(substr)] == substr {
+						return true
+					}
+				}
+				return false
+			}())
 }
 
 // getKubernetesClient returns a Kubernetes client

@@ -33,7 +33,7 @@ import (
 const (
 	errNoProviderConfig     = "no providerConfigRef provided"
 	errGetProviderConfig    = "cannot get referenced ProviderConfig"
-	errTrackUsage          = "cannot track ProviderConfig usage"
+	errTrackUsage           = "cannot track ProviderConfig usage"
 	errExtractCredentials   = "cannot extract credentials"
 	errUnmarshalCredentials = "cannot unmarshal credentials"
 )

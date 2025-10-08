@@ -94,8 +94,8 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 
 	// Extract credentials from the provider config
 	credentials := discordclient.ProviderCredentials{
-		Source:                      discordclient.CredentialsSourceSecret,
-		CommonCredentialSelectors:   pc.Spec.Credentials.CommonCredentialSelectors,
+		Source:                    discordclient.CredentialsSourceSecret,
+		CommonCredentialSelectors: pc.Spec.Credentials.CommonCredentialSelectors,
 	}
 	token, err := credentials.Extract(ctx, c.kube)
 	if err != nil {
@@ -153,7 +153,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	// Update status - populate user information
 	if member.User != nil {
-cr.Status.AtProvider.User = &memberv1alpha1.DiscordUser{
+		cr.Status.AtProvider.User = &memberv1alpha1.DiscordUser{
 			ID:            member.User.ID,
 			Username:      member.User.Username,
 			Discriminator: member.User.Discriminator,

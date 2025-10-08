@@ -94,8 +94,8 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 
 	// Extract credentials from the provider config
 	credentials := discordclient.ProviderCredentials{
-		Source:                      discordclient.CredentialsSourceSecret,
-		CommonCredentialSelectors:   pc.Spec.Credentials.CommonCredentialSelectors,
+		Source:                    discordclient.CredentialsSourceSecret,
+		CommonCredentialSelectors: pc.Spec.Credentials.CommonCredentialSelectors,
 	}
 	token, err := credentials.Extract(ctx, c.kube)
 	if err != nil {

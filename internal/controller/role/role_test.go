@@ -27,8 +27,8 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
-	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
 	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 )
 
@@ -77,12 +77,12 @@ func TestObserve(t *testing.T) {
 	roleID := "987654321"
 
 	tests := []struct {
-		name           string
-		role           *rolev1alpha1.Role
-		mockSetup      func(*MockDiscordClient)
-		expectedExists bool
+		name             string
+		role             *rolev1alpha1.Role
+		mockSetup        func(*MockDiscordClient)
+		expectedExists   bool
 		expectedUpToDate bool
-		expectError    bool
+		expectError      bool
 	}{
 		{
 			name: "role exists and up to date",
