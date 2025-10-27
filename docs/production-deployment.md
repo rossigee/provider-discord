@@ -69,7 +69,7 @@ kubectl apply -f https://raw.githubusercontent.com/rossigee/provider-discord/mas
 
 ```bash
 # Install provider
-kubectl apply -f https://github.com/rossigee/provider-discord/releases/latest/download/provider.yaml
+kubectl apply -f https://github.com/rossigee/provider-discord/releases/download/v0.8.0/provider.yaml
 
 # Apply production configuration
 kubectl apply -f - <<EOF
@@ -78,7 +78,7 @@ kind: Provider
 metadata:
   name: provider-discord
 spec:
-  package: ghcr.io/rossigee/provider-discord:latest
+  package: ghcr.io/rossigee/provider-discord:v0.8.0
   packagePullPolicy: IfNotPresent
   revisionActivationPolicy: Automatic
   revisionHistoryLimit: 3
