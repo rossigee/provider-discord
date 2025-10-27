@@ -3,7 +3,7 @@ kind: Provider
 metadata:
   name: provider-discord
 spec:
-  package: ghcr.io/rossigee/provider-discord:v0.3.3
+  package: ghcr.io/rossigee/provider-discord:v0.8.0
   revisionActivationPolicy: Automatic
   revisionHistoryLimit: 1
   runtimeConfigRef:

@@ -439,11 +439,6 @@ func sanitizeName(name string) string {
 
 func generateWebhookCR(webhook Webhook, guildName string, discoveryMode bool) string {
 	comment := ""
-	if !checkProviderSupport("webhooks") && discoveryMode {
-		comment = `# NOTE: Webhooks require provider-discord v0.4.0+
-# This manifest is ready for deployment
-# `
-	}
 
 	return fmt.Sprintf(`%sapiVersion: webhook.discord.crossplane.io/v1alpha1
 kind: Webhook
@@ -466,11 +461,6 @@ spec:
 
 func generateInviteCR(invite Invite, guildName string, discoveryMode bool) string {
 	comment := ""
-	if !checkProviderSupport("invites") && discoveryMode {
-		comment = `# NOTE: Invites require provider-discord v0.4.0+
-# This manifest is ready for deployment
-# `
-	}
 
 	channelName := "unknown-channel"
 	channelID := ""

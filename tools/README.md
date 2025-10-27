@@ -368,10 +368,10 @@ Your Discord bot needs these permissions for deduplication:
 
 ## Integration with Provider Fix
 
-This tool is designed to work with the provider-discord v0.5.5+ fix that prevents future duplicates:
+This tool is designed to work with the provider-discord v0.8.0+ fix that prevents future duplicates:
 
 1. **Run this tool** to clean up existing duplicates
-2. **Deploy provider-discord v0.5.5+** to prevent new duplicates
+2. **Deploy provider-discord v0.8.0+** to prevent new duplicates
 3. **Monitor** for any remaining issues
 
 ## Technical Details
