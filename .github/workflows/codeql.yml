@@ -1,16 +1,19 @@
-# Standardized Security Template for Crossplane Providers
-# Version: 2025-09-26
+# Standardized CodeQL Security Scanning for Crossplane Providers
+# Version: 2025-10-29 - Combined from template codeql.yml and security.yml
 #
-# This template provides MANUAL/ON-DEMAND security scanning ONLY
-# - NO scheduled scans to eliminate daily email spam
-# - Manual workflow_dispatch trigger for security audits
-# - Comprehensive security analysis when needed
-# - Can be triggered manually or by other workflows
+# This template provides automated CodeQL security scanning
+# - Triggers on pushes/PRs to master/release-* (with no-op detection)
+# - Includes comprehensive security analysis (CodeQL + additional scans)
+# - Results uploaded to GitHub Security tab
+# - No scheduled scans to avoid email spam
 
-name: Security Scanning
+name: CodeQL Security Scanning
 
 on:
-  # IMPORTANT: No schedule trigger to avoid daily email spam
+  push:
+    branches:
+      - master
+      - release-*
   workflow_dispatch:
     inputs:
       scan_type:
@@ -40,9 +43,24 @@ env:
   GO_VERSION: '1.25.3'
 
 jobs:
+  detect-noop:
+    runs-on: ubuntu-24.04
+    outputs:
+      noop: ${{ steps.noop.outputs.should_skip }}
+    steps:
+      - name: Detect No-op Changes
+        id: noop
+        uses: fkirc/skip-duplicate-actions@v5.3.0
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          paths_ignore: '["**.md", "**.png", "**.jpg"]'
+          do_not_skip: '["workflow_dispatch", "schedule", "push"]'
+
   security-analysis:
     name: Security Analysis
     runs-on: ubuntu-24.04
+    needs: detect-noop
+    if: needs.detect-noop.outputs.noop != 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -116,7 +134,8 @@ jobs:
   supply-chain-scan:
     name: Supply Chain Security
     runs-on: ubuntu-24.04
-    if: github.event.inputs.scan_type == 'comprehensive' || github.event.inputs.scan_type == 'dependencies' || github.event.inputs.scan_type == ''
+    needs: detect-noop
+    if: needs.detect-noop.outputs.noop != 'true' && (github.event.inputs.scan_type == 'comprehensive' || github.event.inputs.scan_type == 'dependencies' || github.event.inputs.scan_type == '')
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -168,17 +187,12 @@ jobs:
 
 # Key Principles for this Template:
 #
-# 1. NO SCHEDULED SCANS
-#    - Eliminates daily email spam from cron triggers
-#    - Only runs when manually triggered via workflow_dispatch
-#    - Can be triggered by other workflows if needed
+# 1. AUTOMATED WITH NO-OP DETECTION
+#    - Triggers on pushes/PRs but skips on non-code changes
+#    - Manual trigger available for custom scans
+#    - No scheduled scans to avoid email spam
 #
-# 2. ON-DEMAND FLEXIBILITY
-#    - Configurable scan types (comprehensive, vulnerabilities, secrets, dependencies)
-#    - Optional notification control
-#    - Manual trigger with custom parameters
-#
-# 3. COMPREHENSIVE SECURITY COVERAGE
+# 2. COMPREHENSIVE SECURITY COVERAGE
 #    - CodeQL static analysis for Go code
 #    - Go vulnerability scanning (govulncheck)
 #    - Security scanning (gosec)
@@ -186,24 +200,19 @@ jobs:
 #    - Supply chain security (OSV scanner)
 #    - Dependency review with license checking
 #
+# 3. FLEXIBLE SCAN TYPES
+#    - Comprehensive (all scans)
+#    - Vulnerabilities (govulncheck + gosec)
+#    - Secrets (trufflehog)
+#    - Dependencies (OSV + dependency review)
+#
 # 4. PROPER RESULTS HANDLING
 #    - SARIF format uploads for GitHub Security tab
 #    - Proper error handling and continue-on-error for scans
 #    - Clear notifications when enabled
 #
-# 5. INTELLIGENT EXECUTION
-#    - Conditional job execution based on scan type
-#    - Parallel execution of security analysis and supply chain scans
-#    - Proper permissions for security events
-#
 # To apply this template:
-# 1. Copy to .github/workflows/security.yml
-# 2. REMOVE any existing security.yml files with scheduled triggers
-# 3. Run security scans manually when needed via GitHub Actions UI
-# 4. Trigger from other workflows if automated scanning is desired
-# 5. Monitor Security tab in GitHub for results instead of emails
-#
-# To run security scans:
-# - Go to Actions tab → Security Scanning → Run workflow
-# - Choose scan type and notification preferences
-# - View results in Security tab (no email spam!)
+# 1. Copy to .github/workflows/codeql.yml
+# 2. Run on pushes to master/release-* or manually via Actions UI
+# 3. View results in Security tab (no email spam!)
+# 4. Use scan_type inputs for targeted scans when needed

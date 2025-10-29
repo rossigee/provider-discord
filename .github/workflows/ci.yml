@@ -31,7 +31,6 @@ env:
   GOLANGCI_VERSION: 'latest'
   GOLANGCILINT_VERSION: '2.5.0'
   DOCKER_BUILDX_VERSION: 'v0.11.2'
-
 jobs:
   detect-noop:
     runs-on: ubuntu-24.04
@@ -143,8 +142,7 @@ jobs:
       - name: Run Go Vulnerability Check
         run: |
           go install golang.org/x/vuln/cmd/govulncheck@latest
-          timeout 300 govulncheck ./...
-        continue-on-error: true
+          govulncheck ./...
 
       - name: Run Gosec Security Scanner
         uses: securego/gosec@master
@@ -194,26 +192,24 @@ jobs:
           # Validate that all build steps work without publishing
           echo "Repository: ${{ github.repository }}"
           echo "Repository owner: ${{ github.repository_owner }}"
-          
+
           # Build binary
           make build
           echo "✅ Binary build successful"
-          
+
           # Build Docker image locally (without push)
           make docker.build
           echo "✅ Docker image build successful"
-          
-          # Build Crossplane package locally (without push)
-          make xpkg.build
-          echo "✅ Crossplane package build successful"
-          
+
+          # Note: xpkg.build is validated in release workflow, not CI
+
           # Verify build artifacts exist
           ls -la _output/bin/linux_amd64/provider 2>/dev/null && echo "✅ Provider binary exists" || echo "❌ Provider binary missing"
           ls -la _output/xpkg/linux_amd64/*.xpkg 2>/dev/null && echo "✅ Crossplane package exists" || echo "❌ Crossplane package missing"
-          
+
           echo ""
           echo "🎯 Build validation completed successfully"
-          echo "📦 All artifacts can be built successfully"
+          echo "📦 Core artifacts can be built successfully"
           echo "🏷️  Publishing will occur only on release tag creation"
 
 # Key Principles for this Template:
@@ -239,7 +235,7 @@ jobs:
 # 5. STANDARDIZED BUILD SYSTEM
 #    - Uses rossigee/build submodule (working fork)
 #    - Consistent make targets across all providers
-#    - Go 1.24.5 with proper version handling
+#    - Go 1.25.3 with proper version handling
 # 
 # To apply this template:
 # 1. Copy this structure to .github/workflows/ci.yml
