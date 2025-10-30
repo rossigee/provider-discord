@@ -50,18 +50,9 @@ var (
 	ProviderConfigKindAPIVersion   = ProviderConfigKind + "." + GroupVersion.String()
 	ProviderConfigGroupVersionKind = GroupVersion.WithKind(ProviderConfigKind)
 
-	ProviderConfigUsageKind             = reflect.TypeOf(ProviderConfigUsage{}).Name()
-	ProviderConfigUsageGroupKind        = schema.GroupKind{Group: Group, Kind: ProviderConfigUsageKind}.String()
-	ProviderConfigUsageKindAPIVersion   = ProviderConfigUsageKind + "." + GroupVersion.String()
-	ProviderConfigUsageGroupVersionKind = GroupVersion.WithKind(ProviderConfigUsageKind)
 
-	ProviderConfigUsageListKind             = reflect.TypeOf(ProviderConfigUsageList{}).Name()
-	ProviderConfigUsageListGroupKind        = schema.GroupKind{Group: Group, Kind: ProviderConfigUsageListKind}.String()
-	ProviderConfigUsageListKindAPIVersion   = ProviderConfigUsageListKind + "." + GroupVersion.String()
-	ProviderConfigUsageListGroupVersionKind = GroupVersion.WithKind(ProviderConfigUsageListKind)
 )
 
 func init() {
 	SchemeBuilder.Register(&ProviderConfig{}, &ProviderConfigList{})
-	SchemeBuilder.Register(&ProviderConfigUsage{}, &ProviderConfigUsageList{})
 }
