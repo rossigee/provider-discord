@@ -32,6 +32,8 @@ IMAGES = provider-discord
 # Force registry override (can be overridden by make command arguments)
 REGISTRY_ORGS = ghcr.io/rossigee
 
+img.build.provider-discord: do.build.image.provider-discord
+
 -include build/makelib/imagelight.mk
 
 # Setup XPKG - Standardized registry configuration
