@@ -3,6 +3,8 @@ PROJECT_NAME := provider-discord
 PROJECT_REPO := github.com/rossigee/$(PROJECT_NAME)
 
 PLATFORMS ?= linux_amd64 linux_arm64
+# Override SAFEHOSTARCH to ensure correct platform for tool downloads
+SAFEHOSTARCH ?= amd64
 -include build/makelib/common.mk
 
 # Setup Output
