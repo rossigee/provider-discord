@@ -198,7 +198,7 @@ jobs:
           echo "✅ Binary build successful"
 
           # Build Docker image locally (without push)
-          make img.build
+          make img.build.provider-discord
           echo "✅ Docker image build successful"
 
           # Note: xpkg.build is validated in release workflow, not CI
