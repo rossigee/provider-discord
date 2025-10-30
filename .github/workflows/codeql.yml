@@ -14,6 +14,10 @@ on:
     branches:
       - master
       - release-*
+  pull_request:
+    branches:
+      - master
+      - release-*
   workflow_dispatch:
     inputs:
       scan_type:
@@ -159,6 +163,7 @@ jobs:
           sarif_file: osv-results.sarif
 
       - name: Dependency Review
+        if: github.event_name == 'pull_request'
         uses: actions/dependency-review-action@v4
         with:
           fail-on-severity: moderate
