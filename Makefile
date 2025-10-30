@@ -31,6 +31,11 @@ UPTEST_VERSION = v0.11.1
 IMAGES = provider-discord
 # Force registry override (can be overridden by make command arguments)
 REGISTRY_ORGS = ghcr.io/rossigee
+
+img.build.provider-discord:
+	@echo "Building image provider-discord"
+	docker buildx build $(DOCKER_BUILD_ARGS) --load --tag $(BUILD_REGISTRY)/provider-discord:$(VERSION) --file ./cluster/images/provider-discord/Dockerfile ./cluster/images/provider-discord
+
 -include build/makelib/imagelight.mk
 
 # Setup XPKG - Standardized registry configuration
