@@ -1,3 +1,4 @@
 [submodule "build"]
 	path = build
-	url = https://github.com/crossplane/build
+	url = https://github.com/rossigee/build
+	branch = fix-crossplane-cli-dep
