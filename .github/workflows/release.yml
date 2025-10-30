@@ -18,7 +18,7 @@ on:
 jobs:
   # Use official provider-workflows with custom registry configuration
   release:
-    uses: rossigee/provider-workflows/.github/workflows/publish-provider.yml@main
+    uses: crossplane-contrib/provider-workflows/.github/workflows/publish-provider.yml@main
     with:
       repository: ${{ github.event.repository.name }}
       version: ${{ github.event.inputs.version || github.ref_name }}
