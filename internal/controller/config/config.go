@@ -18,7 +18,9 @@ package config
 
 import (
 	ctrl "sigs.k8s.io/controller-runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
+	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
@@ -32,16 +34,23 @@ import (
 func Setup(mgr ctrl.Manager, o controller.Options) error {
 	name := providerconfig.ControllerName(v1alpha1.ProviderConfigGroupKind)
 
+	// ProviderConfigUsage is a core Crossplane resource
+	usageGVK := schema.GroupVersionKind{
+		Group:   "pkg.crossplane.io",
+		Version: "v1alpha1",
+		Kind:    "ProviderConfigUsageList",
+	}
+
 	// Debug logging for scheme registration issue
 	o.Logger.Info("Setting up provider config controller",
 		"configGVK", v1alpha1.ProviderConfigGroupVersionKind,
-		"usageListGVK", v1alpha1.ProviderConfigUsageListGroupVersionKind,
+		"usageListGVK", usageGVK,
 		"group", v1alpha1.Group,
 		"version", v1alpha1.Version)
 
 	of := resource.ProviderConfigKinds{
 		Config:    v1alpha1.ProviderConfigGroupVersionKind,
-		UsageList: v1alpha1.ProviderConfigUsageListGroupVersionKind,
+		UsageList: usageGVK,
 	}
 
 	r := providerconfig.NewReconciler(mgr, of,
@@ -52,6 +61,6 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		For(&v1alpha1.ProviderConfig{}).
-		Watches(&v1alpha1.ProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{}).
+		Watches(&xpv1.ProviderConfigUsage{}, &resource.EnqueueRequestForProviderConfig{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
