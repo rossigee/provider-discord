@@ -613,7 +613,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 
 ## Roadmap
 
-### ✅ v0.8.1 (Current - Enterprise Production Ready)
+### ✅ v0.8.6 (Current - Enterprise Production Ready)
 - ✅ Complete Discord API v10 coverage with all resources
 - ✅ Guild, Channel, Role, Member, User, Application management
 - ✅ Integration, Webhook, and Invite management
