@@ -66,11 +66,8 @@ func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1al
 	// List all channels in the guild
 	channels, err := c.service.ListGuildChannels(ctx, cr.Spec.ForProvider.GuildID)
 	if err != nil {
-		fmt.Printf("DEBUG: Failed to list guild channels: %v\n", err)
-		// If we can't list channels, assume it doesn't exist to allow creation
-		return managed.ExternalObservation{
-			ResourceExists: false,
-		}, nil
+		// Return error instead of assuming non-existence to prevent duplicate creation
+		return managed.ExternalObservation{}, errors.Wrap(err, "failed to list guild channels")
 	}
 
 	// Check if any existing channel has the same name
