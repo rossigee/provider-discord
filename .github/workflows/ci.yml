@@ -1,5 +1,5 @@
 # Standardized CI/CD Template for Crossplane Providers
-# Version: 2025-09-26 - Updated for Go 1.25.3
+# Version: 2025-12-21 - Updated for Go 1.25.5
 #
 # This template implements CI builds and validates ONLY
 # - CI: Build validation only (no publishing to avoid tag conflicts)
@@ -27,7 +27,7 @@ permissions:
   actions: read    # Needed for detecting duplicate actions
 
 env:
-  GO_VERSION: '1.25.3'
+  GO_VERSION: '1.25.5'
   GOLANGCI_VERSION: 'latest'
   GOLANGCILINT_VERSION: '2.7.2'
   DOCKER_BUILDX_VERSION: 'v0.11.2'
@@ -209,30 +209,30 @@ jobs:
           echo "🏷️  Publishing will occur only on release tag creation"
 
 # Key Principles for this Template:
-# 
+#
 # 1. CI BUILDS, RELEASE PUBLISHES
 #    - CI workflow: Only validates builds (no registry pushes)
 #    - Release workflow: Handles all publishing
 #    - Eliminates tag conflicts between workflows
-# 
+#
 # 2. SINGLE PRIMARY REGISTRY
 #    - Primary: ghcr.io/rossigee (consistent across all providers)
 #    - Optional: Environment-controlled additional registries
-# 
+#
 # 3. PARALLEL VALIDATION
 #    - All validation jobs run in parallel after noop detection
 #    - Build validation only runs on master branch
-# 
+#
 # 4. COMPREHENSIVE SECURITY
 #    - govulncheck: Go vulnerability scanning
 #    - gosec: Static security analysis
 #    - CodeQL integration for SARIF uploads
-# 
+#
 # 5. STANDARDIZED BUILD SYSTEM
 #    - Uses rossigee/build submodule (working fork)
 #    - Consistent make targets across all providers
-#    - Go 1.25.3 with proper version handling
-# 
+#    - Go 1.25.5 with proper version handling
+#
 # To apply this template:
 # 1. Copy this structure to .github/workflows/ci.yml
 # 2. Update provider-specific names/paths
