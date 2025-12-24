@@ -1,6 +1,6 @@
 module github.com/rossigee/provider-discord
 
-go 1.25.0
+go 1.25.5
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
