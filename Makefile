@@ -53,9 +53,9 @@ xpkg.build.provider-discord: do.build.images
 
 # Ensure publish only happens on release branches
 publish.artifacts:
-	@if ! echo "$(BRANCH_NAME)" | grep -qE "$(subst $(SPACE),|,main|master|release-.*)"; then \ 
-		$(ERR) Publishing is only allowed on branches matching: main|master|release-.* (current: $(BRANCH_NAME)); \ 
-		exit 1; \ 
+	@if ! echo "$(BRANCH_NAME)" | grep -qE "$(subst $(SPACE),|,main|master|release-.*)"; then \
+		$(ERR) Publishing is only allowed on branches matching: main|master|release-.* (current: $(BRANCH_NAME)); \
+		exit 1; \
 	fi
 	$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.publish.$(r).$(x)))
 	$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),@$(MAKE) img.release.publish.$(r).$(i)))
@@ -80,6 +80,9 @@ submodules:
 # its location in CI so that we cache between builds.
 go.cachedir:
 	@go env GOCACHE
+
+go.mod.cachedir:
+	@go env GOMODCACHE
 
 # Use the default generate targets from build system
 # The build system already handles code generation properly
