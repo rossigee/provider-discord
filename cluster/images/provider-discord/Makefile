@@ -29,4 +29,4 @@ img.publish: img.build
 	@$(INFO) docker push $(IMAGE)
 	@docker push $(IMAGE)
 	@$(OK) docker push $(IMAGE)
-	@LATEST_IMAGE=$$(echo $(IMAGE) | sed 's/:.*//'):latest && docker tag $(IMAGE) $LATEST_IMAGE && docker push $LATEST_IMAGE
+	@LATEST_IMAGE=$$(echo $(IMAGE) | sed 's/:.*//'):latest && docker tag $(IMAGE) $$LATEST_IMAGE && docker push $$LATEST_IMAGE
