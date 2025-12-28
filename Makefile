@@ -53,7 +53,7 @@ xpkg.build.provider-discord: do.build.images
 
 # Ensure publish only happens on release branches or tags
 publish.artifacts:
-	@if ! echo "$(BRANCH_NAME)" | grep -qE "$(subst $(SPACE),|,main|master|release-.*)" && ! echo "$(VERSION)" | grep -qE "^v[0-9]+\.[0-9]+\.[0-9]+$$"; then \
+	@if ! (echo "$(BRANCH_NAME)" | grep -qE "$(subst $(SPACE),|,main|master|release-.*)" || echo "$(VERSION)" | grep -qE "^v[0-9]+\.[0-9]+\.[0-9]+$$"); then \
 		$(ERR) Publishing is only allowed on branches matching: main|master|release-.* or version tags (current: $(BRANCH_NAME), version: $(VERSION)); \
 		exit 1; \
 	fi
