@@ -28,7 +28,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
 	"github.com/rossigee/provider-discord/apis"
@@ -59,11 +59,6 @@ func TestGuildLifecycle(t *testing.T) {
 				Name:                        "Test Guild",
 				VerificationLevel:           func() *int { v := 1; return &v }(),
 				DefaultMessageNotifications: func() *int { v := 0; return &v }(),
-			},
-			ResourceSpec: xpv1.ResourceSpec{
-				ProviderConfigReference: &xpv1.Reference{
-					Name: "test-provider-config",
-				},
 			},
 		},
 	}
@@ -149,11 +144,6 @@ func TestChannelLifecycle(t *testing.T) {
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: "123456789",
-			},
-			ResourceSpec: xpv1.ResourceSpec{
-				ProviderConfigReference: &xpv1.Reference{
-					Name: "test-provider-config",
-				},
 			},
 		},
 	}

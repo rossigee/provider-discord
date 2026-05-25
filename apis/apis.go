@@ -22,6 +22,7 @@ import (
 
 	applicationv1alpha1 "github.com/rossigee/provider-discord/apis/application/v1alpha1"
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	deduplicationv1alpha1 "github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
 	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
 	integrationv1alpha1 "github.com/rossigee/provider-discord/apis/integration/v1alpha1"
 	invitev1alpha1 "github.com/rossigee/provider-discord/apis/invite/v1alpha1"
@@ -37,6 +38,8 @@ func init() {
 	AddToSchemes = append(AddToSchemes,
 		// Provider configuration
 		v1alpha1.AddToScheme,
+		// Operational resources
+		deduplicationv1alpha1.AddToScheme,
 		// v1alpha1 APIs (cluster-scoped)
 		guildv1alpha1.AddToScheme,
 		channelv1alpha1.AddToScheme,

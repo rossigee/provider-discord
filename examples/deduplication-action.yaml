@@ -1,0 +1,120 @@
+---
+# Example: Using deduplication in ACTION mode (destructive)
+#
+# ⚠️  WARNING: This mode WILL DELETE DUPLICATE CHANNELS
+#
+# This example shows how to trigger channel deduplication with actual deletion.
+# The provider will:
+# 1. Identify duplicate channels (same name in the same guild)
+# 2. Keep the channel with the lowest position (oldest/highest priority)
+# 3. DELETE all other duplicate channels
+# 4. Optionally delete corresponding Crossplane resources
+#
+# IMPORTANT: Only use this after running in REPORT mode and verifying
+# which channels will be deleted!
+#
+# Usage:
+# 1. First run REPORT mode to see what would be deleted:
+#    kubectl annotate providerconfig default \
+#      discord.crossplane.io/deduplication=report --overwrite
+#    kubectl get deduplication <name> -o yaml
+#
+# 2. VERIFY the results - ensure you're OK with deletions
+#
+# 3. Switch to ACTION mode to actually delete:
+#    kubectl annotate providerconfig default \
+#      discord.crossplane.io/deduplication=action --overwrite
+#
+# 4. Monitor the deletion:
+#    kubectl get deduplication --watch
+#
+# 5. Verify in Discord that channels were deleted as expected
+#
+
+apiVersion: discord.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: default
+  annotations:
+    # Trigger deduplication in ACTION mode (analysis + deletion)
+    # ⚠️  This will delete duplicate channels!
+    discord.crossplane.io/deduplication: "action"
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      name: discord-token
+      namespace: crossplane-system
+
+  # Optional: Configure deduplication behavior
+  deduplication:
+    enabled: true
+    mode: "action"
+
+    # Whether to delete Crossplane resources for deleted Discord channels
+    # Set to true to keep cluster state consistent with Discord
+    deleteOrphanedResources: true
+
+    # Optional: Only deduplicate specific guilds (if empty, all guilds are processed)
+    # targetGuilds:
+    #   - "123456789012345678"
+    #   - "234567890123456789"
+
+# Example: Output from action mode deduplication
+# (See below for expected output structure)
+#
+# After applying the action mode annotation, you can inspect results:
+#
+#   $ kubectl get deduplication
+#   NAME                     PHASE       MODE     DUPLICATES-FOUND   DELETED   AGE
+#   default-1735689456       completed   action   6                  6         3m
+#
+#   $ kubectl describe deduplication default-1735689456
+#
+#   Status:
+#     Phase:  completed
+#     Summary:
+#       Total Guilds Analyzed:           2
+#       Total Channels Analyzed:         42
+#       Duplicate Groups Found:          3
+#       Total Duplicate Channels Found:  6
+#       Channels Deleted:                6            ← Actual deletions!
+#       Orphaned Resources Deleted:      3
+#     Results:
+#       <guild-id-1>:
+#         Guild Id:           123456789012345678
+#         Guild Name:         My Server
+#         Total Channels:     26            ← Reduced from 28
+#         Duplicate Groups:
+#           - Channel Name:     general
+#             Count:           2
+#             Kept Channel Id:  987654321098765432
+#             Deleted Channel Ids:  876543210987654321
+#           - Channel Name:     development
+#             Count:           2
+#             Kept Channel Id:  765432109876543210
+#             Deleted Channel Ids:  654321098765432109
+#         Channels Deleted:     2
+#         Orphaned Resources Deleted:  2      ← Crossplane resources also cleaned up
+#
+# Events recorded on ProviderConfig:
+#
+#   Events:
+#     Type    Reason                    Age    From                              Message
+#     ----    ------                    ---    ----                              -------
+#     Normal  DeduplicationCompleted    3m     discord-provider-deduplication    Deduplication action completed. Mode: action. Guilds analyzed: 2, Duplicates found: 6, Channels deleted: 6
+
+# Recovery Procedure: If wrong channels were deleted
+#
+# 1. Check Discord's audit log to see what was deleted
+#
+# 2. Manually recreate important channels in Discord
+#
+# 3. Update Crossplane resources if they reference deleted channels:
+#    kubectl get channels -o wide
+#    kubectl delete channel <deleted-channel-name>
+#
+# 4. Run in REPORT mode again to verify state is clean:
+#    kubectl annotate providerconfig default \
+#      discord.crossplane.io/deduplication=report --overwrite
+#    kubectl get deduplication <new-name> -o yaml

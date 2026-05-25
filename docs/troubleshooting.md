@@ -5,7 +5,9 @@ Comprehensive troubleshooting guide for provider-discord covering common issues,
 ## Quick Diagnostic Commands
 
 ### Provider Status
+
 ```bash
+
 # Check provider installation
 kubectl get providers
 
@@ -18,10 +20,14 @@ kubectl describe providerconfig default
 
 # Check managed resources
 kubectl get guilds,channels,roles,webhooks,invites,members,users,applications,integrations -A
+
 ```
 
+
 ### Health Checks
+
 ```bash
+
 # Provider health endpoints
 kubectl port-forward -n crossplane-system deployment/provider-discord 8081:8081
 curl http://localhost:8081/healthz
@@ -30,7 +36,9 @@ curl http://localhost:8081/readyz
 # Metrics endpoint
 kubectl port-forward -n crossplane-system deployment/provider-discord 8080:8080
 curl http://localhost:8080/metrics
+
 ```
+
 
 ## Common Issues
 
@@ -42,7 +50,9 @@ curl http://localhost:8080/metrics
 - No provider logs available
 
 #### Diagnostic Steps
+
 ```bash
+
 # Check provider pod status
 kubectl get pods -n crossplane-system -l pkg.crossplane.io/provider=provider-discord
 
@@ -54,29 +64,41 @@ kubectl describe provider provider-discord
 
 # Check Crossplane core logs
 kubectl logs -n crossplane-system deployment/crossplane -c crossplane
+
 ```
+
 
 #### Common Causes & Solutions
 
 **Missing RBAC Permissions**
+
 ```bash
+
 # Check RBAC
 kubectl auth can-i create guilds --as=system:serviceaccount:crossplane-system:provider-discord
 
 # Apply missing RBAC (if needed)
 kubectl apply -f https://raw.githubusercontent.com/rossigee/provider-discord/master/cluster/rbac.yaml
+
 ```
 
+
 **Image Pull Issues**
+
 ```yaml
+
 # Check image pull policy and registry access
 spec:
   package: ghcr.io/rossigee/provider-discord:v0.8.0
   packagePullPolicy: IfNotPresent
+
 ```
 
+
 **Resource Constraints**
+
 ```yaml
+
 # Check and adjust resource limits
 resources:
   requests:
@@ -85,7 +107,9 @@ resources:
   limits:
     cpu: 500m
     memory: 512Mi
+
 ```
+
 
 ### 2. Authentication Failures
 
@@ -95,7 +119,9 @@ resources:
 - Discord API requests failing
 
 #### Diagnostic Steps
+
 ```bash
+
 # Check secret exists and has correct format
 kubectl get secret discord-creds -n crossplane-system -o yaml
 
@@ -104,12 +130,16 @@ kubectl get providerconfig default -o yaml
 
 # Test token manually (remove bot prefix if present)
 curl -H "Authorization: Bot YOUR_TOKEN_HERE" https://discord.com/api/v10/users/@me
+
 ```
+
 
 #### Solutions
 
 **Invalid Token Format**
+
 ```bash
+
 # Ensure token starts with bot ID (not "Bot " prefix)
 # Correct format: MTAxNTYyNjA4MDQwNzU5OTIzNQ.GkQTzg.example
 # Wrong format: Bot MTAxNTYyNjA4MDQwNzU5OTIzNQ.GkQTzg.example
@@ -119,18 +149,26 @@ kubectl create secret generic discord-creds \
   -n crossplane-system \
   --from-literal=token=YOUR_ACTUAL_TOKEN \
   --dry-run=client -o yaml | kubectl apply -f -
+
 ```
 
+
 **Token Regenerated**
+
 ```bash
+
 # Get new token from Discord Developer Portal
 # Update secret immediately
 kubectl patch secret discord-creds -n crossplane-system \
   -p '{"data":{"token":"'$(echo -n "NEW_TOKEN" | base64)'"}}'
+
 ```
 
+
 **Wrong Secret Key**
+
 ```yaml
+
 # Ensure providerconfig references correct key
 spec:
   credentials:
@@ -139,7 +177,9 @@ spec:
       namespace: crossplane-system
       name: discord-creds
       key: token  # Must match secret key
+
 ```
+
 
 ### 3. Permission Denied Errors
 
@@ -149,7 +189,9 @@ spec:
 - Cannot create/modify Discord resources
 
 #### Diagnostic Steps
+
 ```bash
+
 # Check bot permissions in Discord server
 # - Go to Discord server settings
 # - Check bot role permissions
@@ -158,7 +200,9 @@ spec:
 # Check specific resource permissions
 kubectl describe guild my-guild
 kubectl get events --field-selector involvedObject.name=my-guild
+
 ```
+
 
 #### Solutions
 
@@ -186,7 +230,9 @@ kubectl get events --field-selector involvedObject.name=my-guild
 - HTTP 429 responses
 
 #### Diagnostic Steps
+
 ```bash
+
 # Check rate limit metrics
 curl -s http://localhost:8080/metrics | grep rate_limit
 
@@ -195,26 +241,36 @@ kubectl logs -n crossplane-system deployment/provider-discord | grep "circuit br
 
 # Monitor rate limit headers in traces
 # Access Jaeger UI to see detailed timing
+
 ```
+
 
 #### Solutions
 
 **High Rate Limit Usage**
+
 ```yaml
+
 # Adjust rate limiting configuration
 env:
 - name: DISCORD_RATE_LIMIT_BACKOFF_MAX
   value: "60s"  # Increase max backoff
 - name: DISCORD_CIRCUIT_BREAKER_ENABLED
   value: "true"  # Enable circuit breaker
+
 ```
 
+
 **Too Many Concurrent Operations**
+
 ```yaml
+
 # Reduce controller concurrency
 args:
 - --max-reconcile-rate=5
+
 ```
+
 
 **Bot Shared Across Multiple Providers**
 - Use separate bots for different environments
@@ -229,7 +285,9 @@ args:
 - Resource drift not corrected
 
 #### Diagnostic Steps
+
 ```bash
+
 # Check resource status
 kubectl describe guild my-guild
 
@@ -238,12 +296,16 @@ kubectl get guild my-guild -o yaml | grep -A 5 -B 5 observedGeneration
 
 # Check provider reconciliation metrics
 curl -s http://localhost:8080/metrics | grep reconciliation
+
 ```
+
 
 #### Solutions
 
 **Stuck Resources**
+
 ```bash
+
 # Force reconciliation
 kubectl annotate guild my-guild crossplane.io/external-name=GUILD_ID
 
@@ -252,24 +314,34 @@ kubectl get guild my-guild -o yaml | grep finalizers
 
 # Remove stuck finalizers (last resort)
 kubectl patch guild my-guild --type='merge' -p '{"metadata":{"finalizers":[]}}'
+
 ```
 
+
 **Resource Drift**
+
 ```yaml
+
 # Enable drift detection
 spec:
   managementPolicy: Observe  # For read-only monitoring
   # or
   managementPolicy: ObserveCreateUpdate  # Skip deletion
+
 ```
 
+
 **Long Reconciliation Times**
+
 ```yaml
+
 # Adjust controller settings
 env:
 - name: RECONCILE_TIMEOUT
   value: "10m"
+
 ```
+
 
 ### 6. Network Connectivity Issues
 
@@ -279,7 +351,9 @@ env:
 - Timeouts connecting to Discord API
 
 #### Diagnostic Steps
+
 ```bash
+
 # Test network connectivity from pod
 kubectl exec -n crossplane-system deployment/provider-discord -- \
   curl -v https://discord.com/api/v10/gateway
@@ -290,12 +364,16 @@ kubectl exec -n crossplane-system deployment/provider-discord -- \
 
 # Check network policies
 kubectl get networkpolicy -n crossplane-system
+
 ```
+
 
 #### Solutions
 
 **DNS Issues**
+
 ```yaml
+
 # Add DNS configuration
 spec:
   template:
@@ -304,10 +382,14 @@ spec:
       dnsConfig:
         nameservers:
         - 8.8.8.8
+
 ```
 
+
 **Network Policy Blocking**
+
 ```yaml
+
 # Allow Discord API access
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
@@ -324,10 +406,14 @@ spec:
     ports:
     - protocol: TCP
       port: 443
+
 ```
 
+
 **Proxy Configuration**
+
 ```yaml
+
 # Configure HTTP proxy
 env:
 - name: HTTP_PROXY
@@ -336,7 +422,9 @@ env:
   value: "http://proxy.company.com:8080"
 - name: NO_PROXY
   value: "kubernetes.default.svc,10.0.0.0/8"
+
 ```
+
 
 ### 7. Performance Issues
 
@@ -346,7 +434,9 @@ env:
 - Controller falling behind
 
 #### Diagnostic Steps
+
 ```bash
+
 # Check resource usage
 kubectl top pod -n crossplane-system -l pkg.crossplane.io/provider=provider-discord
 
@@ -355,12 +445,16 @@ curl -s http://localhost:8080/metrics | grep duration
 
 # Check reconciliation queue depth
 kubectl logs -n crossplane-system deployment/provider-discord | grep "queue depth"
+
 ```
+
 
 #### Solutions
 
 **Resource Optimization**
+
 ```yaml
+
 # Increase resource limits
 resources:
   requests:
@@ -369,26 +463,36 @@ resources:
   limits:
     cpu: 1000m
     memory: 1Gi
+
 ```
 
+
 **Controller Tuning**
+
 ```yaml
+
 # Adjust controller concurrency
 args:
 - --max-reconcile-rate=10
 - --poll-interval=1m
 - --sync-period=10m
+
 ```
 
+
 **Enable Profiling**
+
 ```yaml
+
 # Add profiling endpoint
 args:
 - --debug
 ports:
 - name: profiling
   containerPort: 6060
+
 ```
+
 
 ### 8. Monitoring and Observability Issues
 
@@ -398,7 +502,9 @@ ports:
 - Health checks failing
 
 #### Diagnostic Steps
+
 ```bash
+
 # Check metrics endpoint
 curl http://localhost:8080/metrics
 
@@ -408,12 +514,16 @@ curl http://localhost:8081/readyz
 
 # Check service discovery
 kubectl get servicemonitor -n crossplane-system
+
 ```
+
 
 #### Solutions
 
 **Metrics Not Scraped**
+
 ```yaml
+
 # Ensure ServiceMonitor exists
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
@@ -425,43 +535,59 @@ spec:
       app: provider-discord
   endpoints:
   - port: metrics
+
 ```
 
+
 **Tracing Not Working**
+
 ```yaml
+
 # Enable tracing
 env:
 - name: OTEL_TRACING_ENABLED
   value: "true"
 - name: OTEL_EXPORTER_OTLP_ENDPOINT
   value: "http://jaeger-collector:14268/api/traces"
+
 ```
 
+
 **Health Checks Failing**
+
 ```bash
+
 # Check component health
 curl -s http://localhost:8081/readyz | jq .
 
 # Fix common health issues
 kubectl rollout restart deployment/provider-discord -n crossplane-system
+
 ```
+
 
 ## Advanced Troubleshooting
 
 ### Debug Mode
 
 Enable debug logging:
+
 ```yaml
+
 env:
 - name: LOG_LEVEL
   value: "debug"
 - name: CONTROLLER_LOG_LEVEL
   value: "debug"
+
 ```
+
 
 ### Memory Profiling
 
+
 ```bash
+
 # Enable pprof endpoint
 kubectl port-forward -n crossplane-system deployment/provider-discord 6060:6060
 
@@ -470,11 +596,15 @@ go tool pprof http://localhost:6060/debug/pprof/heap
 
 # CPU profile
 go tool pprof http://localhost:6060/debug/pprof/profile
+
 ```
+
 
 ### Distributed Tracing Analysis
 
+
 ```bash
+
 # Find slow operations
 # In Jaeger UI: service:"provider-discord" AND duration:>5s
 
@@ -483,11 +613,15 @@ go tool pprof http://localhost:6060/debug/pprof/profile
 
 # Analyze retry patterns
 # Look for spans with discord.retry.attempt attribute
+
 ```
+
 
 ### Log Analysis
 
+
 ```bash
+
 # Parse structured logs
 kubectl logs -n crossplane-system deployment/provider-discord | jq 'select(.level=="error")'
 
@@ -497,7 +631,9 @@ kubectl logs -n crossplane-system deployment/provider-discord | jq 'select(.corr
 # Count error types
 kubectl logs -n crossplane-system deployment/provider-discord | \
   jq -r 'select(.level=="error") | .msg' | sort | uniq -c
+
 ```
+
 
 ## Prevention Strategies
 

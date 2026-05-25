@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // ChannelParameters are the configurable fields of a Channel.
@@ -134,13 +134,13 @@ type ChannelObservation struct {
 
 // A ChannelSpec defines the desired state of a Channel.
 type ChannelSpec struct {
-	xpv1.ResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 	ForProvider       ChannelParameters `json:"forProvider"`
 }
 
 // A ChannelStatus represents the observed state of a Channel.
 type ChannelStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 	AtProvider          ChannelObservation `json:"atProvider,omitempty"`
 }
 

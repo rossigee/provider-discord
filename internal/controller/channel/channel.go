@@ -18,8 +18,8 @@ package channel
 
 import (
 	"context"
-	"fmt"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -27,7 +27,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
@@ -53,15 +53,18 @@ var (
 
 // isValidDiscordID checks if the provided string is a valid Discord snowflake ID
 func isValidDiscordID(id string) bool {
-	isValid := discordSnowflakeRegex.MatchString(id)
-	// Debug logging to understand validation behavior
-	fmt.Printf("DEBUG: Validating ID '%s' - isValid: %t\n", id, isValid)
-	return isValid
+	return discordSnowflakeRegex.MatchString(id)
+}
+
+// isDiscordNotFound reports whether a Discord API error is a 404 not-found response.
+func isDiscordNotFound(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 404")
 }
 
 // checkChannelExistsByName checks if a channel with the same name already exists in the guild
 func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1alpha1.Channel) (managed.ExternalObservation, error) {
-	fmt.Printf("DEBUG: Checking if channel '%s' exists in guild '%s'\n", cr.Spec.ForProvider.Name, cr.Spec.ForProvider.GuildID)
+	log := ctrl.LoggerFrom(ctx)
+	log.V(4).Info("Checking for existing channel by name", "name", cr.Spec.ForProvider.Name, "guildID", cr.Spec.ForProvider.GuildID)
 
 	// List all channels in the guild
 	channels, err := c.service.ListGuildChannels(ctx, cr.Spec.ForProvider.GuildID)
@@ -73,7 +76,7 @@ func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1al
 	// Check if any existing channel has the same name
 	for _, channel := range channels {
 		if channel.Name == cr.Spec.ForProvider.Name {
-			fmt.Printf("DEBUG: Found existing channel '%s' with ID '%s' - setting external name\n", channel.Name, channel.ID)
+			log.V(4).Info("Found existing channel by name, adopting", "name", channel.Name, "id", channel.ID)
 
 			// Set the external name to the existing channel's ID
 			meta.SetExternalName(cr, channel.ID)
@@ -90,8 +93,8 @@ func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1al
 				UpdatedAt: now,
 			}
 
-			// Check if we need to update
-			needsUpdate := cr.Spec.ForProvider.Name != channel.Name
+			// Since we matched by name, only position and parentID can differ
+			needsUpdate := false
 			if cr.Spec.ForProvider.Position != nil && *cr.Spec.ForProvider.Position != channel.Position {
 				needsUpdate = true
 			}
@@ -106,7 +109,7 @@ func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1al
 		}
 	}
 
-	fmt.Printf("DEBUG: Channel '%s' does not exist in guild - will create new channel\n", cr.Spec.ForProvider.Name)
+	log.V(4).Info("Channel not found by name, will create", "name", cr.Spec.ForProvider.Name)
 
 	// Channel doesn't exist, needs to be created
 	return managed.ExternalObservation{
@@ -125,13 +128,13 @@ func SetupWithClient(mgr ctrl.Manager, o controller.Options, newServiceFn func(t
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(channelv1alpha1.ChannelGroupVersionKind),
-		managed.WithExternalConnecter(&connector{
+		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			newServiceFn: newServiceFn,
 		}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
-		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name))))
+		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name)))) //nolint:staticcheck
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).
@@ -186,35 +189,33 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotChannel)
 	}
 
+	log := ctrl.LoggerFrom(ctx)
 	externalName := meta.GetExternalName(cr)
 
-	// DEBUG: Always log what we're checking
-	fmt.Printf("OBSERVE DEBUG: External name='%s', Channel name='%s'\n", externalName, cr.Spec.ForProvider.Name)
+	log.V(4).Info("Observing channel", "externalName", externalName, "channelName", cr.Spec.ForProvider.Name)
 
-	// If external-name is empty or not a valid Discord ID, check if channel exists by name
-	// Crossplane runtime defaults external-name to metadata.name for new resources
+	// If external-name is empty or not a valid Discord ID, check if channel exists by name.
+	// Crossplane runtime defaults external-name to metadata.name for new resources.
 	if externalName == "" {
-		fmt.Printf("OBSERVE DEBUG: External name is empty - checking for existing channel by name\n")
 		return c.checkChannelExistsByName(ctx, cr)
 	}
 
 	// Check if external-name is a valid Discord snowflake ID (18-19 digits)
 	if !isValidDiscordID(externalName) {
 		// For non-snowflake external names, check if channel exists by name
-		fmt.Printf("OBSERVE DEBUG: External name '%s' is not valid snowflake - checking for existing channel by name\n", externalName)
 		return c.checkChannelExistsByName(ctx, cr)
 	}
-
-	fmt.Printf("OBSERVE DEBUG: External name '%s' is valid snowflake - calling GetChannel\n", externalName)
 
 	// If we have a valid external name (Discord channel ID), try to get by ID
 	channel, err := c.service.GetChannel(ctx, externalName)
 	if err != nil {
-		// If channel not found by ID, assume it needs to be created
-		// This handles cases where external-name was set but channel doesn't exist
-		return managed.ExternalObservation{
-			ResourceExists: false,
-		}, nil
+		if isDiscordNotFound(err) {
+			// Channel was deleted externally; let Crossplane recreate it
+			return managed.ExternalObservation{ResourceExists: false}, nil
+		}
+		// Propagate transient errors (rate-limit, 5xx, network) so Crossplane
+		// retries rather than accidentally provisioning a duplicate channel
+		return managed.ExternalObservation{}, errors.Wrap(err, "failed to get channel")
 	}
 
 	if channel == nil {

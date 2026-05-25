@@ -1,0 +1,210 @@
+---
+# Deduplication Workflow Guide
+#
+# This guide shows the complete workflow for identifying and removing
+# duplicate channels from your Discord servers.
+
+# STEP 1: Create a ProviderConfig with credentials
+# If you don't already have one, create it:
+apiVersion: discord.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: default
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      name: discord-token
+      namespace: crossplane-system
+
+# ============================================================================
+# STEP 2: Run deduplication in REPORT mode
+# This analyzes all guilds but makes no changes
+#
+# Apply via kubectl:
+#   kubectl annotate providerconfig default \
+#     discord.crossplane.io/deduplication=report --overwrite
+#
+# Or create/patch directly:
+---
+apiVersion: discord.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: default
+  annotations:
+    discord.crossplane.io/deduplication: "report"
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      name: discord-token
+      namespace: crossplane-system
+
+# ============================================================================
+# STEP 3: Inspect the results
+#
+# List all deduplication operations:
+#   kubectl get deduplication
+#
+# Get detailed results:
+#   kubectl get deduplication <name> -o yaml
+#
+# Check events on the ProviderConfig:
+#   kubectl describe providerconfig default
+#
+# The Deduplication CRD will show:
+# - Which guilds were analyzed
+# - How many duplicate groups were found
+# - Which channels would be deleted (keyed by position)
+# - Per-guild breakdown of duplicates
+
+# ============================================================================
+# STEP 4: Review and verify
+#
+# Before moving to action mode, carefully review:
+# 1. The guild names and their duplicate groups
+# 2. Which channels would be kept (lowest position = oldest)
+# 3. Which channels would be deleted
+# 4. Any errors that occurred during analysis
+#
+# Example review commands:
+#   $ kubectl get deduplication
+#   NAME                  PHASE       MODE    DUPLICATES-FOUND   AGE
+#   default-1735689123    completed   report  6                  10m
+#
+#   $ kubectl get deduplication default-1735689123 -o yaml | grep -A 50 "results:"
+#
+# If this looks correct, proceed to STEP 5
+# If this looks wrong, troubleshoot and re-run STEP 2
+
+# ============================================================================
+# STEP 5: Transition to ACTION mode
+#
+# Once you've verified the REPORT mode results, switch to action:
+#   kubectl annotate providerconfig default \
+#     discord.crossplane.io/deduplication=action --overwrite
+#
+# Or patch the manifest:
+---
+apiVersion: discord.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: default
+  annotations:
+    discord.crossplane.io/deduplication: "action"
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      name: discord-token
+      namespace: crossplane-system
+  deduplication:
+    enabled: true
+    mode: "action"
+    deleteOrphanedResources: true
+
+# ============================================================================
+# STEP 6: Monitor the deletion
+#
+# Watch the deduplication progress:
+#   kubectl get deduplication --watch
+#
+# Or check final results:
+#   kubectl get deduplication -l <filter> -o wide
+#
+# The output will show:
+# - Phase: "completed"
+# - Channels deleted count
+# - Orphaned resources deleted count
+
+# ============================================================================
+# STEP 7: Verify in Discord
+#
+# Log into Discord and verify:
+# 1. Duplicate channels are gone
+# 2. The kept channel (oldest/lowest position) still exists
+# 3. Message history is preserved in the kept channel
+# 4. Permissions and settings are intact
+
+# ============================================================================
+# STEP 8: Clean up Crossplane resources (if needed)
+#
+# If deleteOrphanedResources was false, you may need to clean up
+# Crossplane Channel resources that reference deleted channels:
+#
+# Find resources with IDs of deleted channels:
+#   kubectl get channels -o yaml | grep -A 5 "deleted-channel-id"
+#
+# Delete the Crossplane resource:
+#   kubectl delete channel <resource-name>
+
+# ============================================================================
+# ADVANCED: Deduplicate only specific guilds
+#
+# Instead of deduplicating all guilds, you can target specific ones:
+---
+apiVersion: discord.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: default
+  annotations:
+    discord.crossplane.io/deduplication: "report"
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      name: discord-token
+      namespace: crossplane-system
+  deduplication:
+    enabled: true
+    mode: "report"
+    # Only analyze these guilds
+    targetGuilds:
+      - "123456789012345678"  # My Server
+      - "987654321098765432"  # Another Server
+    # Leave out any other guild IDs
+
+# ============================================================================
+# TROUBLESHOOTING
+#
+# Q: No deduplication runs when I apply the annotation
+# A: Check that:
+#    1. The bot token is valid and has permissions
+#    2. The ProviderConfig name matches your usage
+#    3. The annotation value is exactly "report" or "action"
+#    4. Check logs: kubectl logs -n crossplane-system -l app=provider-discord --tail=100
+#
+# Q: Deduplication fails with "failed to extract credentials"
+# A: Verify:
+#    1. The secret exists: kubectl get secret discord-token
+#    2. The secret has a "token" key: kubectl get secret discord-token -o yaml
+#    3. The secretRef namespace matches: kubectl get secret discord-token -n crossplane-system
+#
+# Q: I don't see duplicate channels in the report
+# A: This could mean:
+#    1. You don't actually have duplicate channels
+#    2. The bot doesn't have permission to list channels (View Channels permission required)
+#    3. Check the Errors field in the Deduplication CRD status for details
+#
+# Q: Can I undo a deletion?
+# A: Discord's deleted channels cannot be recovered. However:
+#    1. Check Discord's audit log for what was deleted
+#    2. Manually recreate channels if needed
+#    3. Run in REPORT mode again to verify cleanup
+#    4. Consider enabling Discord's backup feature for future protection
+
+# ============================================================================
+# MONITORING AND AUDITING
+#
+# Track all deduplication operations:
+#   kubectl get deduplication --sort-by=.metadata.creationTimestamp
+#
+# Get total statistics across all runs:
+#   kubectl get deduplication -o json | \
+#     jq '.items[] | select(.status.phase=="completed") | .status.summary'
+#
+# Alert on failures:
+#   kubectl get deduplication --field-selector=status.phase=failed
+#
+# View detailed audit trail:
+#   kubectl describe providerconfig default | grep -A 20 Events:

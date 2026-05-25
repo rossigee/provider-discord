@@ -18,13 +18,14 @@ package clients
 
 import (
 	"context"
+	"strings"
 
 	"github.com/pkg/errors"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 
 	"github.com/rossigee/provider-discord/apis/v1alpha1"
@@ -106,8 +107,8 @@ func GetConfig(ctx context.Context, c client.Client, mg resource.Managed) (*stri
 	}
 
 	// Use no-op tracker for v2.0.0 compatibility
-	t := resource.TrackerFn(func(ctx context.Context, mg resource.Managed) error { return nil })
-	if err := t.Track(ctx, mg); err != nil {
+	t := resource.ModernTrackerFn(func(ctx context.Context, mg resource.ModernManaged) error { return nil })
+	if err := t.Track(ctx, mg.(resource.ModernManaged)); err != nil {
 		return nil, errors.Wrap(err, errTrackUsage)
 	}
 
@@ -133,6 +134,7 @@ func GetConfig(ctx context.Context, c client.Client, mg resource.Managed) (*stri
 		return nil, errors.Errorf("credentials secret does not contain key %s", pc.Spec.Credentials.SecretRef.Key)
 	}
 
-	token := string(tokenBytes)
+	// Trim whitespace/newlines that sneak in from base64-encoded secrets or `echo`-style provisioning
+	token := strings.TrimSpace(string(tokenBytes))
 	return &token, nil
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/rossigee/provider-discord/internal/controller/application"
 	"github.com/rossigee/provider-discord/internal/controller/channel"
 	// "github.com/rossigee/provider-discord/internal/controller/config" // Removed - not needed, crossplane-runtime handles ProviderConfig
+	"github.com/rossigee/provider-discord/internal/controller/deduplication"
 	"github.com/rossigee/provider-discord/internal/controller/guild"
 	"github.com/rossigee/provider-discord/internal/controller/integration"
 	"github.com/rossigee/provider-discord/internal/controller/invite"
@@ -65,6 +66,11 @@ func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *m
 		if err := setup(mgr, o); err != nil {
 			return err
 		}
+	}
+
+	// Setup deduplication controller (watches ProviderConfig annotations)
+	if err := deduplication.Setup(mgr); err != nil {
+		return err
 	}
 
 	// Set the global metrics recorder for client use

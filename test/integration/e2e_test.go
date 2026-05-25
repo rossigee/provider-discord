@@ -29,7 +29,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
@@ -231,11 +231,6 @@ func createTestChannels(namespace, suffix, guildID, providerConfigName string) [
 					GuildID: guildID,
 					Topic:   stringPtrE2E("Test text channel created by E2E tests"),
 				},
-				ResourceSpec: xpv1.ResourceSpec{
-					ProviderConfigReference: &xpv1.Reference{
-						Name: providerConfigName,
-					},
-				},
 			},
 		},
 		{
@@ -250,11 +245,6 @@ func createTestChannels(namespace, suffix, guildID, providerConfigName string) [
 					GuildID:   guildID,
 					Bitrate:   intPtrE2E(64000),
 					UserLimit: intPtrE2E(10),
-				},
-				ResourceSpec: xpv1.ResourceSpec{
-					ProviderConfigReference: &xpv1.Reference{
-						Name: providerConfigName,
-					},
 				},
 			},
 		},
@@ -277,11 +267,6 @@ func createTestRoles(namespace, suffix, guildID, providerConfigName string) []*r
 					Mentionable: boolPtrE2E(false),
 					Permissions: stringPtrE2E("8"), // Administrator permission
 				},
-				ResourceSpec: xpv1.ResourceSpec{
-					ProviderConfigReference: &xpv1.Reference{
-						Name: providerConfigName,
-					},
-				},
 			},
 		},
 		{
@@ -297,11 +282,6 @@ func createTestRoles(namespace, suffix, guildID, providerConfigName string) []*r
 					Hoist:       boolPtrE2E(false),
 					Mentionable: boolPtrE2E(true),
 					Permissions: stringPtrE2E("1024"), // View channels permission
-				},
-				ResourceSpec: xpv1.ResourceSpec{
-					ProviderConfigReference: &xpv1.Reference{
-						Name: providerConfigName,
-					},
 				},
 			},
 		},

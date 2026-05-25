@@ -14,7 +14,9 @@ This guide covers deploying provider-discord in production environments with ent
 
 ### Recommended Architecture
 
+
 ```
+
 ┌─────────────────────────────────────────────────────────────┐
 │                    Kubernetes Cluster                      │
 ├─────────────────────────────────────────────────────────────┤
@@ -44,13 +46,17 @@ This guide covers deploying provider-discord in production environments with ent
 │  │ • Performance   │  │ • Trace Export  │                │
 │  └─────────────────┘  └─────────────────┘                │
 └─────────────────────────────────────────────────────────────┘
+
 ```
+
 
 ## Production Installation
 
 ### Method 1: Helm Chart (Recommended)
 
+
 ```bash
+
 # Add Crossplane Helm repository
 helm repo add crossplane-stable https://charts.crossplane.io/stable
 helm repo update
@@ -63,11 +69,15 @@ helm install crossplane crossplane-stable/crossplane \
 
 # Install provider-discord with production configuration
 kubectl apply -f https://raw.githubusercontent.com/rossigee/provider-discord/master/examples/provider-config.yaml
+
 ```
+
 
 ### Method 2: Direct Kubernetes Manifests
 
+
 ```bash
+
 # Install provider
 kubectl apply -f https://github.com/rossigee/provider-discord/releases/download/v0.8.0/provider.yaml
 
@@ -168,13 +178,17 @@ spec:
             - name: health
               containerPort: 8081
 EOF
+
 ```
+
 
 ## Security Configuration
 
 ### 1. Pod Security Standards
 
+
 ```yaml
+
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -183,11 +197,15 @@ metadata:
     pod-security.kubernetes.io/enforce: restricted
     pod-security.kubernetes.io/audit: restricted
     pod-security.kubernetes.io/warn: restricted
+
 ```
+
 
 ### 2. Network Policies
 
+
 ```yaml
+
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -236,11 +254,15 @@ spec:
     ports:
     - protocol: TCP
       port: 14268
+
 ```
+
 
 ### 3. RBAC Configuration
 
+
 ```yaml
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -283,13 +305,17 @@ subjects:
 - kind: ServiceAccount
   name: provider-discord
   namespace: crossplane-system
+
 ```
+
 
 ## Monitoring Setup
 
 ### 1. Prometheus ServiceMonitor
 
+
 ```yaml
+
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -324,11 +350,15 @@ spec:
   - name: health
     port: 8081
     targetPort: 8081
+
 ```
+
 
 ### 2. AlertManager Rules
 
+
 ```yaml
+
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -373,13 +403,17 @@ spec:
       annotations:
         summary: "Provider Discord high memory usage"
         description: "Memory usage is above 80%"
+
 ```
+
 
 ## Observability Configuration
 
 ### 1. OpenTelemetry Collector
 
+
 ```yaml
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -457,11 +491,15 @@ spec:
       - name: config
         configMap:
           name: otel-collector-config
+
 ```
+
 
 ### 2. Jaeger Installation
 
+
 ```bash
+
 # Install Jaeger Operator
 kubectl create namespace jaeger-system
 kubectl apply -f https://github.com/jaegertracing/jaeger-operator/releases/latest/download/jaeger-operator.yaml -n jaeger-system
@@ -506,13 +544,17 @@ spec:
         cpu: 500m
         memory: 512Mi
 EOF
+
 ```
+
 
 ## High Availability Configuration
 
 ### 1. Multi-Replica Deployment
 
+
 ```yaml
+
 spec:
   replicas: 3
   strategy:
@@ -520,11 +562,15 @@ spec:
     rollingUpdate:
       maxUnavailable: 1
       maxSurge: 1
+
 ```
+
 
 ### 2. Pod Disruption Budget
 
+
 ```yaml
+
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -535,11 +581,15 @@ spec:
   selector:
     matchLabels:
       pkg.crossplane.io/provider: provider-discord
+
 ```
+
 
 ### 3. Affinity Rules
 
+
 ```yaml
+
 spec:
   template:
     spec:
@@ -558,13 +608,17 @@ spec:
             - matchExpressions:
               - key: node-role.kubernetes.io/control-plane
                 operator: DoesNotExist
+
 ```
+
 
 ## Backup and Disaster Recovery
 
 ### 1. Configuration Backup
 
+
 ```bash
+
 #!/bin/bash
 # backup-discord-config.sh
 
@@ -585,7 +639,9 @@ kubectl get secrets -n crossplane-system -l app=provider-discord -o yaml | \
   sed 's/data:.*/data: {}/' > "$BACKUP_DIR/secrets-metadata.yaml"
 
 echo "Backup completed: $BACKUP_DIR"
+
 ```
+
 
 ### 2. Disaster Recovery Plan
 

@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // IntegrationParameters defines the desired state of a Discord guild integration
@@ -91,13 +91,13 @@ type IntegrationObservation struct {
 
 // A IntegrationSpec defines the desired state of a Integration.
 type IntegrationSpec struct {
-	xpv1.ResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 	ForProvider       IntegrationParameters `json:"forProvider"`
 }
 
 // A IntegrationStatus represents the observed state of a Integration.
 type IntegrationStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 	AtProvider          IntegrationObservation `json:"atProvider,omitempty"`
 }
 

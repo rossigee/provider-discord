@@ -23,8 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 func TestGuildDeepCopy(t *testing.T) {
@@ -38,9 +36,6 @@ func TestGuildDeepCopy(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: GuildSpec{
-			ResourceSpec: xpv1.ResourceSpec{
-				DeletionPolicy: xpv1.DeletionDelete,
-			},
 			ForProvider: GuildParameters{
 				Name:                        "Test Guild",
 				Region:                      stringPtr("us-east"),
@@ -51,7 +46,6 @@ func TestGuildDeepCopy(t *testing.T) {
 			},
 		},
 		Status: GuildStatus{
-			ResourceStatus: xpv1.ResourceStatus{},
 			AtProvider: GuildObservation{
 				ID:            "123456789",
 				Name:          "Test Guild",

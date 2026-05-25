@@ -23,8 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 func TestRoleDeepCopy(t *testing.T) {
@@ -38,9 +36,6 @@ func TestRoleDeepCopy(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: RoleSpec{
-			ResourceSpec: xpv1.ResourceSpec{
-				DeletionPolicy: xpv1.DeletionDelete,
-			},
 			ForProvider: RoleParameters{
 				Name:        "Admin Role",
 				GuildID:     "123456789",
@@ -52,7 +47,6 @@ func TestRoleDeepCopy(t *testing.T) {
 			},
 		},
 		Status: RoleStatus{
-			ResourceStatus: xpv1.ResourceStatus{},
 			AtProvider: RoleObservation{
 				ID:      "role123456",
 				Managed: true,

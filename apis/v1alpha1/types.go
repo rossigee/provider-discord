@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // A ProviderConfigSpec defines the desired state of a ProviderConfig.
@@ -31,6 +31,10 @@ type ProviderConfigSpec struct {
 	// Defaults to https://discord.com/api/v10 if not specified.
 	// +optional
 	BaseURL *string `json:"baseURL,omitempty"`
+
+	// Deduplication configuration for channel deduplication.
+	// +optional
+	Deduplication *DeduplicationSpec `json:"deduplication,omitempty"`
 }
 
 // ProviderCredentials required to authenticate.
@@ -74,4 +78,38 @@ type ProviderConfigList struct {
 	Items           []ProviderConfig `json:"items"`
 }
 
+// DeduplicationSpec defines the desired state of channel deduplication.
+type DeduplicationSpec struct {
+	// Enabled indicates if deduplication is active.
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
 
+	// Mode defines the deduplication behavior.
+	// "report" - analyze and report duplicates via Kubernetes Events
+	// "action" - delete duplicate channels and corresponding Crossplane resources
+	// +kubebuilder:validation:Enum=report;action
+	// +optional
+	Mode DeduplicationMode `json:"mode,omitempty"`
+
+	// DeleteOrphanedResources indicates whether to delete Crossplane resources
+	// for deleted Discord channels. Only applies in "action" mode.
+	// +optional
+	DeleteOrphanedResources bool `json:"deleteOrphanedResources,omitempty"`
+
+	// TargetGuilds limits deduplication to specific guild IDs.
+	// If empty, all guilds the bot is a member of will be processed.
+	// +optional
+	TargetGuilds []string `json:"targetGuilds,omitempty"`
+}
+
+// DeduplicationMode defines how deduplication should be performed.
+// +kubebuilder:validation:Enum=report;action
+type DeduplicationMode string
+
+const (
+	// DeduplicationModeReport performs analysis only and reports via Kubernetes Events.
+	DeduplicationModeReport DeduplicationMode = "report"
+
+	// DeduplicationModeAction deletes duplicate channels and related Crossplane resources.
+	DeduplicationModeAction DeduplicationMode = "action"
+)

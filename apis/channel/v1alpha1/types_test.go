@@ -23,8 +23,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
 )
 
 func TestChannelDeepCopy(t *testing.T) {
@@ -38,9 +36,6 @@ func TestChannelDeepCopy(t *testing.T) {
 			Namespace: "default",
 		},
 		Spec: ChannelSpec{
-			ResourceSpec: xpv1.ResourceSpec{
-				DeletionPolicy: xpv1.DeletionDelete,
-			},
 			ForProvider: ChannelParameters{
 				Name:             "test-channel",
 				Type:             0, // Text channel
@@ -55,7 +50,6 @@ func TestChannelDeepCopy(t *testing.T) {
 			},
 		},
 		Status: ChannelStatus{
-			ResourceStatus: xpv1.ResourceStatus{},
 			AtProvider: ChannelObservation{
 				ID:       "111222333",
 				Name:     "test-channel",

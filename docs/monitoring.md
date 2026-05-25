@@ -15,9 +15,13 @@ Provider-discord includes comprehensive observability features:
 ### Core Provider Metrics
 
 #### API Operations
+
 ```
+
 provider_discord_discord_api_operations_total{resource_type, operation, status}
+
 ```
+
 - **Type**: Counter
 - **Description**: Total Discord API operations
 - **Labels**:
@@ -26,27 +30,39 @@ provider_discord_discord_api_operations_total{resource_type, operation, status}
   - `status`: success, error, rate_limited
 
 #### API Operation Duration
+
 ```
+
 provider_discord_discord_api_operation_duration_seconds{resource_type, operation}
+
 ```
+
 - **Type**: Histogram
 - **Description**: Duration of Discord API operations
 - **Buckets**: 0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0
 
 #### Rate Limiting
+
 ```
+
 provider_discord_discord_rate_limits_total{resource_type, endpoint}
 provider_discord_discord_rate_limit_remaining{resource_type, endpoint}
 provider_discord_discord_rate_limit_reset_time{resource_type, endpoint}
+
 ```
+
 - **Type**: Counter, Gauge, Gauge
 - **Description**: Discord API rate limit tracking
 - **Usage**: Monitor rate limit consumption and reset times
 
 #### Managed Resources
+
 ```
+
 provider_discord_managed_resources{resource_type, status}
+
 ```
+
 - **Type**: Gauge
 - **Description**: Number of managed Discord resources
 - **Labels**:
@@ -54,29 +70,41 @@ provider_discord_managed_resources{resource_type, status}
   - `status`: ready, creating, updating, deleting, error
 
 #### Reconciliation Metrics
+
 ```
+
 provider_discord_resource_reconciliations_total{resource_type, status}
 provider_discord_resource_reconciliation_duration_seconds{resource_type}
+
 ```
+
 - **Type**: Counter, Histogram
 - **Description**: Resource reconciliation operations and timing
 
 #### Error Tracking
+
 ```
+
 provider_discord_discord_api_errors_total{resource_type, status_code, error_type}
+
 ```
+
 - **Type**: Counter
 - **Description**: Discord API errors by type and status code
 - **Labels**:
   - `error_type`: rate_limit, auth_error, not_found, server_error, network_error
 
 #### Health Metrics
+
 ```
+
 provider_discord_health_check_requests_total{endpoint, status}
 provider_discord_health_check_duration_seconds{endpoint}
 provider_discord_discord_api_health{component}
 provider_discord_provider_health{component}
+
 ```
+
 - **Type**: Counter, Histogram, Gauge, Gauge
 - **Description**: Health endpoint metrics and component status
 
@@ -84,7 +112,9 @@ provider_discord_provider_health{component}
 
 ### Scrape Configuration
 
+
 ```yaml
+
 # prometheus.yml
 global:
   scrape_interval: 15s
@@ -113,11 +143,15 @@ scrape_configs:
     target_label: kubernetes_name
   - source_labels: [__meta_kubernetes_pod_name]
     target_label: kubernetes_pod_name
+
 ```
+
 
 ### ServiceMonitor (Prometheus Operator)
 
+
 ```yaml
+
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -146,13 +180,17 @@ spec:
     path: /metrics
     honorLabels: true
     scrapeTimeout: 5s
+
 ```
+
 
 ## Alerting Rules
 
 ### Critical Alerts
 
+
 ```yaml
+
 # provider-discord-alerts.yml
 groups:
 - name: provider-discord.critical
@@ -245,11 +283,15 @@ groups:
     annotations:
       summary: "High number of managed Discord resources"
       description: "Managing {{ $value }} Discord resources across all types."
+
 ```
+
 
 ### Alertmanager Configuration
 
+
 ```yaml
+
 # alertmanager.yml
 global:
   slack_api_url: 'YOUR_SLACK_WEBHOOK_URL'
@@ -290,13 +332,17 @@ receivers:
   - channel: '#discord-provider'
     title: 'Discord Provider: {{ .GroupLabels.alertname }}'
     text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+
 ```
+
 
 ## Grafana Dashboards
 
 ### Main Dashboard JSON
 
+
 ```json
+
 {
   "dashboard": {
     "id": null,
@@ -417,7 +463,9 @@ receivers:
     ]
   }
 }
+
 ```
+
 
 ### Resource-Specific Dashboards
 
@@ -457,7 +505,9 @@ Provider-discord emits OpenTelemetry traces for:
 
 ### Jaeger Configuration
 
+
 ```yaml
+
 apiVersion: jaegertracing.io/v1
 kind: Jaeger
 metadata:
@@ -494,12 +544,16 @@ spec:
             receivers: [otlp]
             processors: [batch, attributes]
             exporters: [jaeger]
+
 ```
+
 
 ### Trace Analysis Queries
 
 #### Common Queries
+
 ```
+
 # All Discord operations
 service:"provider-discord"
 
@@ -517,7 +571,9 @@ service:"provider-discord" AND resource.type:"guild"
 
 # API errors by endpoint
 service:"provider-discord" AND discord.http.status_code:>=400
+
 ```
+
 
 ## Health Monitoring
 
@@ -538,7 +594,9 @@ service:"provider-discord" AND discord.http.status_code:>=400
 
 ### Health Check Configuration
 
+
 ```yaml
+
 livenessProbe:
   httpGet:
     path: /healthz
@@ -556,7 +614,9 @@ readinessProbe:
   periodSeconds: 10
   timeoutSeconds: 5
   failureThreshold: 3
+
 ```
+
 
 ## Log Analysis
 
@@ -564,7 +624,9 @@ readinessProbe:
 
 Provider-discord uses structured JSON logging:
 
+
 ```json
+
 {
   "level": "info",
   "ts": "2023-12-07T10:30:45.123Z",
@@ -575,13 +637,17 @@ Provider-discord uses structured JSON logging:
   "correlation_id": "abc123",
   "trace_id": "def456"
 }
+
 ```
+
 
 ### Log Aggregation
 
 #### Fluent Bit Configuration
 
+
 ```yaml
+
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -615,12 +681,16 @@ data:
         Host  elasticsearch.logging.svc.cluster.local
         Port  9200
         Index provider-discord-logs
+
 ```
+
 
 ### Log Queries
 
 #### Elasticsearch/Kibana Queries
+
 ```
+
 # All provider logs
 kubernetes.labels.app:"provider-discord"
 
@@ -635,7 +705,9 @@ kubernetes.labels.app:"provider-discord" AND msg:"Discord API error"
 
 # Rate limit events
 kubernetes.labels.app:"provider-discord" AND msg:"rate limited"
+
 ```
+
 
 ## Performance Monitoring
 
@@ -690,7 +762,9 @@ For detailed troubleshooting procedures, see [Troubleshooting Guide](troubleshoo
 
 ### Datadog Integration
 
+
 ```yaml
+
 # DataDog annotations for auto-discovery
 metadata:
   annotations:
@@ -704,11 +778,15 @@ metadata:
           "metrics": ["*"]
         }
       ]
+
 ```
+
 
 ### New Relic Integration
 
+
 ```yaml
+
 # New Relic monitoring
 env:
 - name: NEW_RELIC_LICENSE_KEY
@@ -718,6 +796,8 @@ env:
       key: license
 - name: NEW_RELIC_APP_NAME
   value: "provider-discord"
+
 ```
+
 
 This comprehensive monitoring setup provides complete visibility into provider-discord operations, enabling proactive issue detection and resolution.

@@ -1,0 +1,84 @@
+---
+# Example: Using deduplication in REPORT mode (safe, dry-run)
+#
+# This example shows how to trigger channel deduplication analysis without
+# making any changes. The provider will analyze all guilds for duplicate
+# channels and report findings via Kubernetes Events.
+#
+# Usage:
+# 1. Apply this manifest to enable analysis:
+#    kubectl apply -f deduplication-report.yaml
+#
+# 2. Check the ProviderConfig to see events:
+#    kubectl describe providerconfig default
+#
+# 3. Get detailed results from the Deduplication CRD:
+#    kubectl get deduplication
+#    kubectl describe deduplication <name>
+#
+
+apiVersion: discord.crossplane.io/v1alpha1
+kind: ProviderConfig
+metadata:
+  name: default
+  annotations:
+    # Trigger deduplication in REPORT mode (analysis only)
+    discord.crossplane.io/deduplication: "report"
+spec:
+  credentials:
+    source: Secret
+    secretRef:
+      name: discord-token
+      namespace: crossplane-system
+
+# Example: Output from a deduplication report
+# (See below for expected output structure)
+#
+# After running the above, you can inspect the Deduplication CRD:
+#
+#   $ kubectl get deduplication
+#   NAME                     PHASE       MODE    DUPLICATES-FOUND   DELETED   AGE
+#   default-1735689123       completed   report  6                  0         5m
+#
+#   $ kubectl describe deduplication default-1735689123
+#
+#   Status:
+#     Phase:  completed
+#     Summary:
+#       Total Guilds Analyzed:           2
+#       Total Channels Analyzed:         42
+#       Duplicate Groups Found:          3
+#       Total Duplicate Channels Found:  6
+#       Channels Deleted:                0
+#     Results:
+#       <guild-id-1>:
+#         Guild Id:           123456789012345678
+#         Guild Name:         My Server
+#         Total Channels:     28
+#         Duplicate Groups:
+#           - Channel Name:     general
+#             Count:           2
+#             Kept Channel Id:  987654321098765432
+#             Deleted Channel Ids:  876543210987654321
+#           - Channel Name:     development
+#             Count:           2
+#             Kept Channel Id:  765432109876543210
+#             Deleted Channel Ids:  654321098765432109
+#         Channels Deleted:     0
+#       <guild-id-2>:
+#         Guild Id:           234567890123456789
+#         Guild Name:         Another Server
+#         Total Channels:     14
+#         Duplicate Groups:
+#           - Channel Name:     announcements
+#             Count:           2
+#             Kept Channel Id:  555432109876543210
+#             Deleted Channel Ids:  444321098765432109
+#         Channels Deleted:     0
+#
+# Events will also be recorded on the ProviderConfig:
+#
+#   Events:
+#     Type    Reason                    Age    From                              Message
+#     ----    ------                    ---    ----                              -------
+#     Normal  DeduplicationCompleted    5m     discord-provider-deduplication    Deduplication report completed. Mode: report. Guilds analyzed: 2, Duplicates found: 6, Channels deleted: 0

@@ -118,15 +118,21 @@ Use Discord's permission calculator:
 
 ### Create Kubernetes Secret
 
+
 ```bash
+
 kubectl create secret generic discord-creds \
   -n crossplane-system \
   --from-literal=token=YOUR_BOT_TOKEN_HERE
+
 ```
+
 
 ### Create ProviderConfig
 
+
 ```yaml
+
 apiVersion: discord.crossplane.io/v1alpha1
 kind: ProviderConfig
 metadata:
@@ -139,7 +145,9 @@ spec:
       name: discord-creds
       key: token
   baseURL: "https://discord.com/api/v10"
+
 ```
+
 
 ## Security Best Practices
 
@@ -188,7 +196,9 @@ spec:
 
 Test bot functionality:
 
+
 ```bash
+
 # Check provider status
 kubectl get providers
 
@@ -201,7 +211,9 @@ kubectl logs -n crossplane-system deployment/provider-discord
 # Test resource creation
 kubectl apply -f examples/guild.yaml
 kubectl get guilds
+
 ```
+
 
 ## Discord API Limits
 
@@ -221,15 +233,21 @@ kubectl get guilds
 ### Custom API Endpoint
 For Discord Enterprise or self-hosted instances:
 
+
 ```yaml
+
 spec:
   baseURL: "https://your-discord-api.company.com/api/v10"
+
 ```
+
 
 ### Webhook Configuration
 For advanced monitoring and automation:
 
+
 ```yaml
+
 # Webhook resource example
 apiVersion: webhook.discord.crossplane.io/v1alpha1
 kind: Webhook
@@ -240,7 +258,9 @@ spec:
     channelId: "123456789"
     name: "Crossplane Alerts"
     avatar: "https://example.com/avatar.png"
+
 ```
+
 
 ## Support Resources
 

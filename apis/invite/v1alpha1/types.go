@@ -19,7 +19,7 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	xpv1 "github.com/crossplane/crossplane-runtime/v2/apis/common/v1"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 )
 
 // InviteParameters are the configurable fields of an Invite.
@@ -111,13 +111,13 @@ type InviteObservation struct {
 
 // An InviteSpec defines the desired state of an Invite.
 type InviteSpec struct {
-	xpv1.ResourceSpec `json:",inline"`
+	xpv1.ManagedResourceSpec `json:",inline"`
 	ForProvider       InviteParameters `json:"forProvider"`
 }
 
 // An InviteStatus represents the observed state of an Invite.
 type InviteStatus struct {
-	xpv1.ResourceStatus `json:",inline"`
+	xpv1.ManagedResourceStatus `json:",inline"`
 	AtProvider          InviteObservation `json:"atProvider,omitempty"`
 }
 

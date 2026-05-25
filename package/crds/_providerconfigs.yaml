@@ -108,6 +108,38 @@ spec:
                 required:
                 - source
                 type: object
+              deduplication:
+                description: Deduplication configuration for channel deduplication.
+                properties:
+                  deleteOrphanedResources:
+                    description: |-
+                      DeleteOrphanedResources indicates whether to delete Crossplane resources
+                      for deleted Discord channels. Only applies in "action" mode.
+                    type: boolean
+                  enabled:
+                    description: Enabled indicates if deduplication is active.
+                    type: boolean
+                  mode:
+                    allOf:
+                    - enum:
+                      - report
+                      - action
+                    - enum:
+                      - report
+                      - action
+                    description: |-
+                      Mode defines the deduplication behavior.
+                      "report" - analyze and report duplicates via Kubernetes Events
+                      "action" - delete duplicate channels and corresponding Crossplane resources
+                    type: string
+                  targetGuilds:
+                    description: |-
+                      TargetGuilds limits deduplication to specific guild IDs.
+                      If empty, all guilds the bot is a member of will be processed.
+                    items:
+                      type: string
+                    type: array
+                type: object
             required:
             - credentials
             type: object

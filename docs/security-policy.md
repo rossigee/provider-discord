@@ -290,7 +290,9 @@ The provider aligns with the following security standards:
 
 Key security metrics monitored:
 
+
 ```promql
+
 # Authentication failures
 provider_discord_auth_failures_total
 
@@ -302,7 +304,9 @@ provider_discord_api_anomalies_total
 
 # Security alert count
 provider_discord_security_alerts_total
+
 ```
+
 
 ### Alerting
 
