@@ -291,32 +291,54 @@ func (s *DeduplicationService) deleteChannel(ctx context.Context, channelID stri
 	return nil
 }
 
-// getGuilds retrieves all guilds the bot is a member of.
+// getGuilds retrieves all guilds the bot is a member of, handling pagination.
+// Discord returns at most 200 guilds per request; this function follows the
+// `after` cursor until all pages are exhausted.
 func (s *DeduplicationService) getGuilds(ctx context.Context) ([]Guild, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/users/@me/guilds", s.baseURL), nil)
-	if err != nil {
-		return nil, err
+	var all []Guild
+	after := ""
+
+	for {
+		url := fmt.Sprintf("%s/users/@me/guilds?limit=200", s.baseURL)
+		if after != "" {
+			url += "&after=" + after
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("Authorization", "Bot "+s.botToken)
+
+		resp, err := s.httpClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if resp.StatusCode != 200 {
+			body, _ := io.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+			return nil, fmt.Errorf("discord API error: %d - %s", resp.StatusCode, string(body))
+		}
+
+		var page []Guild
+		if err := json.NewDecoder(resp.Body).Decode(&page); err != nil {
+			_ = resp.Body.Close()
+			return nil, err
+		}
+		_ = resp.Body.Close()
+
+		all = append(all, page...)
+
+		// Discord signals the last page by returning fewer than the requested limit
+		if len(page) < 200 {
+			break
+		}
+		// Advance cursor to the last guild ID on this page
+		after = page[len(page)-1].ID
 	}
 
-	req.Header.Set("Authorization", "Bot "+s.botToken)
-
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("discord API error: %d - %s", resp.StatusCode, string(body))
-	}
-
-	var guilds []Guild
-	if err := json.NewDecoder(resp.Body).Decode(&guilds); err != nil {
-		return nil, err
-	}
-
-	return guilds, nil
+	return all, nil
 }
 
 // getChannels retrieves all channels for a specific guild.

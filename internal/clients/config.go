@@ -25,8 +25,8 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	"github.com/rossigee/provider-discord/apis/v1alpha1"
 )
@@ -34,7 +34,6 @@ import (
 const (
 	errNoProviderConfig     = "no providerConfigRef provided"
 	errGetProviderConfig    = "cannot get referenced ProviderConfig"
-	errTrackUsage           = "cannot track ProviderConfig usage"
 	errExtractCredentials   = "cannot extract credentials"
 	errUnmarshalCredentials = "cannot unmarshal credentials"
 )
@@ -104,12 +103,6 @@ func GetConfig(ctx context.Context, c client.Client, mg resource.Managed) (*stri
 	pc := &v1alpha1.ProviderConfig{}
 	if err := c.Get(ctx, types.NamespacedName{Name: pcRef.Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetProviderConfig)
-	}
-
-	// Use no-op tracker for v2.0.0 compatibility
-	t := resource.ModernTrackerFn(func(ctx context.Context, mg resource.ModernManaged) error { return nil })
-	if err := t.Track(ctx, mg.(resource.ModernManaged)); err != nil {
-		return nil, errors.Wrap(err, errTrackUsage)
 	}
 
 	// Extract token from the credentials

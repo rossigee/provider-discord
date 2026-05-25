@@ -26,7 +26,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -51,14 +51,14 @@ const (
 // ProviderConfigReconciler reconciles ProviderConfig objects and handles deduplication.
 type ProviderConfigReconciler struct {
 	client.Client
-	Recorder record.EventRecorder
+	Recorder events.EventRecorder
 }
 
 // Setup adds the reconciler to the manager.
 func Setup(mgr ctrl.Manager) error {
 	r := &ProviderConfigReconciler{
 		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorderFor("discord-provider-deduplication"), //nolint:staticcheck
+		Recorder: mgr.GetEventRecorder("discord-provider-deduplication"),
 	}
 
 	// Predicate to only watch ProviderConfigs with the deduplication annotation
@@ -127,7 +127,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	botToken, baseURL, err := r.extractCredentials(ctx, pc)
 	if err != nil {
 		log.Error(err, "failed to extract credentials")
-		r.Recorder.Event(pc, corev1.EventTypeWarning, "DeduplicationFailed", fmt.Sprintf("Failed to extract credentials: %v", err))
+		r.Recorder.Eventf(pc, nil, corev1.EventTypeWarning, "DeduplicationFailed", "credentials", "Failed to extract credentials: %v", err)
 		return ctrl.Result{}, err
 	}
 
@@ -189,7 +189,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	result, err := dedupService.AnalyzeAndDeduplicate(ctx, mode, spec.TargetGuilds)
 	if err != nil {
 		log.Error(err, "deduplication analysis failed")
-		r.Recorder.Event(pc, corev1.EventTypeWarning, "DeduplicationFailed", fmt.Sprintf("Analysis failed: %v", err))
+		r.Recorder.Eventf(pc, nil, corev1.EventTypeWarning, "DeduplicationFailed", "analysis", "Analysis failed: %v", err)
 		// Best-effort: update CRD to reflect failure so operators can see what happened
 		_, _ = controllerutil.CreateOrUpdate(ctx, r.Client, dedupCRD, func() error {
 			dedupCRD.Status.Phase = "failed"
@@ -252,7 +252,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		eventType = corev1.EventTypeWarning
 		eventMsg += fmt.Sprintf(". Error: %s", result.Error)
 	}
-	r.Recorder.Event(pc, eventType, "DeduplicationCompleted", eventMsg)
+	r.Recorder.Eventf(pc, nil, eventType, "DeduplicationCompleted", "summary", "%s", eventMsg)
 
 	log.Info("Deduplication completed", "mode", mode, "guilds", result.Summary.TotalGuildsAnalyzed,
 		"duplicatesFound", result.Summary.TotalDuplicateChannelsFound,

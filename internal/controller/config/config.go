@@ -17,8 +17,8 @@ limitations under the License.
 package config
 
 import (
-	ctrl "sigs.k8s.io/controller-runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	ctrl "sigs.k8s.io/controller-runtime"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
@@ -54,7 +54,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 
 	r := providerconfig.NewReconciler(mgr, of,
 		providerconfig.WithLogger(o.Logger.WithValues("controller", name)),
-		providerconfig.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorderFor(name)))) //nolint:staticcheck
+		providerconfig.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorder(name))))
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(name).

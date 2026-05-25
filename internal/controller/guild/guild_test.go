@@ -27,8 +27,8 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 )
 
@@ -84,12 +84,12 @@ func TestObserve(t *testing.T) {
 	guildID := "123456789"
 
 	tests := []struct {
-		name                string
-		guild               *guildv1alpha1.Guild
-		mockSetup           func(*MockGuildClient)
-		expectedExists      bool
-		expectedUpToDate    bool
-		expectError         bool
+		name             string
+		guild            *guildv1alpha1.Guild
+		mockSetup        func(*MockGuildClient)
+		expectedExists   bool
+		expectedUpToDate bool
+		expectError      bool
 	}{
 		{
 			name: "guild exists and up to date",
@@ -266,10 +266,10 @@ func TestUpdate(t *testing.T) {
 	guildID := "123456789"
 
 	tests := []struct {
-		name        string
-		guild       *guildv1alpha1.Guild
-		mockSetup   func(*MockGuildClient)
-		expectError bool
+		name         string
+		guild        *guildv1alpha1.Guild
+		mockSetup    func(*MockGuildClient)
+		expectError  bool
 		expectUpdate bool
 	}{
 		{
@@ -301,7 +301,7 @@ func TestUpdate(t *testing.T) {
 					}, nil
 				}
 			},
-			expectError: false,
+			expectError:  false,
 			expectUpdate: true,
 		},
 		{
@@ -336,7 +336,7 @@ func TestUpdate(t *testing.T) {
 					}, nil
 				}
 			},
-			expectError: false,
+			expectError:  false,
 			expectUpdate: true,
 		},
 		{
@@ -388,7 +388,7 @@ func TestUpdate(t *testing.T) {
 					}, nil
 				}
 			},
-			expectError: false,
+			expectError:  false,
 			expectUpdate: true,
 		},
 		{
@@ -413,7 +413,7 @@ func TestUpdate(t *testing.T) {
 			mockSetup: func(m *MockGuildClient) {
 				// ModifyGuildFunc should not be called
 			},
-			expectError: false,
+			expectError:  false,
 			expectUpdate: false,
 		},
 		{
@@ -440,7 +440,7 @@ func TestUpdate(t *testing.T) {
 					return nil, errors.New("update failed")
 				}
 			},
-			expectError: true,
+			expectError:  true,
 			expectUpdate: true,
 		},
 	}
@@ -543,8 +543,8 @@ func TestDisconnect(t *testing.T) {
 
 func TestTypeAssertions(t *testing.T) {
 	tests := []struct {
-		name     string
-		method   string
+		name   string
+		method string
 	}{
 		{
 			name:   "invalid resource type in Observe",
