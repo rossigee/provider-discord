@@ -12,12 +12,12 @@ spec:
     temporary: false   # Not temporary membership
     unique: false      # Can reuse similar invites
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default
   # Connection secrets will contain:
   # - url: full invite URL (https://discord.gg/CODE)
-  writeConnectionSecretsToRef:
+  writeConnectionSecretToRef:
     name: invite-connection
-    namespace: default
 ---
 apiVersion: invite.discord.crossplane.io/v1alpha1
 kind: Invite
@@ -33,10 +33,10 @@ spec:
     temporary: true    # Temporary membership only
     unique: true       # Must be unique
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default
-  writeConnectionSecretsToRef:
+  writeConnectionSecretToRef:
     name: temp-invite-connection
-    namespace: default
 ---
 apiVersion: invite.discord.crossplane.io/v1alpha1
 kind: Invite
@@ -52,7 +52,7 @@ spec:
     temporary: false   # Full membership
     unique: false      # Can reuse similar invites
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default
-  writeConnectionSecretsToRef:
+  writeConnectionSecretToRef:
     name: permanent-invite-connection
-    namespace: default

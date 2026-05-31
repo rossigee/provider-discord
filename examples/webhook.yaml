@@ -11,13 +11,13 @@ spec:
     # Optional: avatar image data (base64 encoded)
     # avatar: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAA..."
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default
   # Connection secrets will contain:
   # - token: webhook token for posting messages
   # - url: webhook URL
-  writeConnectionSecretsToRef:
+  writeConnectionSecretToRef:
     name: webhook-connection
-    namespace: default
 ---
 apiVersion: webhook.discord.crossplane.io/v1alpha1
 kind: Webhook
@@ -30,7 +30,7 @@ spec:
     name: "CI/CD Notifications"
     channelId: "CI_CHANNEL_ID_HERE"  # Replace with actual channel ID
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default
-  writeConnectionSecretsToRef:
+  writeConnectionSecretToRef:
     name: ci-webhook-connection
-    namespace: ci-system

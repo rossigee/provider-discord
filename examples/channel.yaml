@@ -14,6 +14,7 @@ spec:
     nsfw: false
     rateLimitPerUser: 5  # 5 second cooldown
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default
 ---
 apiVersion: channel.discord.crossplane.io/v1alpha1
@@ -31,6 +32,7 @@ spec:
     bitrate: 64000  # 64kbps
     userLimit: 10  # Max 10 users
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default
 ---
 apiVersion: channel.discord.crossplane.io/v1alpha1
@@ -46,4 +48,5 @@ spec:
     guildId: "GUILD_ID_HERE"  # Replace with actual guild ID
     position: 0
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default

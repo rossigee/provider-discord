@@ -30,8 +30,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
-	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	"github.com/rossigee/provider-discord/apis/v1alpha1"
 )
@@ -62,7 +62,7 @@ func TestGetConfig(t *testing.T) {
 			reason: "Should extract token from secret successfully",
 			args: args{
 				mg: &MockManaged{
-					providerConfigRef: &xpv1.Reference{
+					providerConfigRef: &xpv1.ProviderConfigReference{
 						Name: "test-provider-config",
 					},
 				},
@@ -105,7 +105,7 @@ func TestGetConfig(t *testing.T) {
 			reason: "Should fail when provider config not found",
 			args: args{
 				mg: &MockManaged{
-					providerConfigRef: &xpv1.Reference{
+					providerConfigRef: &xpv1.ProviderConfigReference{
 						Name: "non-existent",
 					},
 				},
@@ -119,7 +119,7 @@ func TestGetConfig(t *testing.T) {
 			reason: "Should fail when secret not found",
 			args: args{
 				mg: &MockManaged{
-					providerConfigRef: &xpv1.Reference{
+					providerConfigRef: &xpv1.ProviderConfigReference{
 						Name: "test-provider-config",
 					},
 				},
@@ -153,7 +153,7 @@ func TestGetConfig(t *testing.T) {
 			reason: "Should fail when key not found in secret",
 			args: args{
 				mg: &MockManaged{
-					providerConfigRef: &xpv1.Reference{
+					providerConfigRef: &xpv1.ProviderConfigReference{
 						Name: "test-provider-config",
 					},
 				},
@@ -196,7 +196,7 @@ func TestGetConfig(t *testing.T) {
 			reason: "Should fail when no secret reference provided",
 			args: args{
 				mg: &MockManaged{
-					providerConfigRef: &xpv1.Reference{
+					providerConfigRef: &xpv1.ProviderConfigReference{
 						Name: "test-provider-config",
 					},
 				},
@@ -266,38 +266,26 @@ func TestGetConfig(t *testing.T) {
 
 // MockManaged is a mock implementation of resource.Managed
 type MockManaged struct {
-	providerConfigRef *xpv1.Reference
+	providerConfigRef *xpv1.ProviderConfigReference
 }
 
-func (m *MockManaged) GetProviderConfigReference() *xpv1.Reference {
+func (m *MockManaged) GetProviderConfigReference() *xpv1.ProviderConfigReference {
 	return m.providerConfigRef
 }
 
-func (m *MockManaged) SetProviderConfigReference(r *xpv1.Reference) {}
+func (m *MockManaged) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {}
 
-func (m *MockManaged) GetProviderReference() *xpv1.Reference {
+func (m *MockManaged) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
 	return nil
 }
 
-func (m *MockManaged) SetProviderReference(r *xpv1.Reference) {}
-
-func (m *MockManaged) GetWriteConnectionSecretToReference() *xpv1.SecretReference {
-	return nil
-}
-
-func (m *MockManaged) SetWriteConnectionSecretToReference(r *xpv1.SecretReference) {}
+func (m *MockManaged) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {}
 
 func (m *MockManaged) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
 	return xpv1.Condition{}
 }
 
 func (m *MockManaged) SetConditions(c ...xpv1.Condition) {}
-
-func (m *MockManaged) GetDeletionPolicy() xpv1.DeletionPolicy {
-	return ""
-}
-
-func (m *MockManaged) SetDeletionPolicy(p xpv1.DeletionPolicy) {}
 
 func (m *MockManaged) GetManagementPolicies() xpv1.ManagementPolicies {
 	return nil

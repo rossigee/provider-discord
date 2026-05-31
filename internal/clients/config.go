@@ -86,11 +86,13 @@ func (c *ProviderCredentials) Extract(ctx context.Context, client client.Client)
 // GetConfig extracts the Discord bot token from a ProviderConfig
 func GetConfig(ctx context.Context, c client.Client, mg resource.Managed) (*string, error) {
 	// Get provider config reference from the managed resource's ResourceSpec
-	var pcRef *xpv1.Reference
+	var pcRef *xpv1.ProviderConfigReference
 
 	// Type assert to extract the ProviderConfigReference from the managed resource
 	switch mr := mg.(type) {
-	case interface{ GetProviderConfigReference() *xpv1.Reference }:
+	case interface {
+		GetProviderConfigReference() *xpv1.ProviderConfigReference
+	}:
 		pcRef = mr.GetProviderConfigReference()
 	default:
 		return nil, errors.New(errGetProviderConfig)

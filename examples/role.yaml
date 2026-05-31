@@ -13,6 +13,7 @@ spec:
     mentionable: false  # Role cannot be mentioned
     permissions: "8"    # Administrator permissions (be careful with this!)
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default
 ---
 apiVersion: role.discord.crossplane.io/v1alpha1
@@ -30,4 +31,5 @@ spec:
     mentionable: true
     permissions: "104324097"  # Basic permissions: Read Messages, Send Messages, etc.
   providerConfigRef:
+    kind: ClusterProviderConfig
     name: default

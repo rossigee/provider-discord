@@ -1,6 +1,3 @@
-//go:generate go run sigs.k8s.io/controller-tools/cmd/controller-gen crd:allowDangerousTypes=true paths="./..." output:crd:artifacts:config=../../package/crds object:headerFile=../../hack/boilerplate.go.txt
-//go:generate go run sigs.k8s.io/controller-tools/cmd/controller-gen object:headerFile=../../hack/boilerplate.go.txt paths="./..."
-
 /*
 Copyright 2025 The Crossplane Authors.
 
@@ -49,8 +46,6 @@ var (
 	ProviderConfigGroupKind        = schema.GroupKind{Group: Group, Kind: ProviderConfigKind}.String()
 	ProviderConfigKindAPIVersion   = ProviderConfigKind + "." + GroupVersion.String()
 	ProviderConfigGroupVersionKind = GroupVersion.WithKind(ProviderConfigKind)
-
-
 )
 
 func init() {
