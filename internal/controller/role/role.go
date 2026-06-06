@@ -2,33 +2,25 @@ package role
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	v1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 )
 
 const (
-	errNotRole      = "managed resource is not a Role custom resource"
-	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
-	errGetCreds     = "cannot get credentials"
-
-	// errNewClient removed - unused
+	errNotRole = "managed resource is not a Role custom resource"
 )
 
 // Setup adds a controller that reconciles Role managed resources.
@@ -38,8 +30,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(rolev1alpha1.RoleGroupVersionKind),
 		managed.WithExternalConnector(&connector{
-			kube:  mgr.GetClient(),
-			usage: resource.ModernTrackerFn(func(ctx context.Context, mg resource.ModernManaged) error { return nil }),
+			kube: mgr.GetClient(),
 		}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
@@ -56,59 +47,29 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 // A connector is expected to produce an ExternalClient when its Connect method
 // is called.
 type connector struct {
-	kube  client.Client
-	usage resource.ModernTracker
+	kube client.Client
 }
 
 // Connect typically produces an ExternalClient by:
-// 1. Tracking that the managed resource is using a ProviderConfig.
-// 2. Getting the managed resource's ProviderConfig.
-// 3. Getting the credentials specified by the ProviderConfig.
-// 4. Using the credentials to form a client.
+// 1. Getting the managed resource's ProviderConfig.
+// 2. Getting the credentials specified by the ProviderConfig.
+// 3. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*rolev1alpha1.Role)
+	cr, ok := mg.(*rolev1alpha1.Role)
 	if !ok {
 		return nil, errors.New(errNotRole)
 	}
 
-	if err := c.usage.Track(ctx, mg.(resource.ModernManaged)); err != nil {
-		return nil, errors.Wrap(err, errTrackPCUsage)
+	if cr.GetProviderConfigReference() == nil {
+		return nil, errors.New("no providerConfigRef provided")
 	}
 
-	// Get provider config reference from the managed resource's ResourceSpec
-	var pcRef *xpv1.ProviderConfigReference
-
-	// Type assert to extract the ProviderConfigReference from the managed resource
-	switch mr := mg.(type) {
-	case interface {
-		GetProviderConfigReference() *xpv1.ProviderConfigReference
-	}:
-		pcRef = mr.GetProviderConfigReference()
-	default:
-		return nil, errors.New(errGetPC)
-	}
-
-	if pcRef == nil {
-		return nil, errors.New(errGetPC)
-	}
-
-	pc := &v1alpha1.ProviderConfig{}
-	if err := c.kube.Get(ctx, types.NamespacedName{Name: pcRef.Name}, pc); err != nil {
-		return nil, errors.Wrap(err, errGetPC)
-	}
-
-	// Extract credentials from the provider config
-	credentials := discordclient.ProviderCredentials{
-		Source:                    discordclient.CredentialsSourceSecret,
-		CommonCredentialSelectors: pc.Spec.Credentials.CommonCredentialSelectors,
-	}
-	token, err := credentials.Extract(ctx, c.kube)
+	token, err := discordclient.GetConfig(ctx, c.kube, cr)
 	if err != nil {
-		return nil, errors.Wrap(err, errGetCreds)
+		return nil, errors.Wrap(err, "cannot get discord config")
 	}
 
-	// Create Discord client
-	discordClient := discordclient.NewDiscordClient(token)
+	discordClient := discordclient.NewDiscordClient(*token)
 
 	return &external{discord: discordClient}, nil
 }
@@ -216,7 +177,11 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		_, err = e.discord.ModifyRole(ctx, cr.Spec.ForProvider.GuildID, role.ID, modifyReq)
 		if err != nil {
 			// Log error but don't fail creation
-			fmt.Printf("Warning: failed to set role position: %v\n", err)
+			logging.NewLogrLogger(ctrl.Log.WithName("role-controller")).WithValues(
+				"error", err,
+				"roleID", role.ID,
+				"guildID", cr.Spec.ForProvider.GuildID,
+			).Info("Warning: failed to set role position")
 		}
 	}
 

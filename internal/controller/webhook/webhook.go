@@ -19,6 +19,7 @@ package webhook
 import (
 	"context"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -238,6 +239,11 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		req.Avatar = cr.Spec.ForProvider.Avatar
 	}
 
+	// Allow moving webhook to a different channel
+	if cr.Spec.ForProvider.ChannelID != "" {
+		req.ChannelID = &cr.Spec.ForProvider.ChannelID
+	}
+
 	_, err := c.service.ModifyWebhook(ctx, meta.GetExternalName(cr), req)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update webhook")
@@ -256,6 +262,10 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	err := c.service.DeleteWebhook(ctx, meta.GetExternalName(cr))
 	if err != nil {
+		// Check if the error is a 404 (webhook not found), which means it's already deleted
+		if strings.Contains(err.Error(), "Discord API error: 404") {
+			return managed.ExternalDelete{}, nil
+		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete webhook")
 	}
 

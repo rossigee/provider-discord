@@ -72,7 +72,7 @@ type RoleStatus struct {
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
 // +kubebuilder:subresource:status
-// +kubebuilder:resource:scope=Cluster,categories={crossplane,managed,discord}
+// +kubebuilder:resource:scope=Namespaced,categories={crossplane,managed,discord}
 
 // A Role is an example API type.
 type Role struct {

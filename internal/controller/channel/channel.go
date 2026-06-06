@@ -236,6 +236,17 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		UpdatedAt: now,
 	}
 
+	// Late initialization: populate spec fields from observed state if not set
+	lateInitialized := false
+	if cr.Spec.ForProvider.GuildID == "" && channel.GuildID != "" {
+		cr.Spec.ForProvider.GuildID = channel.GuildID
+		lateInitialized = true
+	}
+	if cr.Spec.ForProvider.Type == 0 && channel.Type != 0 {
+		cr.Spec.ForProvider.Type = channel.Type
+		lateInitialized = true
+	}
+
 	// Check if we need to update
 	needsUpdate := cr.Spec.ForProvider.Name != channel.Name
 	if cr.Spec.ForProvider.Position != nil && *cr.Spec.ForProvider.Position != channel.Position {
@@ -246,8 +257,9 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	return managed.ExternalObservation{
-		ResourceExists:   true,
-		ResourceUpToDate: !needsUpdate,
+		ResourceExists:          true,
+		ResourceUpToDate:        !needsUpdate,
+		ResourceLateInitialized: lateInitialized,
 	}, nil
 }
 
@@ -348,7 +360,9 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	err := c.service.DeleteChannel(ctx, meta.GetExternalName(cr))
 	if err != nil {
 		// Check if the error is a 404 (channel not found), which means it's already deleted
-		// This is a simplified error check - in production, you'd want more robust error handling
+		if isDiscordNotFound(err) {
+			return managed.ExternalDelete{}, nil
+		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete channel")
 	}
 

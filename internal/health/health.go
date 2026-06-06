@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -198,15 +199,39 @@ func (h *HealthChecker) checkKubernetes(ctx context.Context) error {
 }
 
 // CreateDiscordHealthCheck creates a health check function for Discord API
+// If DISCORD_BOT_TOKEN environment variable is set, it will attempt to verify
+// connectivity to the Discord API
 func CreateDiscordHealthCheck() func(context.Context) error {
 	return func(ctx context.Context) error {
-		// This is a placeholder for Discord API health check
-		// In a real implementation, this would:
-		// 1. Create a Discord client with the configured credentials
-		// 2. Make a lightweight API call (e.g., get current user)
-		// 3. Return any errors from the API call
+		token := os.Getenv("DISCORD_BOT_TOKEN")
+		if token == "" {
+			// No token configured - skip Discord API check
+			// This is expected in development or when credentials aren't available
+			return nil
+		}
 
-		// For now, just return nil (healthy)
+		// Make a lightweight API call to verify connectivity
+		client := &http.Client{Timeout: 5 * time.Second}
+		req, err := http.NewRequestWithContext(ctx, "GET",
+			"https://discord.com/api/v11/users/@me", nil)
+		if err != nil {
+			return fmt.Errorf("failed to create Discord API request: %w", err)
+		}
+		req.Header.Set("Authorization", "Bot "+token)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("discord API unreachable: %w", err)
+		}
+		defer func() { _ = resp.Body.Close() }()
+
+		if resp.StatusCode >= 500 {
+			return fmt.Errorf("discord API returned server error: %d", resp.StatusCode)
+		}
+		if resp.StatusCode == 401 {
+			return fmt.Errorf("discord API token is invalid")
+		}
+
 		return nil
 	}
 }

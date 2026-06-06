@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -14,18 +13,13 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	memberv1alpha1 "github.com/rossigee/provider-discord/apis/member/v1alpha1"
-	v1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 )
 
 const (
-	errNotMember    = "managed resource is not a Member custom resource"
-	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
-	errGetCreds     = "cannot get credentials"
+	errNotMember = "managed resource is not a Member custom resource"
 )
 
 // Setup adds a controller that reconciles Member managed resources.
@@ -35,8 +29,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(memberv1alpha1.MemberGroupVersionKind),
 		managed.WithExternalConnector(&connector{
-			kube:  mgr.GetClient(),
-			usage: resource.ModernTrackerFn(func(ctx context.Context, mg resource.ModernManaged) error { return nil }),
+			kube: mgr.GetClient(),
 		}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
@@ -53,59 +46,29 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 // A connector is expected to produce an ExternalClient when its Connect method
 // is called.
 type connector struct {
-	kube  client.Client
-	usage resource.ModernTracker
+	kube client.Client
 }
 
 // Connect typically produces an ExternalClient by:
-// 1. Tracking that the managed resource is using a ProviderConfig.
-// 2. Getting the managed resource's ProviderConfig.
-// 3. Getting the credentials specified by the ProviderConfig.
-// 4. Using the credentials to form a client.
+// 1. Getting the managed resource's ProviderConfig.
+// 2. Getting the credentials specified by the ProviderConfig.
+// 3. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*memberv1alpha1.Member)
+	cr, ok := mg.(*memberv1alpha1.Member)
 	if !ok {
 		return nil, errors.New(errNotMember)
 	}
 
-	if err := c.usage.Track(ctx, mg.(resource.ModernManaged)); err != nil {
-		return nil, errors.Wrap(err, errTrackPCUsage)
+	if cr.GetProviderConfigReference() == nil {
+		return nil, errors.New("no providerConfigRef provided")
 	}
 
-	// Get provider config reference from the managed resource's ResourceSpec
-	var pcRef *xpv1.ProviderConfigReference
-
-	// Type assert to extract the ProviderConfigReference from the managed resource
-	switch mr := mg.(type) {
-	case interface {
-		GetProviderConfigReference() *xpv1.ProviderConfigReference
-	}:
-		pcRef = mr.GetProviderConfigReference()
-	default:
-		return nil, errors.New(errGetPC)
-	}
-
-	if pcRef == nil {
-		return nil, errors.New(errGetPC)
-	}
-
-	pc := &v1alpha1.ProviderConfig{}
-	if err := c.kube.Get(ctx, types.NamespacedName{Name: pcRef.Name}, pc); err != nil {
-		return nil, errors.Wrap(err, errGetPC)
-	}
-
-	// Extract credentials from the provider config
-	credentials := discordclient.ProviderCredentials{
-		Source:                    discordclient.CredentialsSourceSecret,
-		CommonCredentialSelectors: pc.Spec.Credentials.CommonCredentialSelectors,
-	}
-	token, err := credentials.Extract(ctx, c.kube)
+	token, err := discordclient.GetConfig(ctx, c.kube, cr)
 	if err != nil {
-		return nil, errors.Wrap(err, errGetCreds)
+		return nil, errors.Wrap(err, "cannot get discord config")
 	}
 
-	// Create Discord client
-	discordClient := discordclient.NewDiscordClient(token)
+	discordClient := discordclient.NewDiscordClient(*token)
 
 	return &external{discord: discordClient}, nil
 }
@@ -178,10 +141,40 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	cr.Status.AtProvider.Permissions = member.Permissions
 	cr.Status.AtProvider.CommunicationDisabledUntil = member.CommunicationDisabledUntil
 
-	// Check if update is needed - compare nickname and roles
+	// Check if update is needed - compare all modifiable fields
 	needsUpdate := (cr.Spec.ForProvider.Nick != nil && (member.Nick == nil || *cr.Spec.ForProvider.Nick != *member.Nick)) ||
-		(cr.Spec.ForProvider.Nick == nil && member.Nick != nil) ||
-		len(cr.Spec.ForProvider.Roles) != len(member.Roles)
+		(cr.Spec.ForProvider.Nick == nil && member.Nick != nil)
+
+	// Check roles - compare contents not just length
+	if len(cr.Spec.ForProvider.Roles) != len(member.Roles) {
+		needsUpdate = true
+	} else {
+		roleSet := make(map[string]bool)
+		for _, r := range member.Roles {
+			roleSet[r] = true
+		}
+		for _, r := range cr.Spec.ForProvider.Roles {
+			if !roleSet[r] {
+				needsUpdate = true
+				break
+			}
+		}
+	}
+
+	// Check Deaf
+	if cr.Spec.ForProvider.Deaf != nil && member.Deaf != *cr.Spec.ForProvider.Deaf {
+		needsUpdate = true
+	}
+	// Check Mute
+	if cr.Spec.ForProvider.Mute != nil && member.Mute != *cr.Spec.ForProvider.Mute {
+		needsUpdate = true
+	}
+	// Check CommunicationDisabledUntil
+	if cr.Spec.ForProvider.CommunicationDisabledUntil != nil {
+		if member.CommunicationDisabledUntil == nil || *cr.Spec.ForProvider.CommunicationDisabledUntil != *member.CommunicationDisabledUntil {
+			needsUpdate = true
+		}
+	}
 
 	return managed.ExternalObservation{
 		ResourceExists:          true,

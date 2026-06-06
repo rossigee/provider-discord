@@ -18,6 +18,7 @@ package guild
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -113,10 +114,19 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return managed.ExternalObservation{}, errors.New(errNotGuild)
 	}
 
+	log := ctrl.LoggerFrom(ctx)
+
 	// If we have an external name (guild ID), try to get by ID
 	if meta.GetExternalName(cr) != "" {
 		guild, err := c.service.GetGuild(ctx, meta.GetExternalName(cr))
 		if err != nil {
+			// Check if it's a 404 (guild not found)
+			if strings.Contains(err.Error(), "Discord API error: 404") {
+				log.Info("Guild not found, marking as non-existent", "guildID", meta.GetExternalName(cr))
+				return managed.ExternalObservation{
+					ResourceExists: false,
+				}, nil
+			}
 			return managed.ExternalObservation{}, errors.Wrap(err, "failed to get guild by ID")
 		}
 
@@ -347,7 +357,9 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	err := c.service.DeleteGuild(ctx, meta.GetExternalName(cr))
 	if err != nil {
 		// Check if the error is a 404 (guild not found), which means it's already deleted
-		// This is a simplified error check - in production, you'd want more robust error handling
+		if strings.Contains(err.Error(), "Discord API error: 404") {
+			return managed.ExternalDelete{}, nil
+		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete guild")
 	}
 

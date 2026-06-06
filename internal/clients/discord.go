@@ -36,7 +36,7 @@ import (
 
 const (
 	// DiscordAPIBaseURL is the base URL for the Discord API
-	DiscordAPIBaseURL = "https://discord.com/api/v10"
+	DiscordAPIBaseURL = "https://discord.com/api/v11"
 )
 
 // RoleClient defines the interface for role-related Discord operations
