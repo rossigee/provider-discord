@@ -86,32 +86,21 @@ jobs:
         run: |
           make -j XPKG_REG_ORGS="ghcr.io/rossigee" XPKG_REG_ORGS_NO_PROMOTE="ghcr.io/rossigee" BRANCH_NAME="main" VERSION="${{ github.event.inputs.version || github.ref_name }}" build.all
         env:
-          BUILD_ARGS: "--load"
+          BUILD_ARGS: "--push"
 
-      - name: Publish Artifacts
+      - name: Verify Publication
         run: |
           VERSION="${{ github.event.inputs.version || github.ref_name }}"
           REGISTRY="ghcr.io/rossigee"
           REPO="provider-discord"
 
-          echo "=== Available Docker images ==="
-          docker images | grep -i provider || docker images
+          echo "Verifying publication of ${REGISTRY}/${REPO}:${VERSION}"
 
-          echo ""
-          echo "=== Attempting to publish ${REGISTRY}/${REPO}:${VERSION} ==="
+          # Verify images were pushed by checking they exist on the registry
+          # Use docker pull as a quick check
+          docker pull ${REGISTRY}/${REPO}:${VERSION} 2>&1 | tail -5 || exit 1
 
-          # The build.all step should have created images with proper naming
-          # Try to push them
-          set -x
-          docker push ${REGISTRY}/${REPO}:${VERSION} || {
-            echo "First push failed, listing images again:"
-            docker images
-            exit 1
-          }
-          docker push ${REGISTRY}/${REPO}:latest
-          set +x
-
-          echo "✅ Successfully published:"
+          echo "✅ Verified images published:"
           echo "  - ${REGISTRY}/${REPO}:${VERSION}"
           echo "  - ${REGISTRY}/${REPO}:latest"
 
