@@ -58,6 +58,11 @@ jobs:
         with:
           go-version: '1.26.4'
 
+      - name: Install Crossplane CLI
+        run: |
+          go install github.com/crossplane/crossplane-cli@latest
+          crossplane version
+
       - name: Find the Go Build Cache
         id: go_cache
         run: |
