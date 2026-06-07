@@ -61,6 +61,7 @@ jobs:
       - name: Install Crossplane CLI
         run: |
           go install github.com/crossplane/crossplane-cli@latest
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
           echo "${{ github.token }}" | crossplane xpkg login ghcr.io -u rossigee --password-stdin
           crossplane version
 
