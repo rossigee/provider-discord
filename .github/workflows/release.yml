@@ -60,10 +60,23 @@ jobs:
 
       - name: Install Crossplane CLI
         run: |
-          go install github.com/crossplane/crossplane-cli@latest
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-          echo "${{ github.token }}" | crossplane xpkg login ghcr.io -u rossigee --password-stdin
+          # Download crossplane binary directly instead of go install
+          CROSSPLANE_VERSION="v2.0.2"
+          PLATFORM="$(uname -s)_$(uname -m)"
+          case "$PLATFORM" in
+            Linux_x86_64) PLATFORM="linux_amd64" ;;
+            Linux_aarch64) PLATFORM="linux_arm64" ;;
+            Darwin_x86_64) PLATFORM="darwin_amd64" ;;
+            Darwin_arm64) PLATFORM="darwin_arm64" ;;
+          esac
+
+          echo "Downloading crossplane $CROSSPLANE_VERSION for $PLATFORM"
+          curl -sL "https://releases.crossplane.io/release/${CROSSPLANE_VERSION}/bin/${PLATFORM}/crossplane" -o /tmp/crossplane
+          chmod +x /tmp/crossplane
+          sudo mv /tmp/crossplane /usr/local/bin/
+
           crossplane version
+          echo "${{ github.token }}" | crossplane xpkg login ghcr.io -u rossigee --password-stdin
 
       - name: Find the Go Build Cache
         id: go_cache
