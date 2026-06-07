@@ -94,12 +94,22 @@ jobs:
           REGISTRY="ghcr.io/rossigee"
           REPO="provider-discord"
 
-          echo "Publishing ${REGISTRY}/${REPO}:${VERSION}"
+          echo "=== Available Docker images ==="
+          docker images | grep -i provider || docker images
 
-          # The build.all step already created and loaded the Docker images
-          # Push the images to the registry
-          docker push ${REGISTRY}/${REPO}:${VERSION}
+          echo ""
+          echo "=== Attempting to publish ${REGISTRY}/${REPO}:${VERSION} ==="
+
+          # The build.all step should have created images with proper naming
+          # Try to push them
+          set -x
+          docker push ${REGISTRY}/${REPO}:${VERSION} || {
+            echo "First push failed, listing images again:"
+            docker images
+            exit 1
+          }
           docker push ${REGISTRY}/${REPO}:latest
+          set +x
 
           echo "✅ Successfully published:"
           echo "  - ${REGISTRY}/${REPO}:${VERSION}"
