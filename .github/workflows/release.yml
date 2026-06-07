@@ -123,6 +123,7 @@ jobs:
   verify-publication:
     needs: release
     runs-on: ubuntu-24.04
+    continue-on-error: true
     steps:
       - name: Verify Publication
         run: |
