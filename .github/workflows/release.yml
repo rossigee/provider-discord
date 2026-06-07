@@ -98,17 +98,34 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version || github.ref_name }}"
           echo "Publishing version: $VERSION"
-          echo "Files to publish:"
-          ls -lh _output/xpkg/linux_*/*.xpkg
+          echo "Current directory: $(pwd)"
+          echo "Output directory contents:"
+          find _output -name "*.xpkg" -o -name "*.tar.gz" 2>/dev/null | head -20
+
+          # Find actual xpkg files
+          XPKG_FILES=$(find _output -name "*.xpkg" 2>/dev/null | sort)
+          echo "Found xpkg files:"
+          echo "$XPKG_FILES"
+
+          if [ -z "$XPKG_FILES" ]; then
+            echo "ERROR: No xpkg files found!"
+            exit 1
+          fi
 
           # Use crossplane xpkg push with explicit error handling
           set -x
           crossplane xpkg push \
-            --package-files _output/xpkg/linux_amd64/provider-discord-${VERSION}.xpkg \
-            --package-files _output/xpkg/linux_arm64/provider-discord-${VERSION}.xpkg \
-            ghcr.io/rossigee/provider-discord:${VERSION} || exit 1
+            $( echo "$XPKG_FILES" | sed 's/^/--package-files /' | tr '\n' ' ' ) \
+            ghcr.io/rossigee/provider-discord:${VERSION}
+          RESULT=$?
           set +x
-          echo "Successfully published provider-discord:${VERSION}"
+
+          if [ $RESULT -eq 0 ]; then
+            echo "✅ Successfully published provider-discord:${VERSION}"
+          else
+            echo "❌ Failed to publish provider-discord:${VERSION}"
+            exit $RESULT
+          fi
 
   # Add GitHub release creation (preserves your custom feature)
   github-release:
