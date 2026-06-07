@@ -96,7 +96,19 @@ jobs:
 
       - name: Publish Artifacts
         run: |
-          make -j XPKG_REG_ORGS="ghcr.io/rossigee" XPKG_REG_ORGS_NO_PROMOTE="ghcr.io/rossigee" BRANCH_NAME="main" VERSION="${{ github.event.inputs.version || github.ref_name }}" publish
+          VERSION="${{ github.event.inputs.version || github.ref_name }}"
+          echo "Publishing version: $VERSION"
+          echo "Files to publish:"
+          ls -lh _output/xpkg/linux_*/*.xpkg
+
+          # Use crossplane xpkg push with explicit error handling
+          set -x
+          crossplane xpkg push \
+            --package-files _output/xpkg/linux_amd64/provider-discord-${VERSION}.xpkg \
+            --package-files _output/xpkg/linux_arm64/provider-discord-${VERSION}.xpkg \
+            ghcr.io/rossigee/provider-discord:${VERSION} || exit 1
+          set +x
+          echo "Successfully published provider-discord:${VERSION}"
 
   # Add GitHub release creation (preserves your custom feature)
   github-release:
