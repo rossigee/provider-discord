@@ -56,7 +56,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
         with:
-          go-version: '1.25.5'
+          go-version: '1.26.4'
 
       - name: Find the Go Build Cache
         id: go_cache
