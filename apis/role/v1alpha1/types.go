@@ -53,14 +53,15 @@ type RoleObservation struct {
 
 // A RoleSpec defines the desired state of a Role.
 type RoleSpec struct {
-	xpv1.ManagedResourceSpec `json:",inline"`
-	ForProvider       RoleParameters `json:"forProvider"`
+	xpv1.ManagedResourceSpec         `json:",inline"`
+	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	ForProvider                      RoleParameters        `json:"forProvider"`
 }
 
 // A RoleStatus represents the observed state of a Role.
 type RoleStatus struct {
 	xpv1.ManagedResourceStatus `json:",inline"`
-	AtProvider          RoleObservation `json:"atProvider,omitempty"`
+	AtProvider                 RoleObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true

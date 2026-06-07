@@ -9,7 +9,6 @@ func (mg *Role) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
 	return mg.Status.GetCondition(ct)
 }
 
-
 // GetManagementPolicies of this Role.
 func (mg *Role) GetManagementPolicies() xpv1.ManagementPolicies {
 	return mg.Spec.ManagementPolicies
@@ -21,7 +20,7 @@ func (mg *Role) GetProviderConfigReference() *xpv1.ProviderConfigReference {
 }
 
 // GetWriteConnectionSecretToReference of this Role.
-func (mg *Role) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+func (mg *Role) GetWriteConnectionSecretToReference() *xpv1.SecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
 }
 
@@ -29,7 +28,6 @@ func (mg *Role) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference
 func (mg *Role) SetConditions(c ...xpv1.Condition) {
 	mg.Status.SetConditions(c...)
 }
-
 
 // SetManagementPolicies of this Role.
 func (mg *Role) SetManagementPolicies(r xpv1.ManagementPolicies) {
@@ -42,6 +40,6 @@ func (mg *Role) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
 }
 
 // SetWriteConnectionSecretToReference of this Role.
-func (mg *Role) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+func (mg *Role) SetWriteConnectionSecretToReference(r *xpv1.SecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
 }

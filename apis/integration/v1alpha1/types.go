@@ -91,14 +91,15 @@ type IntegrationObservation struct {
 
 // A IntegrationSpec defines the desired state of a Integration.
 type IntegrationSpec struct {
-	xpv1.ManagedResourceSpec `json:",inline"`
-	ForProvider       IntegrationParameters `json:"forProvider"`
+	xpv1.ManagedResourceSpec         `json:",inline"`
+	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	ForProvider                      IntegrationParameters `json:"forProvider"`
 }
 
 // A IntegrationStatus represents the observed state of a Integration.
 type IntegrationStatus struct {
 	xpv1.ManagedResourceStatus `json:",inline"`
-	AtProvider          IntegrationObservation `json:"atProvider,omitempty"`
+	AtProvider                 IntegrationObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true

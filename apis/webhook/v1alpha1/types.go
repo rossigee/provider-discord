@@ -80,14 +80,15 @@ type WebhookObservation struct {
 
 // A WebhookSpec defines the desired state of a Webhook.
 type WebhookSpec struct {
-	xpv1.ManagedResourceSpec `json:",inline"`
-	ForProvider       WebhookParameters `json:"forProvider"`
+	xpv1.ManagedResourceSpec         `json:",inline"`
+	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	ForProvider                      WebhookParameters     `json:"forProvider"`
 }
 
 // A WebhookStatus represents the observed state of a Webhook.
 type WebhookStatus struct {
 	xpv1.ManagedResourceStatus `json:",inline"`
-	AtProvider          WebhookObservation `json:"atProvider,omitempty"`
+	AtProvider                 WebhookObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -111,14 +111,15 @@ type InviteObservation struct {
 
 // An InviteSpec defines the desired state of an Invite.
 type InviteSpec struct {
-	xpv1.ManagedResourceSpec `json:",inline"`
-	ForProvider       InviteParameters `json:"forProvider"`
+	xpv1.ManagedResourceSpec         `json:",inline"`
+	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	ForProvider                      InviteParameters      `json:"forProvider"`
 }
 
 // An InviteStatus represents the observed state of an Invite.
 type InviteStatus struct {
 	xpv1.ManagedResourceStatus `json:",inline"`
-	AtProvider          InviteObservation `json:"atProvider,omitempty"`
+	AtProvider                 InviteObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true

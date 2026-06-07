@@ -161,14 +161,15 @@ type ApplicationObservation struct {
 
 // A ApplicationSpec defines the desired state of a Application.
 type ApplicationSpec struct {
-	xpv1.ManagedResourceSpec `json:",inline"`
-	ForProvider       ApplicationParameters `json:"forProvider"`
+	xpv1.ManagedResourceSpec         `json:",inline"`
+	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	ForProvider                      ApplicationParameters `json:"forProvider"`
 }
 
 // A ApplicationStatus represents the observed state of a Application.
 type ApplicationStatus struct {
 	xpv1.ManagedResourceStatus `json:",inline"`
-	AtProvider          ApplicationObservation `json:"atProvider,omitempty"`
+	AtProvider                 ApplicationObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true

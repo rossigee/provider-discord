@@ -21,6 +21,7 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"github.com/crossplane/crossplane/apis/v2/core/v2"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -272,6 +273,11 @@ func (in *ApplicationParameters) DeepCopy() *ApplicationParameters {
 func (in *ApplicationSpec) DeepCopyInto(out *ApplicationSpec) {
 	*out = *in
 	in.ManagedResourceSpec.DeepCopyInto(&out.ManagedResourceSpec)
+	if in.WriteConnectionSecretToReference != nil {
+		in, out := &in.WriteConnectionSecretToReference, &out.WriteConnectionSecretToReference
+		*out = new(v2.SecretReference)
+		**out = **in
+	}
 	in.ForProvider.DeepCopyInto(&out.ForProvider)
 }
 

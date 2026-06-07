@@ -9,7 +9,6 @@ func (mg *Guild) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
 	return mg.Status.GetCondition(ct)
 }
 
-
 // GetManagementPolicies of this Guild.
 func (mg *Guild) GetManagementPolicies() xpv1.ManagementPolicies {
 	return mg.Spec.ManagementPolicies
@@ -21,7 +20,7 @@ func (mg *Guild) GetProviderConfigReference() *xpv1.ProviderConfigReference {
 }
 
 // GetWriteConnectionSecretToReference of this Guild.
-func (mg *Guild) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+func (mg *Guild) GetWriteConnectionSecretToReference() *xpv1.SecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
 }
 
@@ -29,7 +28,6 @@ func (mg *Guild) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReferenc
 func (mg *Guild) SetConditions(c ...xpv1.Condition) {
 	mg.Status.SetConditions(c...)
 }
-
 
 // SetManagementPolicies of this Guild.
 func (mg *Guild) SetManagementPolicies(r xpv1.ManagementPolicies) {
@@ -42,6 +40,6 @@ func (mg *Guild) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
 }
 
 // SetWriteConnectionSecretToReference of this Guild.
-func (mg *Guild) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+func (mg *Guild) SetWriteConnectionSecretToReference(r *xpv1.SecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
 }

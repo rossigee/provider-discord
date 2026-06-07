@@ -131,14 +131,15 @@ type GuildObservation struct {
 
 // A GuildSpec defines the desired state of a Guild.
 type GuildSpec struct {
-	xpv1.ManagedResourceSpec `json:",inline"`
-	ForProvider       GuildParameters `json:"forProvider"`
+	xpv1.ManagedResourceSpec         `json:",inline"`
+	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	ForProvider                      GuildParameters       `json:"forProvider"`
 }
 
 // A GuildStatus represents the observed state of a Guild.
 type GuildStatus struct {
 	xpv1.ManagedResourceStatus `json:",inline"`
-	AtProvider          GuildObservation `json:"atProvider,omitempty"`
+	AtProvider                 GuildObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true

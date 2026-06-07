@@ -139,14 +139,15 @@ type MemberObservation struct {
 
 // A MemberSpec defines the desired state of a Member.
 type MemberSpec struct {
-	xpv1.ManagedResourceSpec `json:",inline"`
-	ForProvider       MemberParameters `json:"forProvider"`
+	xpv1.ManagedResourceSpec         `json:",inline"`
+	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	ForProvider                      MemberParameters      `json:"forProvider"`
 }
 
 // A MemberStatus represents the observed state of a Member.
 type MemberStatus struct {
 	xpv1.ManagedResourceStatus `json:",inline"`
-	AtProvider          MemberObservation `json:"atProvider,omitempty"`
+	AtProvider                 MemberObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true

@@ -134,14 +134,15 @@ type ChannelObservation struct {
 
 // A ChannelSpec defines the desired state of a Channel.
 type ChannelSpec struct {
-	xpv1.ManagedResourceSpec `json:",inline"`
-	ForProvider       ChannelParameters `json:"forProvider"`
+	xpv1.ManagedResourceSpec         `json:",inline"`
+	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	ForProvider                      ChannelParameters     `json:"forProvider"`
 }
 
 // A ChannelStatus represents the observed state of a Channel.
 type ChannelStatus struct {
 	xpv1.ManagedResourceStatus `json:",inline"`
-	AtProvider          ChannelObservation `json:"atProvider,omitempty"`
+	AtProvider                 ChannelObservation `json:"atProvider,omitempty"`
 }
 
 // +kubebuilder:object:root=true

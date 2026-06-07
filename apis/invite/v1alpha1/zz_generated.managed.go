@@ -9,7 +9,6 @@ func (mg *Invite) GetCondition(ct xpv1.ConditionType) xpv1.Condition {
 	return mg.Status.GetCondition(ct)
 }
 
-
 // GetManagementPolicies of this Invite.
 func (mg *Invite) GetManagementPolicies() xpv1.ManagementPolicies {
 	return mg.Spec.ManagementPolicies
@@ -21,7 +20,7 @@ func (mg *Invite) GetProviderConfigReference() *xpv1.ProviderConfigReference {
 }
 
 // GetWriteConnectionSecretToReference of this Invite.
-func (mg *Invite) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReference {
+func (mg *Invite) GetWriteConnectionSecretToReference() *xpv1.SecretReference {
 	return mg.Spec.WriteConnectionSecretToReference
 }
 
@@ -29,7 +28,6 @@ func (mg *Invite) GetWriteConnectionSecretToReference() *xpv1.LocalSecretReferen
 func (mg *Invite) SetConditions(c ...xpv1.Condition) {
 	mg.Status.SetConditions(c...)
 }
-
 
 // SetManagementPolicies of this Invite.
 func (mg *Invite) SetManagementPolicies(r xpv1.ManagementPolicies) {
@@ -42,6 +40,6 @@ func (mg *Invite) SetProviderConfigReference(r *xpv1.ProviderConfigReference) {
 }
 
 // SetWriteConnectionSecretToReference of this Invite.
-func (mg *Invite) SetWriteConnectionSecretToReference(r *xpv1.LocalSecretReference) {
+func (mg *Invite) SetWriteConnectionSecretToReference(r *xpv1.SecretReference) {
 	mg.Spec.WriteConnectionSecretToReference = r
 }
