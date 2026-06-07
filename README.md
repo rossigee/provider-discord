@@ -1,6 +1,6 @@
 # Provider Discord
 
-[![CI](https://github.com/rossigee/provider-discord/actions/workflows/ci.yml/badge.svg)](https://github.com/rossigee/provider-discord/actions/workflows/ci.yml)
+[![Build](https://github.com/rossigee/provider-discord/actions/workflows/ci.yml/badge.svg)](https://github.com/rossigee/provider-discord/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/rossigee/provider-discord)](https://goreportcard.com/report/github.com/rossigee/provider-discord)
 [![Coverage Status](https://coveralls.io/repos/github/rossigee/provider-discord/badge.svg)](https://coveralls.io/github/rossigee/provider-discord)
 

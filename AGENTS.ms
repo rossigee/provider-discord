@@ -10,7 +10,7 @@
 
 2. **Channel** - Text/voice channel management
    - Text channels
-   - Voice channels  
+   - Voice channels
    - Category channels
    - Channel permissions and settings
 

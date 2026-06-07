@@ -1,8 +1,26 @@
 # Changelog
 
-## v0.9.1 (unreleased)
+## v0.10.0 (2026-06-07)
 
-### Bug Fixes
+### Features
+
+- Add namespace-scoped resource support for all Discord managed resources
+  (User, Role, Member, Channel, Category, RoleAssignment).
+  Previously only cluster-scoped ClusterRoles were supported. Now users can
+  create Discord resources within a specific namespace using Namespaced CRDs
+  and a namespaced ProviderConfig.
+- Upgrade Discord API to v11.
+
+### Fixes
+
+- Use `github.token` instead of `PAT_TOKEN` for GHCR authentication in build
+  pipeline.
+
+---
+
+## v0.9.1 (2026-06-07)
+
+### Fixes
 
 - Fix `GetProviderConfigReference()` type-switch in `config.go` and all
   controllers (`user`, `role`, `member`, `integration`) to use
