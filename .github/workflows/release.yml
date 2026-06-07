@@ -58,25 +58,6 @@ jobs:
         with:
           go-version: '1.26.4'
 
-      - name: Install Crossplane CLI
-        run: |
-          # Download crossplane binary directly instead of go install
-          CROSSPLANE_VERSION="v2.0.2"
-          PLATFORM="$(uname -s)_$(uname -m)"
-          case "$PLATFORM" in
-            Linux_x86_64) PLATFORM="linux_amd64" ;;
-            Linux_aarch64) PLATFORM="linux_arm64" ;;
-            Darwin_x86_64) PLATFORM="darwin_amd64" ;;
-            Darwin_arm64) PLATFORM="darwin_arm64" ;;
-          esac
-
-          echo "Downloading crossplane $CROSSPLANE_VERSION for $PLATFORM"
-          curl -sL "https://releases.crossplane.io/release/${CROSSPLANE_VERSION}/bin/${PLATFORM}/crossplane" -o /tmp/crossplane
-          chmod +x /tmp/crossplane
-          sudo mv /tmp/crossplane /usr/local/bin/
-
-          crossplane version
-          echo "${{ github.token }}" | crossplane xpkg login ghcr.io -u rossigee --password-stdin
 
       - name: Find the Go Build Cache
         id: go_cache
@@ -110,35 +91,19 @@ jobs:
       - name: Publish Artifacts
         run: |
           VERSION="${{ github.event.inputs.version || github.ref_name }}"
-          echo "Publishing version: $VERSION"
-          echo "Current directory: $(pwd)"
-          echo "Output directory contents:"
-          find _output -name "*.xpkg" -o -name "*.tar.gz" 2>/dev/null | head -20
+          REGISTRY="ghcr.io/rossigee"
+          REPO="provider-discord"
 
-          # Find actual xpkg files
-          XPKG_FILES=$(find _output -name "*.xpkg" 2>/dev/null | sort)
-          echo "Found xpkg files:"
-          echo "$XPKG_FILES"
+          echo "Publishing ${REGISTRY}/${REPO}:${VERSION}"
 
-          if [ -z "$XPKG_FILES" ]; then
-            echo "ERROR: No xpkg files found!"
-            exit 1
-          fi
+          # The build.all step already created and loaded the Docker images
+          # Push the images to the registry
+          docker push ${REGISTRY}/${REPO}:${VERSION}
+          docker push ${REGISTRY}/${REPO}:latest
 
-          # Use crossplane xpkg push with explicit error handling
-          set -x
-          crossplane xpkg push \
-            $( echo "$XPKG_FILES" | sed 's/^/--package-files /' | tr '\n' ' ' ) \
-            ghcr.io/rossigee/provider-discord:${VERSION}
-          RESULT=$?
-          set +x
-
-          if [ $RESULT -eq 0 ]; then
-            echo "✅ Successfully published provider-discord:${VERSION}"
-          else
-            echo "❌ Failed to publish provider-discord:${VERSION}"
-            exit $RESULT
-          fi
+          echo "✅ Successfully published:"
+          echo "  - ${REGISTRY}/${REPO}:${VERSION}"
+          echo "  - ${REGISTRY}/${REPO}:latest"
 
   # Add GitHub release creation (preserves your custom feature)
   github-release:
