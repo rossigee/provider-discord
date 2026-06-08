@@ -232,7 +232,7 @@ jobs:
 # 5. STANDARDIZED BUILD SYSTEM
 #    - Uses rossigee/build submodule (working fork)
 #    - Consistent make targets across all providers
-#    - Go 1.25.5 with proper version handling
+#    - Go 1.26.4 with proper version handling
 #
 # To apply this template:
 # 1. Copy this structure to .github/workflows/ci.yml
