@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Cleanup Disk
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be
+        uses: jlumbroso/free-disk-space@v4
         with:
           android: true
           dotnet: true
@@ -31,30 +31,30 @@ jobs:
           swap-storage: false
 
       - name: Setup QEMU
-        uses: docker/setup-qemu-action@2b82ce82d56a2a04d2637cd93a637ae1b359c0a7
+        uses: docker/setup-qemu-action@v4
         with:
           platforms: all
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@885d1462b80bc1c1c7f0b00334ad271f09369c55
+        uses: docker/setup-buildx-action@v4
         with:
           version: v0.20.1
           install: true
 
       - name: Login to GHCR
-        uses: docker/login-action@v3.3.0
+        uses: docker/login-action@v9.2.0/3.0
         with:
           registry: ghcr.io
           username: rossigee
           password: ${{ github.token }}
 
       - name: Checkout
-        uses: actions/checkout@8ade135a41bc03ea155e62e844d188df1ea18608
+        uses: actions/checkout@v4
         with:
           submodules: true
 
       - name: Setup Go
-        uses: actions/setup-go@6edd4406fa81c3da01a34fa6f6343087c207a568
+        uses: actions/setup-go@v4
         with:
           go-version: '1.26.4'
 
@@ -66,14 +66,14 @@ jobs:
           echo "mod_cache=$(make go.mod.cachedir)" >> $GITHUB_OUTPUT
 
       - name: Cache the Go Build Cache
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf
+        uses: actions/cache@v4
         with:
           path: ${{ steps.go_cache.outputs.cache }}
           key: ${{ runner.os }}-build-publish-artifacts-${{ hashFiles('**/go.sum') }}
           restore-keys: ${{ runner.os }}-build-publish-artifacts-
 
       - name: Cache Go Dependencies
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf
+        uses: actions/cache@v4
         with:
           path: ${{ steps.go_cache.outputs.mod_cache }}
           key: ${{ runner.os }}-pkg-${{ hashFiles('**/go.sum') }}
