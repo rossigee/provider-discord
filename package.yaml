@@ -111,29 +111,71 @@ metadata:
 spec:
   controller:
     image: ghcr.io/rossigee/provider-discord:v0.9.0
-  permissionRequests:
-  - apiGroups:
-    - discord.crossplane.io
-    resources:
-    - providerconfigs
-    - providerconfigusages
-    verbs:
-    - "*"
-  - apiGroups:
-    - guild.discord.crossplane.io
-    resources:
-    - guilds
-    verbs:
-    - "*"
-  - apiGroups:
-    - channel.discord.crossplane.io
-    resources:
-    - channels
-    verbs:
-    - "*"
-  - apiGroups:
-    - role.discord.crossplane.io
-    resources:
-    - roles
-    verbs:
-    - "*"
+    permissionRequests:
+    - apiGroups:
+      - discord.crossplane.io
+      resources:
+      - providerconfigs
+      - providerconfigusages
+      verbs:
+      - "*"
+    - apiGroups:
+      - guild.discord.crossplane.io
+      resources:
+      - guilds
+      verbs:
+      - "*"
+    - apiGroups:
+      - channel.discord.crossplane.io
+      resources:
+      - channels
+      verbs:
+      - "*"
+    - apiGroups:
+      - role.discord.crossplane.io
+      resources:
+      - roles
+      verbs:
+      - "*"
+    - apiGroups:
+      - webhook.discord.crossplane.io
+      resources:
+      - webhooks
+      verbs:
+      - "*"
+    - apiGroups:
+      - user.discord.crossplane.io
+      resources:
+      - users
+      verbs:
+      - "*"
+    - apiGroups:
+      - member.discord.crossplane.io
+      resources:
+      - members
+      verbs:
+      - "*"
+    - apiGroups:
+      - application.discord.crossplane.io
+      resources:
+      - applications
+      verbs:
+      - "*"
+    - apiGroups:
+      - invite.discord.crossplane.io
+      resources:
+      - invites
+      verbs:
+      - "*"
+    - apiGroups:
+      - integration.discord.crossplane.io
+      resources:
+      - integrations
+      verbs:
+      - "*"
+    - apiGroups:
+      - deduplication.discord.crossplane.io
+      resources:
+      - deduplications
+      verbs:
+      - "*"
