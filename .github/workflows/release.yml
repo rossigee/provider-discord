@@ -125,6 +125,12 @@ jobs:
           name: xpkg
           path: _output/xpkg/linux_amd64/
 
+      - name: Build Binary
+        run: |
+          set -e
+          export VERSION="$VERSION"
+          make build
+
       - name: Build and Publish Artifacts
         env:
           BRANCH_NAME: master
