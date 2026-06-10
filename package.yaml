@@ -113,6 +113,14 @@ spec:
     image: ghcr.io/rossigee/provider-discord:v0.10.0
     permissionRequests:
     - apiGroups:
+      - ""
+      resources:
+      - secrets
+      verbs:
+      - get
+      - list
+      - watch
+    - apiGroups:
       - discord.crossplane.io
       resources:
       - providerconfigs
