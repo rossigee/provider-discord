@@ -303,6 +303,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	meta.SetExternalName(cr, channel.ID)
 
+	cr.SetConditions(xpv1.Available())
+
 	return managed.ExternalCreation{
 		ConnectionDetails: managed.ConnectionDetails{},
 	}, nil

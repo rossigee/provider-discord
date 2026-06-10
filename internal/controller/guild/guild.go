@@ -283,6 +283,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	meta.SetExternalName(cr, guild.ID)
 
+	cr.SetConditions(xpv1.Available())
+
 	return managed.ExternalCreation{
 		ConnectionDetails: managed.ConnectionDetails{
 			"guildId":   []byte(guild.ID),

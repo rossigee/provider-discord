@@ -228,6 +228,8 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 		connectionDetails["url"] = []byte(inviteURL)
 	}
 
+	cr.SetConditions(xpv1.Available())
+
 	return managed.ExternalCreation{
 		ConnectionDetails: connectionDetails,
 	}, nil
