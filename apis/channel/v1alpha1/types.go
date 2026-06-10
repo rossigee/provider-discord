@@ -82,6 +82,30 @@ type ChannelParameters struct {
 	// +optional
 	// +kubebuilder:validation:Enum=60;1440;4320;10080
 	DefaultAutoArchiveDuration *int `json:"defaultAutoArchiveDuration,omitempty"`
+
+	// PermissionOverwrites are the permission overwrites to apply to the channel.
+	// +optional
+	PermissionOverwrites []PermissionOverwrite `json:"permissionOverwrites,omitempty"`
+}
+
+// PermissionOverwrite represents a permission overwrite for a channel.
+type PermissionOverwrite struct {
+	// ID is the ID of the role or member to overwrite.
+	// +kubebuilder:validation:Required
+	ID string `json:"id"`
+
+	// Type is the type of overwrite (role or member).
+	// +kubebuilder:validation:Required
+	// +kubebuilder:validation:Enum=role;member
+	Type string `json:"type"`
+
+	// Allow is the permission bitwise value to allow.
+	// +optional
+	Allow *int64 `json:"allow,omitempty"`
+
+	// Deny is the permission bitwise value to deny.
+	// +optional
+	Deny *int64 `json:"deny,omitempty"`
 }
 
 // ChannelObservation are the observable fields of a Channel.
@@ -130,6 +154,9 @@ type ChannelObservation struct {
 
 	// UpdatedAt is the timestamp when the channel was last updated.
 	UpdatedAt *metav1.Time `json:"updatedAt,omitempty"`
+
+	// PermissionOverwrites are the permission overwrites applied to the channel.
+	PermissionOverwrites []PermissionOverwrite `json:"permissionOverwrites,omitempty"`
 }
 
 // A ChannelSpec defines the desired state of a Channel.

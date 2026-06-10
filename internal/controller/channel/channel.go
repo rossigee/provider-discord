@@ -342,6 +342,21 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	if cr.Spec.ForProvider.RateLimitPerUser != nil {
 		req.RateLimitPerUser = cr.Spec.ForProvider.RateLimitPerUser
 	}
+	if len(cr.Spec.ForProvider.PermissionOverwrites) > 0 {
+		req.PermissionOverwrites = make([]clients.PermissionOverwrite, len(cr.Spec.ForProvider.PermissionOverwrites))
+		for i, pw := range cr.Spec.ForProvider.PermissionOverwrites {
+			req.PermissionOverwrites[i] = clients.PermissionOverwrite{
+				ID:   pw.ID,
+				Type: pw.Type,
+			}
+			if pw.Allow != nil {
+				req.PermissionOverwrites[i].Allow = pw.Allow
+			}
+			if pw.Deny != nil {
+				req.PermissionOverwrites[i].Deny = pw.Deny
+			}
+		}
+	}
 
 	_, err := c.service.ModifyChannel(ctx, meta.GetExternalName(cr), req)
 	if err != nil {

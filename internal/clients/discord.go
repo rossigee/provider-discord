@@ -520,29 +520,39 @@ func (c *DiscordClient) DeleteRole(ctx context.Context, guildID, roleID string) 
 
 // CreateChannelRequest represents a request to create a channel
 type CreateChannelRequest struct {
-	Name             string  `json:"name"`
-	Type             int     `json:"type"`
-	GuildID          string  `json:"-"` // Not in JSON, used in URL
-	Topic            *string `json:"topic,omitempty"`
-	Bitrate          *int    `json:"bitrate,omitempty"`
-	UserLimit        *int    `json:"user_limit,omitempty"`
-	RateLimitPerUser *int    `json:"rate_limit_per_user,omitempty"`
-	Position         *int    `json:"position,omitempty"`
-	ParentID         *string `json:"parent_id,omitempty"`
-	NSFW             *bool   `json:"nsfw,omitempty"`
+	Name                 string                `json:"name"`
+	Type                 int                   `json:"type"`
+	GuildID              string                `json:"-"` // Not in JSON, used in URL
+	Topic                *string               `json:"topic,omitempty"`
+	Bitrate              *int                  `json:"bitrate,omitempty"`
+	UserLimit            *int                  `json:"user_limit,omitempty"`
+	RateLimitPerUser     *int                  `json:"rate_limit_per_user,omitempty"`
+	Position             *int                  `json:"position,omitempty"`
+	ParentID             *string               `json:"parent_id,omitempty"`
+	NSFW                 *bool                 `json:"nsfw,omitempty"`
+	PermissionOverwrites []PermissionOverwrite `json:"permission_overwrites,omitempty"`
 }
 
 // ModifyChannelRequest represents a request to modify a channel
 type ModifyChannelRequest struct {
-	Name             *string `json:"name,omitempty"`
-	Type             *int    `json:"type,omitempty"`
-	Position         *int    `json:"position,omitempty"`
-	Topic            *string `json:"topic,omitempty"`
-	NSFW             *bool   `json:"nsfw,omitempty"`
-	RateLimitPerUser *int    `json:"rate_limit_per_user,omitempty"`
-	Bitrate          *int    `json:"bitrate,omitempty"`
-	UserLimit        *int    `json:"user_limit,omitempty"`
-	ParentID         *string `json:"parent_id,omitempty"`
+	Name                 *string               `json:"name,omitempty"`
+	Type                 *int                  `json:"type,omitempty"`
+	Position             *int                  `json:"position,omitempty"`
+	Topic                *string               `json:"topic,omitempty"`
+	NSFW                 *bool                 `json:"nsfw,omitempty"`
+	RateLimitPerUser     *int                  `json:"rate_limit_per_user,omitempty"`
+	Bitrate              *int                  `json:"bitrate,omitempty"`
+	UserLimit            *int                  `json:"user_limit,omitempty"`
+	ParentID             *string               `json:"parent_id,omitempty"`
+	PermissionOverwrites []PermissionOverwrite `json:"permission_overwrites,omitempty"`
+}
+
+// PermissionOverwrite represents a permission overwrite for a channel
+type PermissionOverwrite struct {
+	ID    string `json:"id"`
+	Type  string `json:"type"` // "role" or "member"
+	Allow *int64 `json:"allow,omitempty"`
+	Deny  *int64 `json:"deny,omitempty"`
 }
 
 // Webhook represents a Discord webhook

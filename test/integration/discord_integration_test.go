@@ -186,11 +186,11 @@ func testRoleOperations(t *testing.T, client *clients.DiscordClient, ctx context
 	permissions := "0"
 
 	createParams := clients.CreateRoleRequest{
-		Name:         roleName,
-		Color:        &color,
-		Hoist:        &hoist,
-		Mentionable:  &mentionable,
-		Permissions:  &permissions,
+		Name:        roleName,
+		Color:       &color,
+		Hoist:       &hoist,
+		Mentionable: &mentionable,
+		Permissions: &permissions,
 	}
 
 	role, err := client.CreateRole(ctx, guildID, createParams)
@@ -334,8 +334,8 @@ func isRateLimitError(err error) bool {
 	errMsg := err.Error()
 	return false || // You would implement this based on your error types
 		(errMsg != "" && (
-			// Add rate limit error detection logic here
-			false)) // Placeholder for now
+		// Add rate limit error detection logic here
+		false)) // Placeholder for now
 }
 
 // TestDiscordAPIConnectivity tests basic Discord API connectivity

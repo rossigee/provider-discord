@@ -262,60 +262,60 @@ func TestParseDiscordError_ExistingDiscordError(t *testing.T) {
 
 func TestParseDiscordError_GenericError(t *testing.T) {
 	tests := []struct {
-		name          string
-		errorMessage  string
-		expectedType  ErrorType
+		name              string
+		errorMessage      string
+		expectedType      ErrorType
 		expectedRetryable bool
-		expectedStatus int
+		expectedStatus    int
 	}{
 		{
-			name:          "rate limit error",
-			errorMessage:  "rate limit exceeded",
-			expectedType:  ErrorTypeRateLimit,
+			name:              "rate limit error",
+			errorMessage:      "rate limit exceeded",
+			expectedType:      ErrorTypeRateLimit,
 			expectedRetryable: true,
-			expectedStatus: 429,
+			expectedStatus:    429,
 		},
 		{
-			name:          "network error",
-			errorMessage:  "connection timeout",
-			expectedType:  ErrorTypeNetwork,
+			name:              "network error",
+			errorMessage:      "connection timeout",
+			expectedType:      ErrorTypeNetwork,
 			expectedRetryable: true,
-			expectedStatus: 0,
+			expectedStatus:    0,
 		},
 		{
-			name:          "unauthorized error",
-			errorMessage:  "unauthorized access",
-			expectedType:  ErrorTypeAuthentication,
+			name:              "unauthorized error",
+			errorMessage:      "unauthorized access",
+			expectedType:      ErrorTypeAuthentication,
 			expectedRetryable: false,
-			expectedStatus: 401,
+			expectedStatus:    401,
 		},
 		{
-			name:          "forbidden error",
-			errorMessage:  "forbidden operation",
-			expectedType:  ErrorTypePermission,
+			name:              "forbidden error",
+			errorMessage:      "forbidden operation",
+			expectedType:      ErrorTypePermission,
 			expectedRetryable: false,
-			expectedStatus: 403,
+			expectedStatus:    403,
 		},
 		{
-			name:          "not found error",
-			errorMessage:  "resource not found",
-			expectedType:  ErrorTypeNotFound,
+			name:              "not found error",
+			errorMessage:      "resource not found",
+			expectedType:      ErrorTypeNotFound,
 			expectedRetryable: false,
-			expectedStatus: 404,
+			expectedStatus:    404,
 		},
 		{
-			name:          "server error",
-			errorMessage:  "internal server error",
-			expectedType:  ErrorTypeTemporary,
+			name:              "server error",
+			errorMessage:      "internal server error",
+			expectedType:      ErrorTypeTemporary,
 			expectedRetryable: true,
-			expectedStatus: 500,
+			expectedStatus:    500,
 		},
 		{
-			name:          "unknown error",
-			errorMessage:  "some random error",
-			expectedType:  ErrorTypeUnknown,
+			name:              "unknown error",
+			errorMessage:      "some random error",
+			expectedType:      ErrorTypeUnknown,
 			expectedRetryable: true,
-			expectedStatus: 500,
+			expectedStatus:    500,
 		},
 	}
 
@@ -428,7 +428,7 @@ func TestResilientClient_CalculateDelay(t *testing.T) {
 
 	// Second delay should be roughly double the first (with jitter)
 	assert.True(t, delay2 > delay1)
-	assert.True(t, delay1 >= 90*time.Millisecond)   // Should be around 100ms ± 10%
+	assert.True(t, delay1 >= 90*time.Millisecond) // Should be around 100ms ± 10%
 	assert.True(t, delay1 <= 110*time.Millisecond)
 }
 

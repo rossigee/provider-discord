@@ -57,13 +57,13 @@ const (
 	AttrErrorType    = "discord.error.type"
 
 	// Span names
-	SpanReconcile        = "discord.reconcile"
-	SpanAPICall          = "discord.api.call"
-	SpanCreateResource   = "discord.create"
-	SpanUpdateResource   = "discord.update"
-	SpanDeleteResource   = "discord.delete"
-	SpanObserveResource  = "discord.observe"
-	SpanHealthCheck      = "discord.health.check"
+	SpanReconcile       = "discord.reconcile"
+	SpanAPICall         = "discord.api.call"
+	SpanCreateResource  = "discord.create"
+	SpanUpdateResource  = "discord.update"
+	SpanDeleteResource  = "discord.delete"
+	SpanObserveResource = "discord.observe"
+	SpanHealthCheck     = "discord.health.check"
 )
 
 var (
@@ -74,23 +74,23 @@ var (
 
 // Config holds tracing configuration
 type Config struct {
-	Enabled         bool
-	ServiceName     string
-	ServiceVersion  string
-	Endpoint        string
-	SamplingRatio   float64
-	Headers         map[string]string
+	Enabled        bool
+	ServiceName    string
+	ServiceVersion string
+	Endpoint       string
+	SamplingRatio  float64
+	Headers        map[string]string
 }
 
 // DefaultConfig returns default tracing configuration
 func DefaultConfig() *Config {
 	return &Config{
-		Enabled:       getEnvBool("OTEL_TRACING_ENABLED", false),
-		ServiceName:   getEnv("OTEL_SERVICE_NAME", "provider-discord"),
+		Enabled:        getEnvBool("OTEL_TRACING_ENABLED", false),
+		ServiceName:    getEnv("OTEL_SERVICE_NAME", "provider-discord"),
 		ServiceVersion: getEnv("OTEL_SERVICE_VERSION", "unknown"),
-		Endpoint:      getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
-		SamplingRatio: getEnvFloat("OTEL_SAMPLING_RATIO", 0.1),
-		Headers:       make(map[string]string),
+		Endpoint:       getEnv("OTEL_EXPORTER_OTLP_ENDPOINT", ""),
+		SamplingRatio:  getEnvFloat("OTEL_SAMPLING_RATIO", 0.1),
+		Headers:        make(map[string]string),
 	}
 }
 

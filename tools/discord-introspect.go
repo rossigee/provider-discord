@@ -55,8 +55,8 @@ type Webhook struct {
 }
 
 type Invite struct {
-	Code      string `json:"code"`
-	Guild     *struct {
+	Code  string `json:"code"`
+	Guild *struct {
 		ID   string `json:"id"`
 		Name string `json:"name"`
 	} `json:"guild,omitempty"`
@@ -69,9 +69,9 @@ type Invite struct {
 		ID       string `json:"id"`
 		Username string `json:"username"`
 	} `json:"inviter,omitempty"`
-	MaxAge    int `json:"max_age"`
-	MaxUses   int `json:"max_uses"`
-	Temporary bool `json:"temporary"`
+	MaxAge    int    `json:"max_age"`
+	MaxUses   int    `json:"max_uses"`
+	Temporary bool   `json:"temporary"`
 	CreatedAt string `json:"created_at"`
 	Uses      int    `json:"uses"`
 }
@@ -230,8 +230,8 @@ func checkProviderSupport(resourceType string) bool {
 		"guilds":   true,
 		"channels": true,
 		"roles":    true,
-		"webhooks": true,  // Now supported!
-		"invites":  true,  // Now supported!
+		"webhooks": true, // Now supported!
+		"invites":  true, // Now supported!
 	}
 	return supportedResources[resourceType]
 }

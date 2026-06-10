@@ -20,8 +20,8 @@ package metrics
 import (
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
 	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
 )
@@ -36,14 +36,14 @@ const (
 	ResourceRole    = "role"
 
 	// Operation types
-	OpCreate = "create"
-	OpUpdate = "update"
-	OpDelete = "delete"
+	OpCreate  = "create"
+	OpUpdate  = "update"
+	OpDelete  = "delete"
 	OpObserve = "observe"
 
 	// Status types
-	StatusSuccess = "success"
-	StatusError   = "error"
+	StatusSuccess     = "success"
+	StatusError       = "error"
 	StatusRateLimited = "rate_limited"
 )
 

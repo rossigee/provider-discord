@@ -35,10 +35,10 @@ import (
 
 const (
 	// Default retry configuration
-	DefaultMaxRetries     = 3
-	DefaultBaseDelay      = 100 * time.Millisecond
-	DefaultMaxDelay       = 30 * time.Second
-	DefaultJitterFactor   = 0.1
+	DefaultMaxRetries   = 3
+	DefaultBaseDelay    = 100 * time.Millisecond
+	DefaultMaxDelay     = 30 * time.Second
+	DefaultJitterFactor = 0.1
 
 	// Circuit breaker defaults
 	DefaultFailureThreshold = 5
@@ -53,11 +53,11 @@ const (
 
 // RetryConfig defines configuration for retry logic
 type RetryConfig struct {
-	MaxRetries    int
-	BaseDelay     time.Duration
-	MaxDelay      time.Duration
-	JitterFactor  float64
-	Multiplier    float64
+	MaxRetries   int
+	BaseDelay    time.Duration
+	MaxDelay     time.Duration
+	JitterFactor float64
+	Multiplier   float64
 }
 
 // DefaultRetryConfig returns a default retry configuration
@@ -91,14 +91,14 @@ func DefaultCircuitBreakerConfig() *CircuitBreakerConfig {
 type ErrorType string
 
 const (
-	ErrorTypeRateLimit     ErrorType = "rate_limit"
-	ErrorTypeTemporary     ErrorType = "temporary"
-	ErrorTypePermanent     ErrorType = "permanent"
-	ErrorTypeUnknown       ErrorType = "unknown"
-	ErrorTypeNetwork       ErrorType = "network"
+	ErrorTypeRateLimit      ErrorType = "rate_limit"
+	ErrorTypeTemporary      ErrorType = "temporary"
+	ErrorTypePermanent      ErrorType = "permanent"
+	ErrorTypeUnknown        ErrorType = "unknown"
+	ErrorTypeNetwork        ErrorType = "network"
 	ErrorTypeAuthentication ErrorType = "authentication"
-	ErrorTypePermission    ErrorType = "permission"
-	ErrorTypeNotFound      ErrorType = "not_found"
+	ErrorTypePermission     ErrorType = "permission"
+	ErrorTypeNotFound       ErrorType = "not_found"
 )
 
 // DiscordError represents a Discord API error with retry information
@@ -139,14 +139,14 @@ const (
 
 // CircuitBreaker implements the circuit breaker pattern for Discord API calls
 type CircuitBreaker struct {
-	config         *CircuitBreakerConfig
-	state          CircuitState
-	failures       int
+	config          *CircuitBreakerConfig
+	state           CircuitState
+	failures        int
 	lastFailureTime time.Time
-	successes      int
-	logger         logr.Logger
-	metrics        *metrics.MetricsRecorder
-	resourceType   string
+	successes       int
+	logger          logr.Logger
+	metrics         *metrics.MetricsRecorder
+	resourceType    string
 }
 
 // NewCircuitBreaker creates a new circuit breaker

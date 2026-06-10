@@ -47,10 +47,10 @@ func TestGuildDeepCopy(t *testing.T) {
 		},
 		Status: GuildStatus{
 			AtProvider: GuildObservation{
-				ID:            "123456789",
-				Name:          "Test Guild",
-				Region:        "us-east",
-				MemberCount:   10,
+				ID:                "123456789",
+				Name:              "Test Guild",
+				Region:            "us-east",
+				MemberCount:       10,
 				VerificationLevel: 1,
 			},
 		},

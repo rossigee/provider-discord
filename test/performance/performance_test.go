@@ -37,15 +37,15 @@ type PerformanceConfig struct {
 
 // PerformanceResult holds results from performance tests
 type PerformanceResult struct {
-	TotalRequests     int
+	TotalRequests      int
 	SuccessfulRequests int
-	FailedRequests    int
-	TotalDuration     time.Duration
-	AverageLatency    time.Duration
-	MinLatency        time.Duration
-	MaxLatency        time.Duration
-	RequestsPerSecond float64
-	Errors            []error
+	FailedRequests     int
+	TotalDuration      time.Duration
+	AverageLatency     time.Duration
+	MinLatency         time.Duration
+	MaxLatency         time.Duration
+	RequestsPerSecond  float64
+	Errors             []error
 }
 
 // TestDiscordAPIPerformance runs comprehensive performance tests against Discord API
@@ -530,16 +530,16 @@ func isRateLimitError(err error) bool {
 
 func contains(s, substr string) bool {
 	return len(s) >= len(substr) &&
-		   (s == substr ||
-		    (len(s) > len(substr) &&
-		     (s[:len(substr)] == substr ||
-		      s[len(s)-len(substr):] == substr ||
-		      func() bool {
-		      	for i := 0; i <= len(s)-len(substr); i++ {
-		      		if s[i:i+len(substr)] == substr {
-		      			return true
-		      		}
-		      	}
-		      	return false
-		      }())))
+		(s == substr ||
+			(len(s) > len(substr) &&
+				(s[:len(substr)] == substr ||
+					s[len(s)-len(substr):] == substr ||
+					func() bool {
+						for i := 0; i <= len(s)-len(substr); i++ {
+							if s[i:i+len(substr)] == substr {
+								return true
+							}
+						}
+						return false
+					}())))
 }

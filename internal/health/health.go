@@ -29,7 +29,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
-
 )
 
 const (
@@ -75,11 +74,11 @@ func init() {
 
 // HealthStatus represents the health status of a component
 type HealthStatus struct {
-	Status      string            `json:"status"`
-	Message     string            `json:"message,omitempty"`
-	Timestamp   time.Time         `json:"timestamp"`
-	Details     map[string]string `json:"details,omitempty"`
-	Duration    string            `json:"duration,omitempty"`
+	Status    string            `json:"status"`
+	Message   string            `json:"message,omitempty"`
+	Timestamp time.Time         `json:"timestamp"`
+	Details   map[string]string `json:"details,omitempty"`
+	Duration  string            `json:"duration,omitempty"`
 }
 
 // HealthChecker provides health checking functionality
