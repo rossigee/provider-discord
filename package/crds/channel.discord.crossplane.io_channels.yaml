@@ -250,6 +250,24 @@ spec:
                   parentId:
                     description: ParentID is the ID of the parent category.
                     type: string
+                  permissionOverwrites:
+                    items:
+                      properties:
+                        allow:
+                          format: int64
+                          type: integer
+                        deny:
+                          format: int64
+                          type: integer
+                        id:
+                          type: string
+                        type:
+                          type: string
+                      required:
+                      - id
+                      - type
+                      type: object
+                    type: array
                   position:
                     description: Position is the sorting position of the channel.
                     type: integer

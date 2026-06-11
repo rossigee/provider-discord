@@ -239,9 +239,13 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	if len(channel.PermissionOverwrites) > 0 {
 		cr.Status.AtProvider.PermissionOverwrites = make([]channelv1alpha1.PermissionOverwrite, len(channel.PermissionOverwrites))
 		for i, pw := range channel.PermissionOverwrites {
+			typeStr := "member"
+			if pw.Type == 0 {
+				typeStr = "role"
+			}
 			cr.Status.AtProvider.PermissionOverwrites[i] = channelv1alpha1.PermissionOverwrite{
 				ID:   pw.ID,
-				Type: pw.Type,
+				Type: typeStr,
 			}
 			if pw.Allow != nil {
 				cr.Status.AtProvider.PermissionOverwrites[i].Allow = pw.Allow
@@ -281,7 +285,6 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 				break
 			}
 			if pw.ID != channel.PermissionOverwrites[i].ID ||
-				pw.Type != channel.PermissionOverwrites[i].Type ||
 				(pw.Allow != nil && channel.PermissionOverwrites[i].Allow == nil) ||
 				(pw.Allow == nil && channel.PermissionOverwrites[i].Allow != nil) ||
 				(pw.Allow != nil && channel.PermissionOverwrites[i].Allow != nil && *pw.Allow != *channel.PermissionOverwrites[i].Allow) ||
