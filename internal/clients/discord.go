@@ -253,12 +253,13 @@ type CreateGuildRequest struct {
 
 // Channel represents a Discord channel
 type Channel struct {
-	ID       string `json:"id,omitempty"`
-	Type     int    `json:"type"`
-	GuildID  string `json:"guild_id,omitempty"`
-	Name     string `json:"name"`
-	Position int    `json:"position,omitempty"`
-	ParentID string `json:"parent_id,omitempty"`
+	ID        string               `json:"id,omitempty"`
+	Type      int                 `json:"type"`
+	GuildID   string               `json:"guild_id,omitempty"`
+	Name      string               `json:"name"`
+	Position  int                 `json:"position,omitempty"`
+	ParentID  string               `json:"parent_id,omitempty"`
+	PermissionOverwrites []PermissionOverwrite `json:"permission_overwrites,omitempty"`
 }
 
 // ModifyGuildRequest represents a request to modify a guild

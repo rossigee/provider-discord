@@ -235,6 +235,22 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		ParentID:  channel.ParentID,
 		UpdatedAt: now,
 	}
+	// Populate permission overwrites in status
+	if len(channel.PermissionOverwrites) > 0 {
+		cr.Status.AtProvider.PermissionOverwrites = make([]channelv1alpha1.PermissionOverwrite, len(channel.PermissionOverwrites))
+		for i, pw := range channel.PermissionOverwrites {
+			cr.Status.AtProvider.PermissionOverwrites[i] = channelv1alpha1.PermissionOverwrite{
+				ID:   pw.ID,
+				Type: pw.Type,
+			}
+			if pw.Allow != nil {
+				cr.Status.AtProvider.PermissionOverwrites[i].Allow = pw.Allow
+			}
+			if pw.Deny != nil {
+				cr.Status.AtProvider.PermissionOverwrites[i].Deny = pw.Deny
+			}
+		}
+	}
 
 	// Late initialization: populate spec fields from observed state if not set
 	lateInitialized := false
@@ -254,6 +270,28 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 	if cr.Spec.ForProvider.ParentID != nil && *cr.Spec.ForProvider.ParentID != channel.ParentID {
 		needsUpdate = true
+	}
+	// Check if permission overwrites differ
+	if len(cr.Spec.ForProvider.PermissionOverwrites) != len(channel.PermissionOverwrites) {
+		needsUpdate = true
+	} else {
+		for i, pw := range cr.Spec.ForProvider.PermissionOverwrites {
+			if i >= len(channel.PermissionOverwrites) {
+				needsUpdate = true
+				break
+			}
+			if pw.ID != channel.PermissionOverwrites[i].ID ||
+				pw.Type != channel.PermissionOverwrites[i].Type ||
+				(pw.Allow != nil && channel.PermissionOverwrites[i].Allow == nil) ||
+				(pw.Allow == nil && channel.PermissionOverwrites[i].Allow != nil) ||
+				(pw.Allow != nil && channel.PermissionOverwrites[i].Allow != nil && *pw.Allow != *channel.PermissionOverwrites[i].Allow) ||
+				(pw.Deny != nil && channel.PermissionOverwrites[i].Deny == nil) ||
+				(pw.Deny == nil && channel.PermissionOverwrites[i].Deny != nil) ||
+				(pw.Deny != nil && channel.PermissionOverwrites[i].Deny != nil && *pw.Deny != *channel.PermissionOverwrites[i].Deny) {
+				needsUpdate = true
+				break
+			}
+		}
 	}
 
 	return managed.ExternalObservation{

@@ -109,6 +109,24 @@ spec:
                     maximum: 21600
                     minimum: 0
                     type: integer
+                  permissionOverwrites:
+                    items:
+                      properties:
+                        allow:
+                          format: int64
+                          type: integer
+                        deny:
+                          format: int64
+                          type: integer
+                        id:
+                          type: string
+                        type:
+                          type: string
+                      required:
+                      - id
+                      - type
+                      type: object
+                    type: array
                   topic:
                     description: Topic is the channel topic (text channels only).
                     maxLength: 1024
