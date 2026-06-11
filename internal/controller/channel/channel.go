@@ -386,9 +386,15 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	if len(cr.Spec.ForProvider.PermissionOverwrites) > 0 {
 		req.PermissionOverwrites = make([]clients.PermissionOverwrite, len(cr.Spec.ForProvider.PermissionOverwrites))
 		for i, pw := range cr.Spec.ForProvider.PermissionOverwrites {
+			var pType int
+			if pw.Type == "role" {
+				pType = 0
+			} else {
+				pType = 1
+			}
 			req.PermissionOverwrites[i] = clients.PermissionOverwrite{
 				ID:   pw.ID,
-				Type: pw.Type,
+				Type: pType,
 			}
 			if pw.Allow != nil {
 				req.PermissionOverwrites[i].Allow = pw.Allow
