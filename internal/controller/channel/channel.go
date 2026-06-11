@@ -19,6 +19,7 @@ package channel
 import (
 	"context"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -247,11 +248,17 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 				ID:   pw.ID,
 				Type: typeStr,
 			}
-			if pw.Allow != nil {
-				cr.Status.AtProvider.PermissionOverwrites[i].Allow = pw.Allow
+			if pw.Allow != "" {
+				val, err := strconv.ParseInt(pw.Allow, 10, 64)
+				if err == nil {
+					cr.Status.AtProvider.PermissionOverwrites[i].Allow = &val
+				}
 			}
-			if pw.Deny != nil {
-				cr.Status.AtProvider.PermissionOverwrites[i].Deny = pw.Deny
+			if pw.Deny != "" {
+				val, err := strconv.ParseInt(pw.Deny, 10, 64)
+				if err == nil {
+					cr.Status.AtProvider.PermissionOverwrites[i].Deny = &val
+				}
 			}
 		}
 	}
@@ -284,13 +291,29 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 				needsUpdate = true
 				break
 			}
-			if pw.ID != channel.PermissionOverwrites[i].ID ||
-				(pw.Allow != nil && channel.PermissionOverwrites[i].Allow == nil) ||
-				(pw.Allow == nil && channel.PermissionOverwrites[i].Allow != nil) ||
-				(pw.Allow != nil && channel.PermissionOverwrites[i].Allow != nil && *pw.Allow != *channel.PermissionOverwrites[i].Allow) ||
-				(pw.Deny != nil && channel.PermissionOverwrites[i].Deny == nil) ||
-				(pw.Deny == nil && channel.PermissionOverwrites[i].Deny != nil) ||
-				(pw.Deny != nil && channel.PermissionOverwrites[i].Deny != nil && *pw.Deny != *channel.PermissionOverwrites[i].Deny) {
+			channelPw := channel.PermissionOverwrites[i]
+			if pw.ID != channelPw.ID {
+				needsUpdate = true
+				break
+			}
+			// Convert string allow/deny to int64 for comparison
+			var channelAllow, channelDeny int64
+			if channelPw.Allow != "" {
+				if val, err := strconv.ParseInt(channelPw.Allow, 10, 64); err == nil {
+					channelAllow = val
+				}
+			}
+			if channelPw.Deny != "" {
+				if val, err := strconv.ParseInt(channelPw.Deny, 10, 64); err == nil {
+					channelDeny = val
+				}
+			}
+			if pw.Allow != nil && channelPw.Allow == "" ||
+				pw.Allow == nil && channelPw.Allow != "" ||
+				pw.Allow != nil && channelPw.Allow != "" && *pw.Allow != channelAllow ||
+				pw.Deny != nil && channelPw.Deny == "" ||
+				pw.Deny == nil && channelPw.Deny != "" ||
+				pw.Deny != nil && channelPw.Deny != "" && *pw.Deny != channelDeny {
 				needsUpdate = true
 				break
 			}
@@ -397,10 +420,10 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 				Type: pType,
 			}
 			if pw.Allow != nil {
-				req.PermissionOverwrites[i].Allow = pw.Allow
+				req.PermissionOverwrites[i].Allow = strconv.FormatInt(*pw.Allow, 10)
 			}
 			if pw.Deny != nil {
-				req.PermissionOverwrites[i].Deny = pw.Deny
+				req.PermissionOverwrites[i].Deny = strconv.FormatInt(*pw.Deny, 10)
 			}
 		}
 	}

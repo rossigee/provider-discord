@@ -552,8 +552,8 @@ type ModifyChannelRequest struct {
 type PermissionOverwrite struct {
 	ID    string `json:"id"`
 	Type  int    `json:"type"` // 0 = role, 1 = member
-	Allow *int64 `json:"allow,omitempty"`
-	Deny  *int64 `json:"deny,omitempty"`
+	Allow string `json:"allow,omitempty"`
+	Deny  string `json:"deny,omitempty"`
 }
 
 // Webhook represents a Discord webhook
