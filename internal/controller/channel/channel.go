@@ -428,9 +428,46 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		}
 	}
 
-	_, err := c.service.ModifyChannel(ctx, meta.GetExternalName(cr), req)
+	channel, err := c.service.ModifyChannel(ctx, meta.GetExternalName(cr), req)
 	if err != nil {
 		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update channel")
+	}
+
+	// Update status with the modified values so next reconcile sees up-to-date
+	now := &metav1.Time{Time: time.Now()}
+	cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
+		ID:        meta.GetExternalName(cr),
+		Name:      channel.Name,
+		Type:      channel.Type,
+		GuildID:   channel.GuildID,
+		Position:  channel.Position,
+		ParentID:  channel.ParentID,
+		UpdatedAt: now,
+	}
+	if len(channel.PermissionOverwrites) > 0 {
+		cr.Status.AtProvider.PermissionOverwrites = make([]channelv1alpha1.PermissionOverwrite, len(channel.PermissionOverwrites))
+		for i, pw := range channel.PermissionOverwrites {
+			typeStr := "member"
+			if pw.Type == 0 {
+				typeStr = "role"
+			}
+			cr.Status.AtProvider.PermissionOverwrites[i] = channelv1alpha1.PermissionOverwrite{
+				ID:   pw.ID,
+				Type: typeStr,
+			}
+			if pw.Allow != "" {
+				val, err := strconv.ParseInt(pw.Allow, 10, 64)
+				if err == nil {
+					cr.Status.AtProvider.PermissionOverwrites[i].Allow = &val
+				}
+			}
+			if pw.Deny != "" {
+				val, err := strconv.ParseInt(pw.Deny, 10, 64)
+				if err == nil {
+					cr.Status.AtProvider.PermissionOverwrites[i].Deny = &val
+				}
+			}
+		}
 	}
 
 	return managed.ExternalUpdate{}, nil
