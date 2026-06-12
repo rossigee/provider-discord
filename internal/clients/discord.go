@@ -63,6 +63,7 @@ type ChannelClient interface {
 	ModifyChannel(ctx context.Context, channelID string, req *ModifyChannelRequest) (*Channel, error)
 	DeleteChannel(ctx context.Context, channelID string) error
 	ListGuildChannels(ctx context.Context, guildID string) ([]Channel, error)
+	HasMessages(ctx context.Context, channelID string) (bool, error)
 }
 
 // WebhookClient defines the interface for webhook-related Discord operations
@@ -253,13 +254,23 @@ type CreateGuildRequest struct {
 
 // Channel represents a Discord channel
 type Channel struct {
-	ID        string               `json:"id,omitempty"`
-	Type      int                 `json:"type"`
-	GuildID   string               `json:"guild_id,omitempty"`
-	Name      string               `json:"name"`
-	Position  int                 `json:"position,omitempty"`
-	ParentID  string               `json:"parent_id,omitempty"`
+	ID                   string                `json:"id,omitempty"`
+	Type                 int                   `json:"type"`
+	GuildID              string                `json:"guild_id,omitempty"`
+	Name                 string                `json:"name"`
+	Position             int                   `json:"position,omitempty"`
+	ParentID             string                `json:"parent_id,omitempty"`
 	PermissionOverwrites []PermissionOverwrite `json:"permission_overwrites,omitempty"`
+}
+
+// Message represents a Discord message
+type Message struct {
+	ID        string `json:"id"`
+	ChannelID string `json:"channel_id"`
+	GuildID   string `json:"guild_id,omitempty"`
+	Author    User   `json:"author"`
+	Content   string `json:"content"`
+	Timestamp string `json:"timestamp"`
 }
 
 // ModifyGuildRequest represents a request to modify a guild
@@ -895,6 +906,22 @@ func (c *DiscordClient) ListGuildChannels(ctx context.Context, guildID string) (
 	}
 
 	return channels, nil
+}
+
+// HasMessages checks if a channel has any messages
+func (c *DiscordClient) HasMessages(ctx context.Context, channelID string) (bool, error) {
+	resp, err := c.makeRequest(ctx, "GET", "/channels/"+channelID+"/messages?limit=1", nil)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to check channel messages")
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	var messages []Message
+	if err := json.NewDecoder(resp.Body).Decode(&messages); err != nil {
+		return false, errors.Wrap(err, "failed to decode messages response")
+	}
+
+	return len(messages) > 0, nil
 }
 
 // Webhook methods

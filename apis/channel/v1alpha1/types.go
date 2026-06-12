@@ -86,6 +86,12 @@ type ChannelParameters struct {
 	// PermissionOverwrites are the permission overwrites to apply to the channel.
 	// +optional
 	PermissionOverwrites []PermissionOverwrite `json:"permissionOverwrites,omitempty"`
+
+	// AllowDelete allows deletion of channels that have message history.
+	// Must be explicitly set to true when the channel has messages and an operator
+	// has reviewed and approved the deletion.
+	// +optional
+	AllowDelete *bool `json:"allowDelete,omitempty"`
 }
 
 // PermissionOverwrite represents a permission overwrite for a channel.
@@ -157,6 +163,11 @@ type ChannelObservation struct {
 
 	// PermissionOverwrites are the permission overwrites applied to the channel.
 	PermissionOverwrites []PermissionOverwrite `json:"permissionOverwrites,omitempty"`
+
+	// HasMessages indicates whether the channel has any messages.
+	// Used to prevent accidental deletion of channels with valuable history.
+	// +optional
+	HasMessages *bool `json:"hasMessages,omitempty"`
 }
 
 // A ChannelSpec defines the desired state of a Channel.
@@ -180,6 +191,7 @@ type ChannelStatus struct {
 // +kubebuilder:printcolumn:name="TYPE",type="integer",JSONPath=".spec.forProvider.type"
 // +kubebuilder:printcolumn:name="GUILD",type="string",JSONPath=".spec.forProvider.guildId"
 // +kubebuilder:printcolumn:name="CHANNEL-ID",type="string",JSONPath=".status.atProvider.id"
+// +kubebuilder:printcolumn:name="HAS-MESSAGES",type="boolean",JSONPath=".status.atProvider.hasMessages"
 // +kubebuilder:printcolumn:name="READY",type="string",JSONPath=".status.conditions[?(@.type=='Ready')].status"
 // +kubebuilder:printcolumn:name="SYNCED",type="string",JSONPath=".status.conditions[?(@.type=='Synced')].status"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"

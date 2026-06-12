@@ -39,6 +39,7 @@ type MockChannelClient struct {
 	ModifyChannelFunc     func(ctx context.Context, channelID string, req *discordclient.ModifyChannelRequest) (*discordclient.Channel, error)
 	DeleteChannelFunc     func(ctx context.Context, channelID string) error
 	ListGuildChannelsFunc func(ctx context.Context, guildID string) ([]discordclient.Channel, error)
+	HasMessagesFunc       func(ctx context.Context, channelID string) (bool, error)
 }
 
 // Ensure MockChannelClient implements ChannelClient interface
@@ -77,6 +78,13 @@ func (m *MockChannelClient) ListGuildChannels(ctx context.Context, guildID strin
 		return m.ListGuildChannelsFunc(ctx, guildID)
 	}
 	return nil, errors.New("not implemented")
+}
+
+func (m *MockChannelClient) HasMessages(ctx context.Context, channelID string) (bool, error) {
+	if m.HasMessagesFunc != nil {
+		return m.HasMessagesFunc(ctx, channelID)
+	}
+	return false, errors.New("not implemented")
 }
 
 func TestObserve(t *testing.T) {

@@ -263,6 +263,15 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}
 	}
 
+	// Check if channel has messages (for deletion protection)
+	hasMessages, err := c.service.HasMessages(ctx, externalName)
+	if err != nil {
+		// Log but don't fail - treat as unknown
+		log.V(2).Info("Failed to check channel messages", "error", err)
+	} else {
+		cr.Status.AtProvider.HasMessages = &hasMessages
+	}
+
 	// Late initialization: populate spec fields from observed state if not set
 	lateInitialized := false
 	if cr.Spec.ForProvider.GuildID == "" && channel.GuildID != "" {
@@ -477,6 +486,13 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	cr, ok := mg.(*channelv1alpha1.Channel)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotChannel)
+	}
+
+	// Block deletion if channel has messages and no override is set
+	if cr.Status.AtProvider.HasMessages != nil && *cr.Status.AtProvider.HasMessages {
+		if cr.Spec.ForProvider.AllowDelete == nil || !*cr.Spec.ForProvider.AllowDelete {
+			return managed.ExternalDelete{}, errors.New("cannot delete channel with message history. Set spec.allowDelete=true to confirm deletion has been reviewed and approved")
+		}
 	}
 
 	cr.SetConditions(xpv1.Deleting())
