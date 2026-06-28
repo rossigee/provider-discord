@@ -46,7 +46,7 @@ metadata:
          metadata:
            name: provider-discord
          spec:
-           package: ghcr.io/rossigee/provider-discord:v0.9.0
+           package: ghcr.io/rossigee/provider-discord:v0.10.4
          ```
 
       2. **Create Bot Token Secret**:
@@ -110,7 +110,7 @@ metadata:
       - [Discord API Documentation](https://discord.com/developers/docs)
 spec:
   controller:
-    image: ghcr.io/rossigee/provider-discord:v0.10.0
+    image: ghcr.io/rossigee/provider-discord:v0.10.4
     permissionRequests:
     - apiGroups:
       - ""
