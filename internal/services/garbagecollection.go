@@ -18,6 +18,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -63,15 +64,137 @@ func (s *GarbageCollectionService) RunGarbageCollection(ctx context.Context, spe
 		Errors: make([]string, 0),
 	}
 
-	// TODO: Implement periodic deduplication using the same logic as the deduplication service
-	// This should scan all guilds (or targeted guilds) and delete duplicates automatically
-	// without requiring manual annotation triggers.
-	//
-	// Configuration options:
-	// - spec.PreventDuplicatesOnCreate: Block channel creation if duplicate exists (default: true)
-	// - spec.DeleteOrphanedResources: Delete Crossplane Channel resources for deleted channels (default: true)
-	// - spec.TargetGuilds: Limit GC to specific guild IDs (default: all guilds)
-	// - spec.PollIntervalSeconds: Scan interval in seconds (default: 300, min: 60, max: 3600)
+	// Get targeted guilds (empty = all guilds)
+	targetGuilds := spec.TargetGuilds
+	if len(targetGuilds) == 0 {
+		guilds, err := s.getGuilds(ctx)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("failed to list guilds: %v", err))
+			result.HasErrors = true
+			return result, err
+		}
+		for _, g := range guilds {
+			targetGuilds = append(targetGuilds, g.ID)
+		}
+	}
+
+	// Process each guild for duplicates
+	for _, guildID := range targetGuilds {
+		deleteOrphaned := true // default
+		if spec.DeleteOrphanedResources != nil {
+			deleteOrphaned = *spec.DeleteOrphanedResources
+		}
+
+		duplicatesDeleted, orphanedCleaned, err := s.processGuildDuplicates(ctx, guildID, deleteOrphaned)
+		if err != nil {
+			result.Errors = append(result.Errors, fmt.Sprintf("guild %s: %v", guildID, err))
+			result.HasErrors = true
+			continue
+		}
+		result.DuplicatesDeleted += duplicatesDeleted
+		result.OrphanedResourcesDeleted += orphanedCleaned
+	}
 
 	return result, nil
+}
+
+// processGuildDuplicates finds and deletes duplicate channels in a specific guild.
+func (s *GarbageCollectionService) processGuildDuplicates(ctx context.Context, guildID string, deleteOrphaned bool) (int, int, error) {
+	channels, err := s.getChannels(ctx, guildID)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to list channels: %w", err)
+	}
+
+	// Group channels by name to identify duplicates
+	channelsByName := make(map[string][]Channel)
+	for _, ch := range channels {
+		channelsByName[ch.Name] = append(channelsByName[ch.Name], ch)
+	}
+
+	var duplicatesDeleted int
+	var orphanedCleaned int
+
+	// Process each duplicate group
+	for name, group := range channelsByName {
+		if len(group) <= 1 {
+			continue // Not a duplicate
+		}
+
+		// Find the channel to keep (lowest position = oldest/highest priority)
+		keepIndex := 0
+		minPosition := group[0].Position
+		for i, ch := range group {
+			if ch.Position < minPosition {
+				minPosition = ch.Position
+				keepIndex = i
+			}
+		}
+
+		// Delete all duplicates except the one to keep
+		for i, ch := range group {
+			if i == keepIndex {
+				continue
+			}
+
+			if err := s.deleteChannel(ctx, ch.ID); err != nil {
+				return duplicatesDeleted, orphanedCleaned, fmt.Errorf("failed to delete duplicate %q (%s): %w", name, ch.ID, err)
+			}
+			duplicatesDeleted++
+
+			// Clean up orphaned Crossplane resource if requested
+			if deleteOrphaned {
+				if deleted := s.deleteOrphanedChannelResource(ctx, ch.ID); deleted {
+					orphanedCleaned++
+				}
+			}
+		}
+	}
+
+	return duplicatesDeleted, orphanedCleaned, nil
+}
+
+// deleteOrphanedChannelResource deletes the Crossplane Channel resource for a deleted Discord channel.
+func (s *GarbageCollectionService) deleteOrphanedChannelResource(ctx context.Context, discordChannelID string) bool {
+	// TODO: Implement resource lookup and deletion
+	// This requires querying Kubernetes for Channel resources with external-name = discordChannelID
+	// and deleting them.
+	return false
+}
+
+// getGuilds retrieves all guilds the bot is a member of.
+func (s *GarbageCollectionService) getGuilds(ctx context.Context) ([]Guild, error) {
+	// Reuse deduplication service logic
+	dedupService := NewDeduplicationService(s.httpClient, s.baseURL, s.botToken, s.k8sClient)
+	return dedupService.getGuilds(ctx)
+}
+
+// getChannels retrieves all channels in a guild.
+func (s *GarbageCollectionService) getChannels(ctx context.Context, guildID string) ([]Channel, error) {
+	// Reuse deduplication service logic
+	dedupService := NewDeduplicationService(s.httpClient, s.baseURL, s.botToken, s.k8sClient)
+	return dedupService.getChannels(ctx, guildID)
+}
+
+// deleteChannel deletes a Discord channel by ID.
+func (s *GarbageCollectionService) deleteChannel(ctx context.Context, channelID string) error {
+	// Reuse deduplication service logic
+	dedupService := NewDeduplicationService(s.httpClient, s.baseURL, s.botToken, s.k8sClient)
+	return dedupService.deleteChannel(ctx, channelID)
+}
+
+// ValidateChannelNameAvailable checks if a channel name is available in a guild.
+// Returns an error if a channel with the same name already exists.
+func (s *GarbageCollectionService) ValidateChannelNameAvailable(ctx context.Context, guildID, channelName string) error {
+	channels, err := s.getChannels(ctx, guildID)
+	if err != nil {
+		return fmt.Errorf("failed to check existing channels: %w", err)
+	}
+
+	for _, ch := range channels {
+		if ch.Name == channelName {
+			return fmt.Errorf("channel with name %q already exists in guild (ID: %s)", channelName, guildID)
+		}
+	}
+
+	return nil
 }
