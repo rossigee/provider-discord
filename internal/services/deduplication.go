@@ -163,6 +163,11 @@ func (s *DeduplicationService) AnalyzeAndDeduplicateWithCleanup(ctx context.Cont
 		for _, group := range guildResult.DuplicateGroups {
 			result.Summary.TotalDuplicateChannelsFound += len(group.Channels) - 1
 		}
+
+		// Log any errors encountered during processing
+		if len(guildResult.Errors) > 0 {
+			result.HasError = true
+		}
 	}
 
 	return result, nil
