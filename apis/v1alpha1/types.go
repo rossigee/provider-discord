@@ -35,6 +35,10 @@ type ProviderConfigSpec struct {
 	// Deduplication configuration for channel deduplication.
 	// +optional
 	Deduplication *DeduplicationSpec `json:"deduplication,omitempty"`
+
+	// GarbageCollection configuration for autonomous cleanup.
+	// +optional
+	GarbageCollection *GarbageCollectionSpec `json:"garbageCollection,omitempty"`
 }
 
 // ProviderCredentials required to authenticate.
@@ -113,3 +117,36 @@ const (
 	// DeduplicationModeAction deletes duplicate channels and related Crossplane resources.
 	DeduplicationModeAction DeduplicationMode = "action"
 )
+
+// GarbageCollectionSpec defines autonomous cleanup configuration.
+type GarbageCollectionSpec struct {
+	// Enabled indicates if garbage collection is active.
+	// When enabled, the provider automatically prevents and cleans up duplicates.
+	// +optional
+	Enabled bool `json:"enabled,omitempty"`
+
+	// PreventDuplicatesOnCreate blocks channel creation if a channel with the same name
+	// already exists in the guild. When false, duplicate channels are allowed at creation.
+	// Default: true
+	// +optional
+	PreventDuplicatesOnCreate *bool `json:"preventDuplicatesOnCreate,omitempty"`
+
+	// PollIntervalSeconds is the interval in seconds for periodic duplicate cleanup.
+	// Minimum: 60 (1 minute), Maximum: 3600 (1 hour)
+	// Default: 300 (5 minutes)
+	// +kubebuilder:validation:Minimum=60
+	// +kubebuilder:validation:Maximum=3600
+	// +optional
+	PollIntervalSeconds *int32 `json:"pollIntervalSeconds,omitempty"`
+
+	// DeleteOrphanedResources indicates whether to delete Crossplane Channel resources
+	// when their corresponding Discord channels are deleted during garbage collection.
+	// Default: true
+	// +optional
+	DeleteOrphanedResources *bool `json:"deleteOrphanedResources,omitempty"`
+
+	// TargetGuilds limits garbage collection to specific guild IDs.
+	// If empty, all guilds the bot is a member of will be monitored.
+	// +optional
+	TargetGuilds []string `json:"targetGuilds,omitempty"`
+}
