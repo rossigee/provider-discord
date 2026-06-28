@@ -110,7 +110,7 @@ metadata:
       - [Discord API Documentation](https://discord.com/developers/docs)
 spec:
   controller:
-    image: ghcr.io/rossigee/provider-discord:v0.11.2
+    image: ghcr.io/rossigee/provider-discord:v0.11.3
     permissionRequests:
     - apiGroups:
       - ""
