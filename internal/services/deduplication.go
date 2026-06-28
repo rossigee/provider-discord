@@ -220,10 +220,13 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 			// If in action mode, delete the duplicate channels
 			if mode == "action" {
 				deletesMade := 0
+				duplicatesToDelete := len(group) - 1 // All except the kept one
+
 				for i, channel := range group {
 					if i == keepIndex {
 						continue
 					}
+
 					// Rate-limit: space out DELETE calls to avoid Discord 429 responses
 					if deletesMade > 0 {
 						select {
@@ -233,9 +236,10 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 							return result
 						}
 					}
+
 					err := s.deleteChannel(ctx, channel.ID)
 					if err != nil {
-						result.Errors = append(result.Errors, fmt.Sprintf("failed to delete channel %s: %v", channel.ID, err))
+						result.Errors = append(result.Errors, fmt.Sprintf("failed to delete channel %s (%s): %v", channel.ID, channel.Name, err))
 					} else {
 						deletesMade++
 						result.ChannelsDeleted++
@@ -247,6 +251,11 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 						}
 					}
 				}
+
+				// Log if some duplicates failed to delete
+				if deletesMade < duplicatesToDelete {
+					result.Errors = append(result.Errors, fmt.Sprintf("partial deletion: %d/%d duplicates of %q deleted", deletesMade, duplicatesToDelete, name))
+				}
 			}
 		}
 	}
@@ -257,9 +266,11 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 // deleteChannel deletes a Discord channel by ID.
 // It respects Discord's 429 rate-limit response and blocks for the Retry-After duration.
 func (s *DeduplicationService) deleteChannel(ctx context.Context, channelID string) error {
-	req, err := http.NewRequestWithContext(ctx, "DELETE", fmt.Sprintf("%s/channels/%s", s.baseURL, channelID), nil)
+	url := fmt.Sprintf("%s/channels/%s", s.baseURL, channelID)
+
+	req, err := http.NewRequestWithContext(ctx, "DELETE", url, nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create DELETE request for channel %s: %w", channelID, err)
 	}
 
 	req.Header.Set("Authorization", "Bot "+s.botToken)
@@ -267,7 +278,7 @@ func (s *DeduplicationService) deleteChannel(ctx context.Context, channelID stri
 
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
-		return err
+		return fmt.Errorf("DELETE request failed for channel %s: %w", channelID, err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -285,12 +296,12 @@ func (s *DeduplicationService) deleteChannel(ctx context.Context, channelID stri
 		case <-ctx.Done():
 			return ctx.Err()
 		}
-		return fmt.Errorf("discord API rate limited (429); waited %s — caller should retry", retryAfter)
+		return fmt.Errorf("discord API rate limited (429) for channel %s; waited %s — caller should retry", channelID, retryAfter)
 	}
 
 	if resp.StatusCode != 204 {
 		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("discord API error: %d - %s", resp.StatusCode, string(body))
+		return fmt.Errorf("discord API error (status %d) deleting channel %s: %s", resp.StatusCode, channelID, string(body))
 	}
 
 	return nil
