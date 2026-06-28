@@ -50,7 +50,7 @@ type ProviderConfigReconciler struct {
 // SetupWithManager sets up the controller with the Manager.
 func (r *ProviderConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.client = mgr.GetClient()
-	r.recorder = mgr.GetEventRecorderFor(controllerName)
+	r.recorder = mgr.GetEventRecorderFor(controllerName) //nolint:staticcheck
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&discordv1alpha1.ProviderConfig{}).
