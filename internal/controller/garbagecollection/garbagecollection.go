@@ -53,6 +53,7 @@ func (r *ProviderConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.recorder = mgr.GetEventRecorderFor(controllerName) //nolint:staticcheck
 
 	return ctrl.NewControllerManagedBy(mgr).
+		Named("garbagecollection").
 		For(&discordv1alpha1.ProviderConfig{}).
 		WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
 			pc := obj.(*discordv1alpha1.ProviderConfig)
