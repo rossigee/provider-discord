@@ -119,6 +119,7 @@ const (
 )
 
 // GarbageCollectionSpec defines autonomous cleanup configuration.
+// +kubebuilder:validation:XValidation:rule="self.pollIntervalSeconds == null || (self.pollIntervalSeconds >= 60 && self.pollIntervalSeconds <= 3600)",message="pollIntervalSeconds must be between 60 and 3600"
 type GarbageCollectionSpec struct {
 	// Enabled indicates if garbage collection is active.
 	// When enabled, the provider automatically prevents and cleans up duplicates.
@@ -128,6 +129,7 @@ type GarbageCollectionSpec struct {
 	// PreventDuplicatesOnCreate blocks channel creation if a channel with the same name
 	// already exists in the guild. When false, duplicate channels are allowed at creation.
 	// Default: true
+	// +kubebuilder:validation:Optional
 	// +optional
 	PreventDuplicatesOnCreate *bool `json:"preventDuplicatesOnCreate,omitempty"`
 
@@ -136,17 +138,20 @@ type GarbageCollectionSpec struct {
 	// Default: 300 (5 minutes)
 	// +kubebuilder:validation:Minimum=60
 	// +kubebuilder:validation:Maximum=3600
+	// +kubebuilder:validation:Optional
 	// +optional
 	PollIntervalSeconds *int32 `json:"pollIntervalSeconds,omitempty"`
 
 	// DeleteOrphanedResources indicates whether to delete Crossplane Channel resources
 	// when their corresponding Discord channels are deleted during garbage collection.
 	// Default: true
+	// +kubebuilder:validation:Optional
 	// +optional
 	DeleteOrphanedResources *bool `json:"deleteOrphanedResources,omitempty"`
 
 	// TargetGuilds limits garbage collection to specific guild IDs.
 	// If empty, all guilds the bot is a member of will be monitored.
+	// +kubebuilder:validation:Optional
 	// +optional
 	TargetGuilds []string `json:"targetGuilds,omitempty"`
 }
