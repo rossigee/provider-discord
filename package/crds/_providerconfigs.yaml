@@ -136,6 +136,55 @@ spec:
                       type: string
                     type: array
                 type: object
+              garbageCollection:
+                description: GarbageCollection configuration for autonomous cleanup.
+                properties:
+                  deleteOrphanedResources:
+                    description: |-
+                      DeleteOrphanedResources indicates whether to delete Crossplane Channel resources
+                      when their corresponding Discord channels are deleted during garbage collection.
+                      Default: true
+                    type: boolean
+                  deleteUnmanagedChannels:
+                    description: |-
+                      DeleteUnmanagedChannels deletes Discord channels that have no corresponding
+                      Crossplane Channel resource. Only channels in guilds with at least one
+                      managed Channel resource are eligible for cleanup, to avoid accidentally
+                      wiping guilds where Crossplane management has not been established.
+                      Default: false
+                    type: boolean
+                  enabled:
+                    description: |-
+                      Enabled indicates if garbage collection is active.
+                      When enabled, the provider automatically prevents and cleans up duplicates.
+                    type: boolean
+                  pollIntervalSeconds:
+                    description: |-
+                      PollIntervalSeconds is the interval in seconds for periodic duplicate cleanup.
+                      Minimum: 60 (1 minute), Maximum: 3600 (1 hour)
+                      Default: 300 (5 minutes)
+                    format: int32
+                    maximum: 3600
+                    minimum: 60
+                    type: integer
+                  preventDuplicatesOnCreate:
+                    description: |-
+                      PreventDuplicatesOnCreate blocks channel creation if a channel with the same name
+                      already exists in the guild. When false, duplicate channels are allowed at creation.
+                      Default: true
+                    type: boolean
+                  targetGuilds:
+                    description: |-
+                      TargetGuilds limits garbage collection to specific guild IDs.
+                      If empty, all guilds the bot is a member of will be monitored.
+                    items:
+                      type: string
+                    type: array
+                type: object
+                x-kubernetes-validations:
+                - message: pollIntervalSeconds must be between 60 and 3600
+                  rule: self.pollIntervalSeconds == null || (self.pollIntervalSeconds
+                    >= 60 && self.pollIntervalSeconds <= 3600)
             required:
             - credentials
             type: object

@@ -62,6 +62,11 @@ func (in *GarbageCollectionSpec) DeepCopyInto(out *GarbageCollectionSpec) {
 		*out = new(bool)
 		**out = **in
 	}
+	if in.DeleteUnmanagedChannels != nil {
+		in, out := &in.DeleteUnmanagedChannels, &out.DeleteUnmanagedChannels
+		*out = new(bool)
+		**out = **in
+	}
 	if in.TargetGuilds != nil {
 		in, out := &in.TargetGuilds, &out.TargetGuilds
 		*out = make([]string, len(*in))

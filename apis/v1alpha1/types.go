@@ -149,6 +149,15 @@ type GarbageCollectionSpec struct {
 	// +optional
 	DeleteOrphanedResources *bool `json:"deleteOrphanedResources,omitempty"`
 
+	// DeleteUnmanagedChannels deletes Discord channels that have no corresponding
+	// Crossplane Channel resource. Only channels in guilds with at least one
+	// managed Channel resource are eligible for cleanup, to avoid accidentally
+	// wiping guilds where Crossplane management has not been established.
+	// Default: false
+	// +kubebuilder:validation:Optional
+	// +optional
+	DeleteUnmanagedChannels *bool `json:"deleteUnmanagedChannels,omitempty"`
+
 	// TargetGuilds limits garbage collection to specific guild IDs.
 	// If empty, all guilds the bot is a member of will be monitored.
 	// +kubebuilder:validation:Optional

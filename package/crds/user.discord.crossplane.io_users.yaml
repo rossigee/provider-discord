@@ -16,7 +16,7 @@ spec:
     listKind: UserList
     plural: users
     singular: user
-  scope: Cluster
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.forProvider.userId
@@ -143,8 +143,12 @@ spec:
                   name:
                     description: Name of the secret.
                     type: string
+                  namespace:
+                    description: Namespace of the secret.
+                    type: string
                 required:
                 - name
+                - namespace
                 type: object
             required:
             - forProvider

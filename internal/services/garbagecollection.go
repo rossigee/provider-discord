@@ -24,6 +24,7 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
 	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
 )
 
@@ -40,6 +41,7 @@ type GarbageCollectionResult struct {
 	DuplicatesPrevented      int
 	DuplicatesDeleted        int
 	OrphanedResourcesDeleted int
+	UnmanagedChannelsDeleted int
 	HasErrors                bool
 	Errors                   []string
 }
@@ -78,21 +80,36 @@ func (s *GarbageCollectionService) RunGarbageCollection(ctx context.Context, spe
 		}
 	}
 
-	// Process each guild for duplicates
-	for _, guildID := range targetGuilds {
-		deleteOrphaned := true // default
-		if spec.DeleteOrphanedResources != nil {
-			deleteOrphaned = *spec.DeleteOrphanedResources
-		}
+	deleteUnmanaged := false // default: safe, opt-in only
+	if spec.DeleteUnmanagedChannels != nil {
+		deleteUnmanaged = *spec.DeleteUnmanagedChannels
+	}
 
+	deleteOrphaned := true // default
+	if spec.DeleteOrphanedResources != nil {
+		deleteOrphaned = *spec.DeleteOrphanedResources
+	}
+
+	// Process each guild
+	for _, guildID := range targetGuilds {
 		duplicatesDeleted, orphanedCleaned, err := s.processGuildDuplicates(ctx, guildID, deleteOrphaned)
 		if err != nil {
-			result.Errors = append(result.Errors, fmt.Sprintf("guild %s: %v", guildID, err))
+			result.Errors = append(result.Errors, fmt.Sprintf("guild %s duplicates: %v", guildID, err))
 			result.HasErrors = true
 			continue
 		}
 		result.DuplicatesDeleted += duplicatesDeleted
 		result.OrphanedResourcesDeleted += orphanedCleaned
+
+		if deleteUnmanaged {
+			unmanagedDeleted, err := s.deleteUnmanagedChannels(ctx, guildID)
+			if err != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("guild %s unmanaged: %v", guildID, err))
+				result.HasErrors = true
+				continue
+			}
+			result.UnmanagedChannelsDeleted += unmanagedDeleted
+		}
 	}
 
 	return result, nil
@@ -153,12 +170,77 @@ func (s *GarbageCollectionService) processGuildDuplicates(ctx context.Context, g
 	return duplicatesDeleted, orphanedCleaned, nil
 }
 
-// deleteOrphanedChannelResource deletes the Crossplane Channel resource for a deleted Discord channel.
+// deleteOrphanedChannelResource deletes the Crossplane Channel CR whose external-name matches the deleted Discord channel ID.
 func (s *GarbageCollectionService) deleteOrphanedChannelResource(ctx context.Context, discordChannelID string) bool {
-	// TODO: Implement resource lookup and deletion
-	// This requires querying Kubernetes for Channel resources with external-name = discordChannelID
-	// and deleting them.
+	if s.k8sClient == nil {
+		return false
+	}
+	list := &channelv1alpha1.ChannelList{}
+	if err := s.k8sClient.List(ctx, list); err != nil {
+		return false
+	}
+	for i := range list.Items {
+		ch := &list.Items[i]
+		if ch.GetAnnotations()["crossplane.io/external-name"] == discordChannelID {
+			if err := s.k8sClient.Delete(ctx, ch); err == nil {
+				return true
+			}
+		}
+	}
 	return false
+}
+
+// deleteUnmanagedChannels deletes Discord channels in a guild that have no corresponding Crossplane Channel CR.
+// Safety guard: only runs if at least one Channel CR exists for the guild, to avoid wiping
+// guilds where Crossplane management has not been established.
+func (s *GarbageCollectionService) deleteUnmanagedChannels(ctx context.Context, guildID string) (int, error) {
+	if s.k8sClient == nil {
+		return 0, nil
+	}
+
+	// List all Crossplane Channel CRs
+	list := &channelv1alpha1.ChannelList{}
+	if err := s.k8sClient.List(ctx, list); err != nil {
+		return 0, fmt.Errorf("failed to list Channel resources: %w", err)
+	}
+
+	// Build set of managed Discord channel IDs for this guild
+	managedIDs := make(map[string]struct{})
+	for _, ch := range list.Items {
+		if ch.Spec.ForProvider.GuildID == guildID {
+			if externalName := ch.GetAnnotations()["crossplane.io/external-name"]; externalName != "" {
+				managedIDs[externalName] = struct{}{}
+			}
+		}
+	}
+
+	// Safety guard: don't delete anything if no channels are managed in this guild
+	if len(managedIDs) == 0 {
+		return 0, nil
+	}
+
+	// Get all Discord channels in the guild
+	channels, err := s.getChannels(ctx, guildID)
+	if err != nil {
+		return 0, fmt.Errorf("failed to list Discord channels: %w", err)
+	}
+
+	var deleted int
+	for _, ch := range channels {
+		if _, managed := managedIDs[ch.ID]; managed {
+			continue
+		}
+		// Category channels (type 4) are never auto-deleted to avoid losing structure
+		if ch.Type == 4 {
+			continue
+		}
+		if err := s.deleteChannel(ctx, ch.ID); err != nil {
+			return deleted, fmt.Errorf("failed to delete unmanaged channel %q (%s): %w", ch.Name, ch.ID, err)
+		}
+		deleted++
+	}
+
+	return deleted, nil
 }
 
 // getGuilds retrieves all guilds the bot is a member of.

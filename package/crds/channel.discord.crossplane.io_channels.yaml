@@ -16,7 +16,7 @@ spec:
     listKind: ChannelList
     plural: channels
     singular: channel
-  scope: Cluster
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.forProvider.name
@@ -31,6 +31,9 @@ spec:
     - jsonPath: .status.atProvider.id
       name: CHANNEL-ID
       type: string
+    - jsonPath: .status.atProvider.hasMessages
+      name: HAS-MESSAGES
+      type: boolean
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: READY
       type: string
@@ -68,6 +71,12 @@ spec:
               forProvider:
                 description: ChannelParameters are the configurable fields of a Channel.
                 properties:
+                  allowDelete:
+                    description: |-
+                      AllowDelete allows deletion of channels that have message history.
+                      Must be explicitly set to true when the channel has messages and an operator
+                      has reviewed and approved the deletion.
+                    type: boolean
                   bitrate:
                     description: |-
                       Bitrate is the bitrate (in bits) of the voice channel.
@@ -99,6 +108,35 @@ spec:
                   parentId:
                     description: ParentID is the ID of the parent category for a channel.
                     type: string
+                  permissionOverwrites:
+                    description: PermissionOverwrites are the permission overwrites
+                      to apply to the channel.
+                    items:
+                      description: PermissionOverwrite represents a permission overwrite
+                        for a channel.
+                      properties:
+                        allow:
+                          description: Allow is the permission bitwise value to allow.
+                          format: int64
+                          type: integer
+                        deny:
+                          description: Deny is the permission bitwise value to deny.
+                          format: int64
+                          type: integer
+                        id:
+                          description: ID is the ID of the role or member to overwrite.
+                          type: string
+                        type:
+                          description: Type is the type of overwrite (role or member).
+                          enum:
+                          - role
+                          - member
+                          type: string
+                      required:
+                      - id
+                      - type
+                      type: object
+                    type: array
                   position:
                     description: Position is the sorting position of the channel.
                     type: integer
@@ -109,24 +147,6 @@ spec:
                     maximum: 21600
                     minimum: 0
                     type: integer
-                  permissionOverwrites:
-                    items:
-                      properties:
-                        allow:
-                          format: int64
-                          type: integer
-                        deny:
-                          format: int64
-                          type: integer
-                        id:
-                          type: string
-                        type:
-                          type: string
-                      required:
-                      - id
-                      - type
-                      type: object
-                    type: array
                   topic:
                     description: Topic is the channel topic (text channels only).
                     maxLength: 1024
@@ -207,8 +227,12 @@ spec:
                   name:
                     description: Name of the secret.
                     type: string
+                  namespace:
+                    description: Namespace of the secret.
+                    type: string
                 required:
                 - name
+                - namespace
                 type: object
             required:
             - forProvider
@@ -234,6 +258,11 @@ spec:
                     description: GuildID is the ID of the guild this channel belongs
                       to.
                     type: string
+                  hasMessages:
+                    description: |-
+                      HasMessages indicates whether the channel has any messages.
+                      Used to prevent accidental deletion of channels with valuable history.
+                    type: boolean
                   id:
                     description: ID is the unique identifier of the channel in Discord.
                     type: string
@@ -251,17 +280,28 @@ spec:
                     description: ParentID is the ID of the parent category.
                     type: string
                   permissionOverwrites:
+                    description: PermissionOverwrites are the permission overwrites
+                      applied to the channel.
                     items:
+                      description: PermissionOverwrite represents a permission overwrite
+                        for a channel.
                       properties:
                         allow:
+                          description: Allow is the permission bitwise value to allow.
                           format: int64
                           type: integer
                         deny:
+                          description: Deny is the permission bitwise value to deny.
                           format: int64
                           type: integer
                         id:
+                          description: ID is the ID of the role or member to overwrite.
                           type: string
                         type:
+                          description: Type is the type of overwrite (role or member).
+                          enum:
+                          - role
+                          - member
                           type: string
                       required:
                       - id

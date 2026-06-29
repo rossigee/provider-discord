@@ -16,7 +16,7 @@ spec:
     listKind: GuildList
     plural: guilds
     singular: guild
-  scope: Cluster
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.forProvider.name
@@ -167,8 +167,12 @@ spec:
                   name:
                     description: Name of the secret.
                     type: string
+                  namespace:
+                    description: Namespace of the secret.
+                    type: string
                 required:
                 - name
+                - namespace
                 type: object
             required:
             - forProvider
