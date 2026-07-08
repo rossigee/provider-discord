@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -39,6 +40,7 @@ import (
 	"github.com/rossigee/provider-discord/internal/controller"
 	"github.com/rossigee/provider-discord/internal/features"
 	"github.com/rossigee/provider-discord/internal/metrics"
+	"github.com/rossigee/provider-discord/internal/tracing"
 	"github.com/rossigee/provider-discord/internal/version"
 )
 
@@ -56,6 +58,8 @@ func main() {
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
+	shutdownTracing(context.Background())
+
 	var zl = zap.New(zap.UseDevMode(*debug), func(o *zap.Options) {
 		if *debug {
 			o.Level = uzap.NewAtomicLevelAt(zapcore.DebugLevel)
@@ -65,6 +69,9 @@ func main() {
 	})
 
 	log := logging.NewLogrLogger(zl.WithName("provider-discord"))
+
+	shutdownTracing := tracing.Init("provider-discord")
+	defer shutdownTracing(context.Background())
 
 	// Always set the controller-runtime logger to capture reconciliation events
 	// Use info level to avoid excessive verbosity while still showing important operations
