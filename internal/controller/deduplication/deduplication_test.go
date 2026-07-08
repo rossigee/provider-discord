@@ -17,13 +17,11 @@ limitations under the License.
 package deduplication
 
 import (
-	"testing"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-
-	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	"testing"
 )
 
 // TestDeduplicationAnnotationPredicate tests that the predicate correctly identifies ProviderConfigs with deduplication annotations.

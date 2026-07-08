@@ -18,12 +18,11 @@ limitations under the License.
 package metrics
 
 import (
-	"time"
-
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/metrics"
+	"time"
 )
 
 const (

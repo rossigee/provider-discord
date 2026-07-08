@@ -19,11 +19,10 @@ package clients
 import (
 	"context"
 	"encoding/json"
+	"github.com/google/go-cmp/cmp"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewDiscordClient(t *testing.T) {

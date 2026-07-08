@@ -18,23 +18,20 @@ package integration
 
 import (
 	"context"
-	"testing"
-	"time"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
+	"github.com/crossplane/crossplane/apis/v2/core/v2"
+	"github.com/rossigee/provider-discord/apis"
+	"github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/kubernetes/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
-
-	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
-	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
-
-	"github.com/rossigee/provider-discord/apis"
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"testing"
+	"time"
 )
 
 func TestGuildLifecycle(t *testing.T) {

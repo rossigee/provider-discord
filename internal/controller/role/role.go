@@ -2,11 +2,6 @@ package role
 
 import (
 	"context"
-
-	"github.com/pkg/errors"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
@@ -14,9 +9,11 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-
-	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	discordclient "github.com/rossigee/provider-discord/internal/clients"
+	"github.com/pkg/errors"
+	"github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	"github.com/rossigee/provider-discord/internal/clients"
+	"sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (

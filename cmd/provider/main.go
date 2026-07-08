@@ -18,30 +18,27 @@ package main
 
 import (
 	"context"
-	"os"
-	"path/filepath"
-	"runtime"
-	"time"
-
-	kingpin "github.com/alecthomas/kingpin/v2"
-	uzap "go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-	"sigs.k8s.io/controller-runtime/pkg/healthz"
-	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	xpcontroller "github.com/crossplane/crossplane-runtime/v2/pkg/controller"
+	"github.com/alecthomas/kingpin/v2"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
-
 	"github.com/rossigee/provider-discord/apis"
 	"github.com/rossigee/provider-discord/internal/controller"
 	"github.com/rossigee/provider-discord/internal/features"
 	"github.com/rossigee/provider-discord/internal/metrics"
 	"github.com/rossigee/provider-discord/internal/tracing"
 	"github.com/rossigee/provider-discord/internal/version"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"os"
+	"path/filepath"
+	"runtime"
+	"sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"time"
 )
 
 func main() {
@@ -57,7 +54,6 @@ func main() {
 	)
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
-
 
 	var zl = zap.New(zap.UseDevMode(*debug), func(o *zap.Options) {
 		if *debug {

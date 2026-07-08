@@ -19,13 +19,11 @@ package services
 import (
 	"context"
 	"fmt"
+	"github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1alpha1"
 	"net/http"
-	"time"
-
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	"time"
 )
 
 // GarbageCollectionService handles autonomous cleanup of duplicate channels.

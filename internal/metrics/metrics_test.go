@@ -17,11 +17,10 @@ limitations under the License.
 package metrics
 
 import (
-	"testing"
-	"time"
-
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	"github.com/stretchr/testify/assert"
+	"testing"
+	"time"
 )
 
 func TestMetricsRecorder_RecordAPIOperation(t *testing.T) {

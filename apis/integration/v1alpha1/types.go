@@ -17,10 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/crossplane/crossplane/apis/v2/core/v2"
 )
+
 
 // IntegrationParameters defines the desired state of a Discord guild integration
 type IntegrationParameters struct {
@@ -133,7 +133,4 @@ type IntegrationList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Integration `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Integration{}, &IntegrationList{})
 }

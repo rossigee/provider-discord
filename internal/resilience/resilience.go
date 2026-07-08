@@ -21,16 +21,14 @@ package resilience
 import (
 	"context"
 	"fmt"
+	"github.com/go-logr/logr"
+	"github.com/rossigee/provider-discord/internal/metrics"
 	"math"
 	"math/rand"
 	"net/http"
+	"sigs.k8s.io/controller-runtime/pkg/log"
 	"strconv"
 	"time"
-
-	"github.com/go-logr/logr"
-	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"github.com/rossigee/provider-discord/internal/metrics"
 )
 
 const (

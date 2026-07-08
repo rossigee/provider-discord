@@ -21,17 +21,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"github.com/rossigee/provider-discord/internal/metrics"
 	"io"
 	"net/http"
+	"sigs.k8s.io/controller-runtime"
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-	ctrl "sigs.k8s.io/controller-runtime"
-
-	"github.com/rossigee/provider-discord/internal/metrics"
 )
 
 const (

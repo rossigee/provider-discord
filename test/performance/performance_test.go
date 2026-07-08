@@ -18,13 +18,12 @@ package performance
 
 import (
 	"context"
+	"github.com/rossigee/provider-discord/internal/clients"
 	"os"
 	"runtime"
 	"sync"
 	"testing"
 	"time"
-
-	"github.com/rossigee/provider-discord/internal/clients"
 )
 
 // PerformanceConfig defines configuration for performance tests

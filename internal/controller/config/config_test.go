@@ -17,11 +17,9 @@ limitations under the License.
 package config
 
 import (
-	"testing"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
+	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 func TestSetup(t *testing.T) {

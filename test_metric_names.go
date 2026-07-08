@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"time"
-
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rossigee/provider-discord/internal/metrics"
+	"net/http"
+	"time"
 )
 
 func main() {

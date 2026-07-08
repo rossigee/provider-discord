@@ -18,11 +18,10 @@ package v1alpha1
 
 import (
 	"encoding/json"
-	"testing"
-
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"testing"
 )
 
 func TestRoleDeepCopy(t *testing.T) {

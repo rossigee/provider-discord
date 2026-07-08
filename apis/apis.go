@@ -18,19 +18,18 @@ limitations under the License.
 package apis
 
 import (
+	"github.com/rossigee/provider-discord/apis/application/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/integration/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/invite/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/member/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/user/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/webhook/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	applicationv1alpha1 "github.com/rossigee/provider-discord/apis/application/v1alpha1"
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	deduplicationv1alpha1 "github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
-	integrationv1alpha1 "github.com/rossigee/provider-discord/apis/integration/v1alpha1"
-	invitev1alpha1 "github.com/rossigee/provider-discord/apis/invite/v1alpha1"
-	memberv1alpha1 "github.com/rossigee/provider-discord/apis/member/v1alpha1"
-	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	userv1alpha1 "github.com/rossigee/provider-discord/apis/user/v1alpha1"
-	v1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
-	webhookv1alpha1 "github.com/rossigee/provider-discord/apis/webhook/v1alpha1"
 )
 
 func init() {

@@ -17,10 +17,7 @@ limitations under the License.
 package controller
 
 import (
-	ctrl "sigs.k8s.io/controller-runtime"
-
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
-
 	"github.com/rossigee/provider-discord/internal/clients"
 	"github.com/rossigee/provider-discord/internal/controller/application"
 	"github.com/rossigee/provider-discord/internal/controller/channel"
@@ -34,6 +31,7 @@ import (
 	"github.com/rossigee/provider-discord/internal/controller/user"
 	"github.com/rossigee/provider-discord/internal/controller/webhook"
 	"github.com/rossigee/provider-discord/internal/metrics"
+	"sigs.k8s.io/controller-runtime"
 )
 
 // Setup creates all Discord controllers with the supplied logger and adds them to

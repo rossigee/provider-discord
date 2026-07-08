@@ -17,10 +17,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/crossplane/crossplane/apis/v2/core/v2"
 )
+
 
 //+kubebuilder:object:generate=true
 
@@ -179,7 +179,4 @@ type MemberList struct {
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Member `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&Member{}, &MemberList{})
 }

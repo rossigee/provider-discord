@@ -19,22 +19,19 @@ package integration
 import (
 	"context"
 	"fmt"
-	"os"
-	"testing"
-	"time"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
+	"github.com/crossplane/crossplane/apis/v2/core/v2"
+	"github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"os"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
-	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
-
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"testing"
+	"time"
 )
 
 // Helper functions
