@@ -35,7 +35,7 @@ argument will be nil.  Many validators functions only look at the current value
 The `value` and `oldValue` arguments are always nilable - pointers to primitive
 types, slices of any type, or maps of any type.  Validator functions should
 avoid dereferencing nil. Callers are expected to not pass a nil `value` unless the
-API field itself was nilable. `oldValue` is always nil for CREATE operations and
+API field itself was nilable. `oldValue` is always nil for CREATE operations and 
 is also nil for UPDATE operations if the `value` is not correlated with an `oldValue`.
 
 Simple content-validators may have no `<OtherArgs>`, but validator functions

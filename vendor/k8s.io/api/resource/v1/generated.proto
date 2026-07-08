@@ -1833,3 +1833,4 @@ message ResourceSliceSpec {
   // +k8s:alpha(since: "1.36")=+k8s:maxItems=8
   repeated CounterSet sharedCounters = 8;
 }
+

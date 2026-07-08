@@ -485,7 +485,7 @@ func (g *applyConfigurationGenerator) generateClientgenExtract(sw *generator.Sni
 
 	sw.Do(`
 // Extract$.ApplyConfig.Type|public$From extracts the applied configuration owned by fieldManager from
-// $.Struct|private$ for the specified subresource. Pass an empty string for subresource to extract
+// $.Struct|private$ for the specified subresource. Pass an empty string for subresource to extract 
 // the main resource. Common subresources include "status", "scale", etc.
 // $.Struct|private$ must be a unmodified $.Struct|public$ API object that was retrieved from the Kubernetes API.
 // Extract$.ApplyConfig.Type|public$From provides a way to perform a extract/modify-in-place/apply workflow.

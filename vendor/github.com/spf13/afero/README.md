@@ -84,7 +84,7 @@ In your tests, inject `MemMapFs`. This provides a blazing-fast, isolated, in-mem
 func TestProcessConfiguration(t *testing.T) {
     // Use the in-memory filesystem
     AppFs := afero.NewMemMapFs()
-
+    
     // Pre-populate the memory filesystem for the test
     configPath := "/test/config.json"
     afero.WriteFile(AppFs, configPath, []byte(`{"feature": true}`), 0644)
@@ -129,7 +129,7 @@ Improve performance by layering a fast cache (like memory) over a slow backend (
 import "time"
 
 // Assume 'remoteFs' is a slow backend (e.g., SFTP or GCS)
-var remoteFs afero.Fs
+var remoteFs afero.Fs 
 
 // 'cacheFs' is a fast in-memory backend
 cacheFs := afero.NewMemMapFs()
@@ -184,7 +184,7 @@ func (p *DocumentProcessor) Process(inputPath, outputPath string) error {
     if err != nil {
         return err
     }
-
+    
     processed := processContent(content)
     return afero.WriteFile(p.fs, outputPath, processed, 0644)
 }
@@ -210,7 +210,7 @@ import (
 )
 
 // Assume 'zipReader' is a *zip.Reader initialized from a file or memory
-var zipReader *zip.Reader
+var zipReader *zip.Reader 
 
 // Create a read-only ZipFs
 archiveFS := zipfs.New(zipReader)
@@ -254,20 +254,20 @@ func SaveUserData(fs afero.Fs, userID string, data []byte) error {
 func TestSaveUserData(t *testing.T) {
     // Create a clean, fast, in-memory filesystem for testing
     testFS := afero.NewMemMapFs()
-
+    
     userData := []byte(`{"name": "John", "email": "john@example.com"}`)
     err := SaveUserData(testFS, "123", userData)
-
+    
     if err != nil {
         t.Fatalf("SaveUserData failed: %v", err)
     }
-
+    
     // Verify the file was saved correctly
     saved, err := afero.ReadFile(testFS, "users/123.json")
     if err != nil {
         t.Fatalf("Failed to read saved file: %v", err)
     }
-
+    
     if string(saved) != string(userData) {
         t.Errorf("Data mismatch: got %s, want %s", saved, userData)
     }
@@ -435,7 +435,7 @@ var assetsFS embed.FS
 func main() {
     // Convert embedded files to Afero filesystem
     fs := afero.FromIOFS(assetsFS)
-
+    
     // Use like any other Afero filesystem
     content, _ := afero.ReadFile(fs, "assets/config.json")
 }

@@ -58,7 +58,6 @@ func main() {
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
-	shutdownTracing(context.Background())
 
 	var zl = zap.New(zap.UseDevMode(*debug), func(o *zap.Options) {
 		if *debug {

@@ -34,13 +34,13 @@ Current status:
   * normal mode (`go test`) tests all possible 4+ billion conversions in about 95s.  
 * 100% code coverage with both short mode and normal mode.  
 * tested on amd64 but it should work on all little-endian platforms supported by Go.
-
+ 
 Roadmap:
 
 * add functions for fast batch conversions leveraging SIMD when supported by hardware.
 * speed up unit test when verifying all possible 4+ billion conversions.
 * test on additional platforms.
-
+ 
 ## Float16 to Float32 Conversion
 Conversions from float16 to float32 are lossless conversions.  All 65536 possible float16 to float32 conversions (in pure Go) are confirmed to be correct.  
 
@@ -49,7 +49,7 @@ Unit tests take a fraction of a second to check all 65536 expected values for fl
 ## Float32 to Float16 Conversion
 Conversions from float32 to float16 use IEEE 754 default rounding ("Round-to-Nearest RoundTiesToEven").  All 4294967296 possible float32 to float16 conversions (in pure Go) are confirmed to be correct.  
 
-Unit tests in normal mode take about 1-2 minutes to check all 4+ billion float32 input values and results for Fromfloat32(), FromNaN32ps(), and PrecisionFromfloat32().
+Unit tests in normal mode take about 1-2 minutes to check all 4+ billion float32 input values and results for Fromfloat32(), FromNaN32ps(), and PrecisionFromfloat32(). 
 
 Unit tests in short mode use a small subset (around 229 float32 inputs) and finish in under 0.01 second while still reaching 100% code coverage.
 
@@ -81,13 +81,13 @@ const ErrInvalidNaNValue = float16Error("float16: invalid NaN value, expected IE
 
 // Exported functions
 Fromfloat32(f32 float32) Float16   // Float16 number converted from f32 using IEEE 754 default rounding
-                                      with identical results to AMD and Intel F16C hardware. NaN inputs
+                                      with identical results to AMD and Intel F16C hardware. NaN inputs 
                                       are converted with quiet bit always set on, to be like F16C.
 
 FromNaN32ps(nan float32) (Float16, error)   // Float16 NaN without modifying quiet bit.
                                             // The "ps" suffix means "preserve signaling".
                                             // Returns sNaN and ErrInvalidNaNValue if nan isn't a NaN.
-
+                                 
 Frombits(b16 uint16) Float16       // Float16 number corresponding to b16 (IEEE 754 binary16 rep.)
 NaN() Float16                      // Float16 of IEEE 754 binary16 not-a-number
 Inf(sign int) Float16              // Float16 of IEEE 754 binary16 infinity according to sign

@@ -95,3 +95,4 @@ message LeaseCandidateSpec {
   // +required
   optional string strategy = 6;
 }
+

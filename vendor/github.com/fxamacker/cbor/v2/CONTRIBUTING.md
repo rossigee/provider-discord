@@ -4,7 +4,7 @@ You can contribute by using the library, opening issues, or opening pull request
 
 ## Bug reports and security vulnerabilities
 
-Most issues are tracked publicly on [GitHub](https://github.com/fxamacker/cbor/issues).
+Most issues are tracked publicly on [GitHub](https://github.com/fxamacker/cbor/issues). 
 
 To report security vulnerabilities, please email faye.github@gmail.com and allow time for the problem to be resolved before disclosing it to the public.  For more info, see [Security Policy](https://github.com/fxamacker/cbor#security-policy).
 

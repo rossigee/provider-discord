@@ -91,7 +91,7 @@ conveys that an error occurred in some capacity, but that no actual
 `error` object was involved.
 
 Errors returned by the `Reconcile` implementation of the `Reconciler` interface are commonly logged as a `Reconciler error`.
-It's a developer choice to create an additional error log in the `Reconcile` implementation so a more specific file name and line for the error are returned.
+It's a developer choice to create an additional error log in the `Reconcile` implementation so a more specific file name and line for the error are returned. 
 
 ## Logging messages
 

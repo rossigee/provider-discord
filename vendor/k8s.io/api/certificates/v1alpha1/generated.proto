@@ -100,3 +100,4 @@ message ClusterTrustBundleSpec {
   // as well as to drop PEM block headers and inter-block data.
   optional string trustBundle = 2;
 }
+

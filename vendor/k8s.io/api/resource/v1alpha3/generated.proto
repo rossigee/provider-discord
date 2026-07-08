@@ -454,3 +454,4 @@ message ResourcePoolStatusRequestStatus {
   // +k8s:maxItems=10
   repeated .k8s.io.apimachinery.pkg.apis.meta.v1.Condition conditions = 3;
 }
+

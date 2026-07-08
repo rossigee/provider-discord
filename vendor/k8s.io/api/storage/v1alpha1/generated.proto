@@ -280,3 +280,4 @@ message VolumeError {
   // +optional
   optional int32 errorCode = 3;
 }
+

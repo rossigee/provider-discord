@@ -9,7 +9,7 @@ well as for calculating & applying [RFC7396 JSON merge patches](https://tools.ie
 
 # Get It!
 
-**Latest and greatest**:
+**Latest and greatest**: 
 ```bash
 go get -u github.com/evanphx/json-patch/v5
 ```
@@ -42,7 +42,7 @@ These global variables control the behavior of `jsonpatch.Apply`.
 An alternative to `jsonpatch.Apply` is `jsonpatch.ApplyWithOptions` whose behavior
 is controlled by an `options` parameter of type `*jsonpatch.ApplyOptions`.
 
-Structure `jsonpatch.ApplyOptions` includes the configuration options above
+Structure `jsonpatch.ApplyOptions` includes the configuration options above 
 and adds two new options: `AllowMissingPathOnRemove` and `EnsurePathExistsOnAdd`.
 
 When `AllowMissingPathOnRemove` is set to `true`, `jsonpatch.ApplyWithOptions` will ignore
@@ -58,9 +58,9 @@ whose values are populated from the global configuration variables.
 
 ## Create and apply a merge patch
 Given both an original JSON document and a modified JSON document, you can create
-a [Merge Patch](https://tools.ietf.org/html/rfc7396) document.
+a [Merge Patch](https://tools.ietf.org/html/rfc7396) document. 
 
-It can describe the changes needed to convert from the original to the
+It can describe the changes needed to convert from the original to the 
 modified JSON document.
 
 Once you have a merge patch, you can apply it to other JSON documents using the
@@ -104,7 +104,7 @@ updated alternative doc: {"age":28,"name":"Jane"}
 ```
 
 ## Create and apply a JSON Patch
-You can create patch objects using `DecodePatch([]byte)`, which can then
+You can create patch objects using `DecodePatch([]byte)`, which can then 
 be applied against JSON documents.
 
 The following is an example of creating a patch from two operations, and
@@ -151,9 +151,9 @@ Modified document: {"age":24,"name":"Jane"}
 
 ## Comparing JSON documents
 Due to potential whitespace and ordering differences, one cannot simply compare
-JSON strings or byte-arrays directly.
+JSON strings or byte-arrays directly. 
 
-As such, you can instead use `jsonpatch.Equal(document1, document2)` to
+As such, you can instead use `jsonpatch.Equal(document1, document2)` to 
 determine if two JSON documents are _structurally_ equal. This ignores
 whitespace differences, and key-value ordering.
 
@@ -195,12 +195,12 @@ $ go run main.go
 ```
 
 ## Combine merge patches
-Given two JSON merge patch documents, it is possible to combine them into a
+Given two JSON merge patch documents, it is possible to combine them into a 
 single merge patch which can describe both set of changes.
 
 The resulting merge patch can be used such that applying it results in a
 document structurally similar as merging each merge patch to the document
-in succession.
+in succession. 
 
 ```go
 package main
@@ -260,8 +260,8 @@ combined merge patch: {"age":4.23,"eyes":"blue","height":null,"name":"Jane"}
 # CLI for comparing JSON documents
 You can install the commandline program `json-patch`.
 
-This program can take multiple JSON patch documents as arguments,
-and fed a JSON document from `stdin`. It will apply the patch(es) against
+This program can take multiple JSON patch documents as arguments, 
+and fed a JSON document from `stdin`. It will apply the patch(es) against 
 the document and output the modified doc.
 
 **patch.1.json**
@@ -311,5 +311,5 @@ Contributors can run tests using:
 go test -cover ./...
 ```
 
-Builds for pull requests are tested automatically
+Builds for pull requests are tested automatically 
 using [GitHub Actions](https://github.com/evanphx/json-patch/actions/workflows/go.yml).
