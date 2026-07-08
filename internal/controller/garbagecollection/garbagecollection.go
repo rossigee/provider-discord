@@ -22,7 +22,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -39,7 +39,7 @@ const (
 // ProviderConfigReconciler reconciles ProviderConfig objects with garbage collection enabled.
 type ProviderConfigReconciler struct {
 	client   client.Client
-	recorder record.EventRecorder
+	recorder events.EventRecorder
 }
 
 // +kubebuilder:rbac:groups=discord.crossplane.io,resources=providerconfigs,verbs=get;list;watch;update;patch
@@ -50,7 +50,7 @@ type ProviderConfigReconciler struct {
 // SetupWithManager sets up the controller with the Manager.
 func (r *ProviderConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	r.client = mgr.GetClient()
-	r.recorder = mgr.GetEventRecorderFor(controllerName) //nolint:staticcheck
+	r.recorder = mgr.GetEventRecorder(controllerName)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("garbagecollection").
@@ -76,7 +76,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// Extract credentials
 	botToken, baseURL, err := extractCredentials(ctx, r.client, pc)
 	if err != nil {
-		r.recorder.Eventf(pc, corev1.EventTypeWarning, "GCFailed", "Failed to extract credentials: %v", err)
+		r.recorder.Eventf(pc, nil, corev1.EventTypeWarning, "GCFailed", "", "Failed to extract credentials: %v", err)
 		return ctrl.Result{}, err
 	}
 
@@ -84,7 +84,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	gcService := services.NewGarbageCollectionService(botToken, baseURL, r.client)
 	result, err := gcService.RunGarbageCollection(ctx, pc.Spec.GarbageCollection)
 	if err != nil {
-		r.recorder.Eventf(pc, corev1.EventTypeWarning, "GCFailed", "Garbage collection failed: %v", err)
+		r.recorder.Eventf(pc, nil, corev1.EventTypeWarning, "GCFailed", "", "Garbage collection failed: %v", err)
 		return ctrl.Result{}, err
 	}
 
@@ -94,9 +94,9 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	if result.HasErrors {
 		eventMsg += fmt.Sprintf(" (with %d errors)", len(result.Errors))
-		r.recorder.Eventf(pc, corev1.EventTypeWarning, "GCCompleted", "%s", eventMsg)
+		r.recorder.Eventf(pc, nil, corev1.EventTypeWarning, "GCCompleted", "", "%s", eventMsg)
 	} else {
-		r.recorder.Eventf(pc, corev1.EventTypeNormal, "GCCompleted", "%s", eventMsg)
+		r.recorder.Eventf(pc, nil, corev1.EventTypeNormal, "GCCompleted", "", "%s", eventMsg)
 	}
 
 	// Requeue after configured interval (or default to 5 minutes)

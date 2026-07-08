@@ -58,10 +58,8 @@ func main() {
 
 	var zl = zap.New(zap.UseDevMode(*debug), func(o *zap.Options) {
 		if *debug {
-			o.Development = true
 			o.Level = uzap.NewAtomicLevelAt(zapcore.DebugLevel)
 		} else {
-			o.Development = false
 			o.Level = uzap.NewAtomicLevelAt(zapcore.InfoLevel)
 		}
 	})
