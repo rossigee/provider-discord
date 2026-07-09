@@ -17,33 +17,15 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"application.discord.crossplane.io"
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
-	"v1alpha1"
-)
 
-var (
-	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: Group, Version: Version}
-
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemeBuilder.AddToScheme
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Application type metadata.
 var (
 	ApplicationKind             = reflect.TypeOf(Application{}).Name()
-	ApplicationGroupKind        = schema.GroupKind{Group: Group, Kind: ApplicationKind}.String()
+	ApplicationGroupKind        = schema.GroupKind{Group: Group, Kind: ApplicationKind}
 	ApplicationKindAPIVersion   = ApplicationKind + "." + SchemeGroupVersion.String()
 	ApplicationGroupVersionKind = SchemeGroupVersion.WithKind(ApplicationKind)
 )
-
-func addKnownTypes(s *runtime.Scheme) error {
-	s.AddKnownTypes(SchemeGroupVersion,
-		&Application{},
-		&ApplicationList{},
-	)
-	return nil
-}

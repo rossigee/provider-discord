@@ -17,29 +17,15 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"invite.discord.crossplane.io"
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
-	"v1alpha1"
-)
 
-var (
-	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: Group, Version: Version}
-
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemeBuilder.AddToScheme
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Invite type metadata.
 var (
 	InviteKind             = reflect.TypeOf(Invite{}).Name()
-	InviteGroupKind        = schema.GroupKind{Group: Group, Kind: InviteKind}.String()
+	InviteGroupKind        = schema.GroupKind{Group: Group, Kind: InviteKind}
 	InviteKindAPIVersion   = InviteKind + "." + SchemeGroupVersion.String()
 	InviteGroupVersionKind = SchemeGroupVersion.WithKind(InviteKind)
 )
-
-func addKnownTypes(s *runtime.Scheme) error {
-	return nil
-}

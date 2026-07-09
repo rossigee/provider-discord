@@ -20,13 +20,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
 	"io"
 	"net/http"
-	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 	"time"
+
+	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	deduplicationv1alpha1 "github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (

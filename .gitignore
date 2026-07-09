@@ -87,3 +87,4 @@ __pycache__/
 # Local development
 local/
 .cache/
+vendor/

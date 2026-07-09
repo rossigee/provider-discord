@@ -17,7 +17,7 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // A DeduplicationSpec defines the desired state of a Deduplication operation.
@@ -67,6 +67,9 @@ type DeduplicationStatus struct {
 	// Results contains per-guild deduplication results.
 	// +optional
 	Results map[string]GuildDeduplicationResult `json:"results,omitempty"`
+
+	// DeepCopyObject is implemented by zz_generated.deepcopy.go for DeduplicationSummary and GuildDeduplicationResult
+	// (these are stored inline and do not need to be registered as root types).
 
 	// Conditions represent the latest available observations of the deduplication's state.
 	// +optional

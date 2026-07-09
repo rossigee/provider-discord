@@ -24,12 +24,12 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/rossigee/provider-discord/apis/v1alpha1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
-	"sigs.k8s.io/controller-runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // Setup adds a controller that reconciles ProviderConfigs.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := providerconfig.ControllerName(v1alpha1.ProviderConfigGroupKind)
+	name := providerconfig.ControllerName(v1alpha1.ProviderConfigGroupKind.String())
 
 	// ProviderConfigUsage is a core Crossplane resource
 	usageGVK := schema.GroupVersionKind{

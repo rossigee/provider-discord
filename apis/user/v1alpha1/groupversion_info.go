@@ -14,8 +14,32 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 contains the core resources of the discord provider.
+// Package v1alpha1 contains the v1alpha1 group user.discord.crossplane.io resources of the provider.
 // +kubebuilder:object:generate=true
-// +groupName=discord.crossplane.io
+// +groupName=user.discord.crossplane.io
 // +versionName=v1alpha1
 package v1alpha1
+
+import (
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+const (
+	Group   = "user.discord.crossplane.io"
+	Version = "v1alpha1"
+)
+
+var (
+	SchemeGroupVersion = schema.GroupVersion{Group: Group, Version: Version}
+	SchemeBuilder      = runtime.NewSchemeBuilder(addKnownTypes)
+	AddToScheme        = SchemeBuilder.AddToScheme
+)
+
+func addKnownTypes(s *runtime.Scheme) error {
+	s.AddKnownTypes(SchemeGroupVersion,
+		&User{},
+		&UserList{},
+	)
+	return nil
+}

@@ -8,13 +8,13 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/crossplane/apis/v2/core/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	"github.com/rossigee/provider-discord/apis/user/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
-	"github.com/rossigee/provider-discord/internal/clients"
+	userv1alpha1 "github.com/rossigee/provider-discord/apis/user/v1alpha1"
+	v1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"k8s.io/apimachinery/pkg/types"
-	"sigs.k8s.io/controller-runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -27,7 +27,7 @@ const (
 
 // Setup adds a controller that reconciles User managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(userv1alpha1.UserGroupKind)
+	name := managed.ControllerName(userv1alpha1.UserGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(userv1alpha1.UserGroupVersionKind),

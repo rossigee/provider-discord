@@ -24,13 +24,13 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/crossplane/apis/v2/core/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	"github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
 	"github.com/rossigee/provider-discord/internal/clients"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"regexp"
-	"sigs.k8s.io/controller-runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strconv"
 	"strings"
@@ -122,7 +122,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 
 // SetupWithClient adds a controller that reconciles Channel managed resources with a custom client factory.
 func SetupWithClient(mgr ctrl.Manager, o controller.Options, newServiceFn func(token string) *clients.DiscordClient) error {
-	name := managed.ControllerName(channelv1alpha1.ChannelGroupKind)
+	name := managed.ControllerName(channelv1alpha1.ChannelGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(channelv1alpha1.ChannelGroupVersionKind),

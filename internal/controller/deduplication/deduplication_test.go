@@ -17,9 +17,9 @@ limitations under the License.
 package deduplication
 
 import (
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"testing"
 )

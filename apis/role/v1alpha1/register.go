@@ -14,8 +14,18 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package v1alpha1 contains the core resources of the discord provider.
-// +kubebuilder:object:generate=true
-// +groupName=discord.crossplane.io
-// +versionName=v1alpha1
 package v1alpha1
+
+import (
+	"reflect"
+
+	"k8s.io/apimachinery/pkg/runtime/schema"
+)
+
+// Role type metadata.
+var (
+	RoleKind             = reflect.TypeOf(Role{}).Name()
+	RoleGroupKind        = schema.GroupKind{Group: Group, Kind: RoleKind}
+	RoleKindAPIVersion   = RoleKind + "." + SchemeGroupVersion.String()
+	RoleGroupVersionKind = SchemeGroupVersion.WithKind(RoleKind)
+)

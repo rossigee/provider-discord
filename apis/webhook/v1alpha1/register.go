@@ -17,29 +17,15 @@ limitations under the License.
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/runtime"
 	"reflect"
-	"v1alpha1"
-	"webhook.discord.crossplane.io"
-)
 
-var (
-	// SchemeGroupVersion is group version used to register these objects
-	SchemeGroupVersion = schema.GroupVersion{Group: Group, Version: Version}
-
-	// SchemeBuilder is used to add go types to the GroupVersionKind scheme
-	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemeBuilder.AddToScheme
+	"k8s.io/apimachinery/pkg/runtime/schema"
 )
 
 // Webhook type metadata.
 var (
 	WebhookKind             = reflect.TypeOf(Webhook{}).Name()
-	WebhookGroupKind        = schema.GroupKind{Group: Group, Kind: WebhookKind}.String()
+	WebhookGroupKind        = schema.GroupKind{Group: Group, Kind: WebhookKind}
 	WebhookKindAPIVersion   = WebhookKind + "." + SchemeGroupVersion.String()
 	WebhookGroupVersionKind = SchemeGroupVersion.WithKind(WebhookKind)
 )
-
-func addKnownTypes(s *runtime.Scheme) error {
-	return nil
-}

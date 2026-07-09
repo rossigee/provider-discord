@@ -19,15 +19,16 @@ package services
 import (
 	"context"
 	"encoding/json"
-	"github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"net/http"
 	"net/http/httptest"
-	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 	"sync"
 	"testing"
+
+	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
 // newGCTestScheme builds a runtime.Scheme with the channel v1alpha1 types registered.

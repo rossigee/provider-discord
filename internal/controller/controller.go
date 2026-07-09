@@ -31,7 +31,7 @@ import (
 	"github.com/rossigee/provider-discord/internal/controller/user"
 	"github.com/rossigee/provider-discord/internal/controller/webhook"
 	"github.com/rossigee/provider-discord/internal/metrics"
-	"sigs.k8s.io/controller-runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 // Setup creates all Discord controllers with the supplied logger and adds them to

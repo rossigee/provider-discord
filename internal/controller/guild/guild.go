@@ -24,12 +24,12 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
-	"github.com/crossplane/crossplane/apis/v2/core/v2"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	"github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
 	"github.com/rossigee/provider-discord/internal/clients"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"strings"
 	"time"
@@ -44,7 +44,7 @@ const (
 
 // Setup adds a controller that reconciles Guild managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(guildv1alpha1.GuildGroupKind)
+	name := managed.ControllerName(guildv1alpha1.GuildGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(guildv1alpha1.GuildGroupVersionKind),

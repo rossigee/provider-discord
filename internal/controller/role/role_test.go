@@ -20,12 +20,12 @@ import (
 	"context"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
-	"github.com/rossigee/provider-discord/apis/guild/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	"github.com/rossigee/provider-discord/internal/clients"
+	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"testing"
 )
 

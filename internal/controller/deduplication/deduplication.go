@@ -19,20 +19,21 @@ package deduplication
 import (
 	"context"
 	"fmt"
-	"github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"net/http"
+	"strings"
+	"time"
+
+	deduplicationv1alpha1 "github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
+	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
 	"github.com/rossigee/provider-discord/internal/services"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/events"
-	"net/http"
-	"sigs.k8s.io/controller-runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"strings"
-	"time"
 )
 
 const (

@@ -2,6 +2,7 @@ package role
 
 import (
 	"context"
+
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
@@ -10,9 +11,9 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	"github.com/pkg/errors"
-	"github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	"github.com/rossigee/provider-discord/internal/clients"
-	"sigs.k8s.io/controller-runtime"
+	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	discordclient "github.com/rossigee/provider-discord/internal/clients"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -22,7 +23,7 @@ const (
 
 // Setup adds a controller that reconciles Role managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(rolev1alpha1.RoleGroupKind)
+	name := managed.ControllerName(rolev1alpha1.RoleGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
 		resource.ManagedKind(rolev1alpha1.RoleGroupVersionKind),

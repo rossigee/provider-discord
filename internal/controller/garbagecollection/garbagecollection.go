@@ -19,14 +19,15 @@ package garbagecollection
 import (
 	"context"
 	"fmt"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"time"
+
+	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
 	"github.com/rossigee/provider-discord/internal/services"
-	"k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/events"
-	"sigs.k8s.io/controller-runtime"
+	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
-	"time"
 )
 
 const (
