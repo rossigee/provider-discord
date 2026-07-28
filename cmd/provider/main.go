@@ -24,6 +24,9 @@ import (
 	"time"
 
 	"github.com/alecthomas/kingpin/v2"
+	apimachineryruntime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/scheme"
+
 	xpcontroller "github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
@@ -85,6 +88,14 @@ func main() {
 		"management-policies", *enableManagementPolicies,
 		"debug-mode", *debug)
 
+	s := apimachineryruntime.NewScheme()
+	if err := scheme.AddToScheme(s); err != nil {
+		kingpin.FatalIfError(err, "Cannot add k8s types to scheme")
+	}
+	if err := apis.AddToScheme(s); err != nil {
+		kingpin.FatalIfError(err, "Cannot add Discord APIs to scheme")
+	}
+
 	cfg, err := ctrl.GetConfig()
 	if err != nil {
 		kingpin.FatalIfError(err, "Cannot get API server rest config")
@@ -98,6 +109,7 @@ func main() {
 		LeaderElectionID:           "crossplane-leader-election-provider-discord",
 		LeaderElectionNamespace:    *leaderElectionNS,
 		LeaderElectionResourceLock: "leases",
+		Scheme:                           s,
 		LeaseDuration:              func() *time.Duration { d := 60 * time.Second; return &d }(),
 		RenewDeadline:              func() *time.Duration { d := 50 * time.Second; return &d }(),
 	})
@@ -117,12 +129,6 @@ func main() {
 		o.Features.Enable(features.EnableAlphaManagementPolicies)
 		log.Info("Alpha feature enabled", "flag", features.EnableAlphaManagementPolicies)
 	}
-
-	log.Info("Adding Discord APIs to scheme")
-	if err := apis.AddToScheme(mgr.GetScheme()); err != nil {
-		kingpin.FatalIfError(err, "Cannot add Discord APIs to scheme")
-	}
-	log.Info("Successfully added Discord APIs to scheme")
 
 	// Initialize metrics recorder for Discord API monitoring
 	metricsRecorder := metrics.NewMetricsRecorder()

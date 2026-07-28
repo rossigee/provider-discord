@@ -205,7 +205,7 @@ func (in *UserSpec) DeepCopyInto(out *UserSpec) {
 	in.ManagedResourceSpec.DeepCopyInto(&out.ManagedResourceSpec)
 	if in.WriteConnectionSecretToReference != nil {
 		in, out := &in.WriteConnectionSecretToReference, &out.WriteConnectionSecretToReference
-		*out = new(v2.SecretReference)
+		*out = new(v2.LocalSecretReference)
 		**out = **in
 	}
 	in.ForProvider.DeepCopyInto(&out.ForProvider)

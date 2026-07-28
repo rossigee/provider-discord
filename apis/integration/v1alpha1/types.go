@@ -92,7 +92,7 @@ type IntegrationObservation struct {
 // A IntegrationSpec defines the desired state of a Integration.
 type IntegrationSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
-	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
 	ForProvider                      IntegrationParameters `json:"forProvider"`
 }
 

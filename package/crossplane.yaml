@@ -109,9 +109,7 @@ metadata:
       - [API Reference](https://doc.crds.dev/github.com/rossigee/provider-discord)
       - [Discord API Documentation](https://discord.com/developers/docs)
 spec:
-  controller:
-    image: ghcr.io/rossigee/provider-discord:v0.11.4
-    permissionRequests:
+  permissionRequests:
       - apiGroups:
           - discord.crossplane.io
         resources:
@@ -190,3 +188,11 @@ spec:
           - deduplications/status
         verbs:
           - "*"
+      - apiGroups:
+          - events.k8s.io
+        resources:
+          - events
+        verbs:
+          - "*"
+  controller:
+    image: ghcr.io/rossigee/provider-discord:v0.11.4

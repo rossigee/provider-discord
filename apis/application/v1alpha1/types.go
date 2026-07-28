@@ -162,7 +162,7 @@ type ApplicationObservation struct {
 // A ApplicationSpec defines the desired state of a Application.
 type ApplicationSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
-	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
 	ForProvider                      ApplicationParameters `json:"forProvider"`
 }
 

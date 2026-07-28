@@ -103,7 +103,7 @@ type UserObservation struct {
 // A UserSpec defines the desired state of a User.
 type UserSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
-	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
 	ForProvider                      UserParameters        `json:"forProvider"`
 }
 

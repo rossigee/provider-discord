@@ -5,6 +5,7 @@
 package v1alpha1
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -29,5 +30,6 @@ func addKnownTypes(s *runtime.Scheme) error {
 		&Role{},
 		&RoleList{},
 	)
+		metav1.AddToGroupVersion(s, SchemeGroupVersion)
 	return nil
 }

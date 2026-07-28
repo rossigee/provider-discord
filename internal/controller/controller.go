@@ -27,6 +27,7 @@ import (
 	"github.com/rossigee/provider-discord/internal/controller/integration"
 	"github.com/rossigee/provider-discord/internal/controller/invite"
 	"github.com/rossigee/provider-discord/internal/controller/member"
+	"github.com/rossigee/provider-discord/internal/controller/providerconfig"
 	"github.com/rossigee/provider-discord/internal/controller/role"
 	"github.com/rossigee/provider-discord/internal/controller/user"
 	"github.com/rossigee/provider-discord/internal/controller/webhook"
@@ -43,6 +44,10 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 // SetupWithMetrics creates all Discord controllers with metrics support and adds them to
 // the supplied manager.
 func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *metrics.MetricsRecorder) error {
+	if err := providerconfig.Setup(mgr); err != nil {
+		return err
+	}
+
 	// Setup all controllers using regular Setup functions
 	// The metrics will be integrated at the client level
 	for _, setup := range []func(ctrl.Manager, controller.Options) error{

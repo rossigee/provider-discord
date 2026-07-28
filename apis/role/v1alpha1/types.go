@@ -51,7 +51,7 @@ type RoleObservation struct {
 // A RoleSpec defines the desired state of a Role.
 type RoleSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
-	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
 	ForProvider                      RoleParameters        `json:"forProvider"`
 }
 

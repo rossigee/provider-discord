@@ -80,7 +80,7 @@ type WebhookObservation struct {
 // A WebhookSpec defines the desired state of a Webhook.
 type WebhookSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
-	WriteConnectionSecretToReference *xpv1.SecretReference `json:"writeConnectionSecretToRef,omitempty"`
+	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
 	ForProvider                      WebhookParameters     `json:"forProvider"`
 }
 
