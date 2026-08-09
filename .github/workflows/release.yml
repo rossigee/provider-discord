@@ -73,6 +73,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
+      - name: Build Artifacts
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -e
+          export VERSION="${{ steps.version.outputs.version }}"
+          make build.init
+          make build PLATFORMS=linux_amd64
+
       - name: Build and Publish Docker Image
         env:
           VERSION: ${{ steps.version.outputs.version }}
@@ -82,8 +91,13 @@ jobs:
           export VERSION="${{ steps.version.outputs.version }}"
           REGISTRY_PATH="ghcr.io/${{ github.repository_owner }}/provider-discord"
 
+          # Prepare artifacts in expected location for Dockerfile
+          mkdir -p bin/linux_amd64
+          cp _output/bin/linux_amd64/provider bin/linux_amd64/
+          cp package.yaml .
+
           # Build and push Docker image for version tag
-          docker build ./cluster/images/provider-discord -t ${REGISTRY_PATH}:${VERSION} -t ${REGISTRY_PATH}:latest
+          docker build . -f cluster/images/provider-discord/Dockerfile -t ${REGISTRY_PATH}:${VERSION} -t ${REGISTRY_PATH}:latest
           docker push ${REGISTRY_PATH}:${VERSION}
           docker push ${REGISTRY_PATH}:latest
 
