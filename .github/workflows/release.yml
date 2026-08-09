@@ -83,7 +83,7 @@ jobs:
           REGISTRY_PATH="ghcr.io/${{ github.repository_owner }}/provider-discord"
 
           # Build and push Docker image for version tag
-          docker build . -t ${REGISTRY_PATH}:${VERSION} -t ${REGISTRY_PATH}:latest
+          docker build ./cluster/images/provider-discord -t ${REGISTRY_PATH}:${VERSION} -t ${REGISTRY_PATH}:latest
           docker push ${REGISTRY_PATH}:${VERSION}
           docker push ${REGISTRY_PATH}:latest
 
