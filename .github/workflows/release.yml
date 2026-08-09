@@ -94,7 +94,6 @@ jobs:
           # Prepare artifacts in expected location for Dockerfile
           mkdir -p bin/linux_amd64
           cp _output/bin/linux_amd64/provider bin/linux_amd64/
-          cp package.yaml .
 
           # Build and push Docker image for version tag
           docker build . -f cluster/images/provider-discord/Dockerfile -t ${REGISTRY_PATH}:${VERSION} -t ${REGISTRY_PATH}:latest
