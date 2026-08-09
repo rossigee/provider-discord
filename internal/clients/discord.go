@@ -414,12 +414,22 @@ func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint st
 	if resp.StatusCode >= 400 {
 		defer func() { _ = resp.Body.Close() }()
 		bodyBytes, _ := io.ReadAll(resp.Body)
+
+		// For rate limit errors, capture the Retry-After header if present
+		errMsg := string(bodyBytes)
+		if resp.StatusCode == 429 {
+			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+				errMsg = errMsg + " | Retry-After: " + retryAfter
+			}
+		}
+
 		c.logger.Error(nil, "Discord API error",
 			"method", method,
 			"url", url,
 			"status", resp.StatusCode,
-			"response", string(bodyBytes))
-		return nil, errors.Errorf("Discord API error: %d - %s", resp.StatusCode, string(bodyBytes))
+			"response", string(bodyBytes),
+			"retry_after", resp.Header.Get("Retry-After"))
+		return nil, errors.Errorf("Discord API error: %d - %s", resp.StatusCode, errMsg)
 	}
 
 	return resp, nil
@@ -435,29 +445,50 @@ func (c *DiscordClient) is429Error(err error) bool {
 }
 
 // extractRetryAfter extracts the Retry-After duration from a 429 error, checking both
-// the response body (Discord JSON format) and headers. Returns a reasonable default if
-// no Retry-After is found.
+// the response headers (Retry-After) and the response body (Discord JSON format).
+// Returns a reasonable default if no Retry-After is found.
 func (c *DiscordClient) extractRetryAfter(err error) time.Duration {
 	if err == nil {
 		return 1 * time.Second
 	}
 
-	// Try to parse the error message to extract the response body
 	errStr := err.Error()
+
+	// First, check if Retry-After header value was included in error message
+	if idx := strings.LastIndex(errStr, " | Retry-After: "); idx != -1 {
+		retryAfterStr := errStr[idx+len(" | Retry-After: "):]
+		if seconds, err := strconv.ParseFloat(retryAfterStr, 64); err == nil {
+			duration := time.Duration(seconds*1000) * time.Millisecond
+			c.logger.Info("Using Retry-After header",
+				"retry_after_seconds", seconds,
+				"wait_duration", duration)
+			return duration
+		}
+	}
+
+	// Fallback: try to parse the response body for retry_after field
 	parts := strings.Split(errStr, " - ")
 	if len(parts) < 2 {
-		// No response body in error; use exponential backoff default
+		// No response body in error; use default backoff
 		return 1 * time.Second
 	}
 
 	respBody := parts[len(parts)-1]
+	// Remove the Retry-After header suffix if present
+	if idx := strings.LastIndex(respBody, " | Retry-After: "); idx != -1 {
+		respBody = respBody[:idx]
+	}
 
-	// Try to parse Discord's JSON response format (looks for retry_after field)
+	// Try to parse Discord's JSON response format (looks for retry_after field in seconds)
 	var resp struct {
 		RetryAfter *float64 `json:"retry_after"`
 	}
 	if err := json.Unmarshal([]byte(respBody), &resp); err == nil && resp.RetryAfter != nil {
-		return time.Duration(*resp.RetryAfter*1000) * time.Millisecond
+		duration := time.Duration(*resp.RetryAfter*1000) * time.Millisecond
+		c.logger.Info("Using retry_after from response body",
+			"retry_after_seconds", *resp.RetryAfter,
+			"wait_duration", duration)
+		return duration
 	}
 
 	// Default backoff: 1 second

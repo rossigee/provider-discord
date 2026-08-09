@@ -796,3 +796,112 @@ func TestRateLimiterThrottles(t *testing.T) {
 		t.Errorf("Rate limiter did not throttle; expected >= 800ms, got %v", elapsed)
 	}
 }
+
+func TestMakeRequest429WithRetryAfterHeader(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			// First call: 429 with Retry-After header (seconds)
+			w.WriteHeader(http.StatusTooManyRequests)
+			w.Header().Set("Content-Type", "application/json")
+			w.Header().Set("Retry-After", "0.05")
+			if _, err := w.Write([]byte(`{"message": "Rate limited"}`)); err != nil {
+				t.Errorf("Failed to write error response: %v", err)
+			}
+		} else {
+			// Second call (after retry): success
+			w.Header().Set("Content-Type", "application/json")
+			mockGuild := Guild{
+				ID:                          "123456789",
+				Name:                        "Test Guild",
+				OwnerID:                     "987654321",
+				VerificationLevel:           1,
+				DefaultMessageNotifications: 0,
+				ExplicitContentFilter:       1,
+				Features:                    []string{"COMMUNITY"},
+				AFKTimeout:                  300,
+				SystemChannelFlags:          0,
+			}
+			if err := json.NewEncoder(w).Encode(mockGuild); err != nil {
+				t.Errorf("Failed to encode mock response: %v", err)
+			}
+		}
+	}))
+	defer server.Close()
+
+	client := NewDiscordClient("test-token")
+	client.baseURL = server.URL
+
+	guild, err := client.GetGuild(context.Background(), "123456789")
+	if err != nil {
+		t.Fatalf("Expected successful retry after 429, got error: %v", err)
+	}
+
+	if guild.ID != "123456789" {
+		t.Errorf("Expected guild ID 123456789, got %s", guild.ID)
+	}
+
+	if callCount != 2 {
+		t.Errorf("Expected 2 calls (1 429 + 1 retry), got %d", callCount)
+	}
+}
+
+func TestExtractRetryAfterFromHeader(t *testing.T) {
+	tests := []struct {
+		name    string
+		errMsg  string
+		want    time.Duration
+		minWait time.Duration
+		maxWait time.Duration
+	}{
+		{
+			name:    "Retry-After header with seconds",
+			errMsg:  `Discord API error: 429 - {"message": "Rate limited"} | Retry-After: 0.5`,
+			want:    500 * time.Millisecond,
+			minWait: 400 * time.Millisecond,
+			maxWait: 600 * time.Millisecond,
+		},
+		{
+			name:    "Retry-After header with fractional seconds",
+			errMsg:  `Discord API error: 429 - {"message": "Rate limited"} | Retry-After: 2.5`,
+			want:    2500 * time.Millisecond,
+			minWait: 2400 * time.Millisecond,
+			maxWait: 2600 * time.Millisecond,
+		},
+		{
+			name:    "Retry-After header with integer",
+			errMsg:  `Discord API error: 429 - {"message": "Rate limited"} | Retry-After: 1`,
+			want:    1000 * time.Millisecond,
+			minWait: 900 * time.Millisecond,
+			maxWait: 1100 * time.Millisecond,
+		},
+		{
+			name:    "No Retry-After header, uses JSON body",
+			errMsg:  `Discord API error: 429 - {"retry_after": 0.1, "message": "Rate limited"}`,
+			want:    100 * time.Millisecond,
+			minWait: 50 * time.Millisecond,
+			maxWait: 200 * time.Millisecond,
+		},
+		{
+			name:    "No Retry-After anywhere, uses default",
+			errMsg:  `Discord API error: 429 - {"message": "Rate limited"}`,
+			want:    1000 * time.Millisecond,
+			minWait: 900 * time.Millisecond,
+			maxWait: 1100 * time.Millisecond,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := NewDiscordClient("test-token")
+			err := fmt.Errorf("%s", tt.errMsg)
+			got := client.extractRetryAfter(err)
+
+			if got < tt.minWait || got > tt.maxWait {
+				t.Errorf("extractRetryAfter() = %v, want %v (range %v-%v)",
+					got, tt.want, tt.minWait, tt.maxWait)
+			}
+		})
+	}
+}
