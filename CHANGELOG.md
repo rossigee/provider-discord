@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.11.5 (2026-08-09)
+
+### Fixes
+
+- Add global rate limiter (5 req/s with burst 5) to prevent exhaustion of Discord's API rate
+  limits. All DiscordClient instances now share a package-level token bucket limiter, ensuring
+  aggregate request rate stays well below Discord's global 50 req/s limit and per-route
+  constraints.
+- Implement `Retry-After` header parsing and exponential backoff on HTTP 429 (Too Many Requests)
+  responses. When Discord or Cloudflare returns a 429, the client extracts the retry delay from
+  the response body or headers, waits out the indicated duration, and retries up to 3 times
+  before surfacing the error to the reconciler. This prevents the self-sustaining Cloudflare IP
+  ban loops that occurred when reconcilers retried immediately without respecting rate-limit
+  signals.
+
+---
+
 ## v0.10.0 (2026-06-07)
 
 ### Features

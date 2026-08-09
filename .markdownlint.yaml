@@ -7,6 +7,10 @@ MD013:
   tables: false
   headings: false
 
+# MD024: Allow duplicate headings (common in changelog: each version section
+# has "### Features", "### Fixes", "### Migration Notes", etc.)
+MD024: false
+
 # MD033: Allow inline HTML
 MD033: false
 

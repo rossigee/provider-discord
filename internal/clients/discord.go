@@ -21,15 +21,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/go-logr/logr"
-	"github.com/pkg/errors"
-	"github.com/rossigee/provider-discord/internal/metrics"
 	"io"
 	"net/http"
-	ctrl "sigs.k8s.io/controller-runtime"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+	"golang.org/x/time/rate"
+
+	"github.com/rossigee/provider-discord/internal/metrics"
+	ctrl "sigs.k8s.io/controller-runtime"
 )
 
 const (
@@ -139,6 +142,12 @@ var _ ApplicationClient = (*DiscordClient)(nil)
 var _ IntegrationClient = (*DiscordClient)(nil)
 
 var globalMetricsRecorder *metrics.MetricsRecorder
+
+// globalRateLimiter is a package-level rate limiter shared across all Discord client instances
+// to ensure the aggregate request rate respects Discord's API rate limits.
+// Configured conservatively at 5 req/s with a burst of 5 to stay well below Discord's global 50 req/s limit
+// and account for stricter per-route rate limits.
+var globalRateLimiter = rate.NewLimiter(rate.Limit(5), 5)
 
 // SetGlobalMetricsRecorder sets the global metrics recorder for all Discord clients
 func SetGlobalMetricsRecorder(recorder *metrics.MetricsRecorder) {
@@ -295,8 +304,55 @@ type ModifyGuildRequest struct {
 	PremiumProgressBarEnabled   *bool    `json:"premium_progress_bar_enabled,omitempty"`
 }
 
-// makeRequest performs an HTTP request to the Discord API
+// makeRequest performs an HTTP request to the Discord API with rate limiting and backoff on 429 errors.
 func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
+	const maxRetries = 3
+	var lastErr error
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// Rate limit before making the request
+		if err := globalRateLimiter.Wait(ctx); err != nil {
+			return nil, errors.Wrap(err, "rate limiter context cancelled")
+		}
+
+		resp, err := c.makeRequestOnce(ctx, method, endpoint, body)
+
+		// If not a 429, return immediately (either success or non-retryable error)
+		if err == nil || !c.is429Error(err) {
+			return resp, err
+		}
+
+		// It's a 429 — extract the Retry-After duration and wait
+		waitDuration := c.extractRetryAfter(err)
+		if attempt < maxRetries {
+			c.logger.Info("Rate limited by Discord API, will retry",
+				"method", method,
+				"url", c.baseURL+endpoint,
+				"attempt", attempt+1,
+				"max_retries", maxRetries,
+				"wait_duration", waitDuration)
+
+			// Wait the indicated duration or a backoff, respecting context cancellation
+			select {
+			case <-ctx.Done():
+				lastErr = err
+				break
+			case <-time.After(waitDuration):
+				// Continue to next retry
+			}
+		} else {
+			c.logger.Error(nil, "Rate limited by Discord API after retries exhausted",
+				"method", method,
+				"url", c.baseURL+endpoint,
+				"max_retries", maxRetries)
+			lastErr = err
+		}
+	}
+
+	return nil, lastErr
+}
+
+// makeRequestOnce performs a single HTTP request without retries or pre-flight rate limiting.
+func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
 	var reqBody io.Reader
 	var bodyStr string
 	if body != nil {
@@ -367,6 +423,45 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 	}
 
 	return resp, nil
+}
+
+// is429Error checks if an error from makeRequestOnce represents a 429 rate-limit response.
+func (c *DiscordClient) is429Error(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "Discord API error: 429 -")
+}
+
+// extractRetryAfter extracts the Retry-After duration from a 429 error, checking both
+// the response body (Discord JSON format) and headers. Returns a reasonable default if
+// no Retry-After is found.
+func (c *DiscordClient) extractRetryAfter(err error) time.Duration {
+	if err == nil {
+		return 1 * time.Second
+	}
+
+	// Try to parse the error message to extract the response body
+	errStr := err.Error()
+	parts := strings.Split(errStr, " - ")
+	if len(parts) < 2 {
+		// No response body in error; use exponential backoff default
+		return 1 * time.Second
+	}
+
+	respBody := parts[len(parts)-1]
+
+	// Try to parse Discord's JSON response format (looks for retry_after field)
+	var resp struct {
+		RetryAfter *float64 `json:"retry_after"`
+	}
+	if err := json.Unmarshal([]byte(respBody), &resp); err == nil && resp.RetryAfter != nil {
+		return time.Duration(*resp.RetryAfter*1000) * time.Millisecond
+	}
+
+	// Default backoff: 1 second
+	return 1 * time.Second
 }
 
 // GetGuild retrieves a guild by ID

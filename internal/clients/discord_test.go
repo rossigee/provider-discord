@@ -19,10 +19,14 @@ package clients
 import (
 	"context"
 	"encoding/json"
-	"github.com/google/go-cmp/cmp"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
+	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestNewDiscordClient(t *testing.T) {
@@ -672,5 +676,123 @@ func TestGetChannelError(t *testing.T) {
 	_, err := client.GetChannel(context.Background(), "123456789")
 	if err == nil {
 		t.Error("Expected error for unknown channel, got nil")
+	}
+}
+
+func TestMakeRequest429WithRetryAfter(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount == 1 {
+			// First call: 429 with retry_after in JSON body
+			w.WriteHeader(http.StatusTooManyRequests)
+			w.Header().Set("Content-Type", "application/json")
+			if _, err := w.Write([]byte(`{"retry_after": 0.05, "message": "Rate limited"}`)); err != nil {
+				t.Errorf("Failed to write error response: %v", err)
+			}
+		} else {
+			// Second call (after retry): success
+			w.Header().Set("Content-Type", "application/json")
+			mockGuild := Guild{
+				ID:                          "123456789",
+				Name:                        "Test Guild",
+				OwnerID:                     "987654321",
+				VerificationLevel:           1,
+				DefaultMessageNotifications: 0,
+				ExplicitContentFilter:       1,
+				Features:                    []string{"COMMUNITY"},
+				AFKTimeout:                  300,
+				SystemChannelFlags:          0,
+			}
+			if err := json.NewEncoder(w).Encode(mockGuild); err != nil {
+				t.Errorf("Failed to encode mock response: %v", err)
+			}
+		}
+	}))
+	defer server.Close()
+
+	client := NewDiscordClient("test-token")
+	client.baseURL = server.URL
+
+	guild, err := client.GetGuild(context.Background(), "123456789")
+	if err != nil {
+		t.Fatalf("Expected successful retry after 429, got error: %v", err)
+	}
+
+	if guild.ID != "123456789" {
+		t.Errorf("Expected guild ID 123456789, got %s", guild.ID)
+	}
+
+	if callCount != 2 {
+		t.Errorf("Expected 2 calls (1 429 + 1 retry), got %d", callCount)
+	}
+}
+
+func TestMakeRequest429ExhaustedRetries(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Always return 429
+		w.WriteHeader(http.StatusTooManyRequests)
+		w.Header().Set("Content-Type", "application/json")
+		if _, err := w.Write([]byte(`{"retry_after": 0.01, "message": "Rate limited"}`)); err != nil {
+			t.Errorf("Failed to write error response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	client := NewDiscordClient("test-token")
+	client.baseURL = server.URL
+
+	_, err := client.GetGuild(context.Background(), "123456789")
+	if err == nil {
+		t.Error("Expected error after exhausting retries, got nil")
+	}
+
+	if !strings.Contains(err.Error(), "Discord API error: 429") {
+		t.Errorf("Expected 429 error, got: %v", err)
+	}
+}
+
+func TestRateLimiterThrottles(t *testing.T) {
+	start := time.Now()
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		mockGuild := Guild{
+			ID:                          fmt.Sprintf("guild%d", callCount),
+			Name:                        "Test Guild",
+			OwnerID:                     "987654321",
+			VerificationLevel:           1,
+			DefaultMessageNotifications: 0,
+			ExplicitContentFilter:       1,
+			Features:                    []string{},
+			AFKTimeout:                  300,
+			SystemChannelFlags:          0,
+		}
+		if err := json.NewEncoder(w).Encode(mockGuild); err != nil {
+			t.Errorf("Failed to encode mock response: %v", err)
+		}
+	}))
+	defer server.Close()
+
+	client := NewDiscordClient("test-token")
+	client.baseURL = server.URL
+
+	// Make 11 sequential requests (should hit rate limit with burst of 5, require waits)
+	for i := 0; i < 11; i++ {
+		_, err := client.GetGuild(context.Background(), "123456789")
+		if err != nil {
+			t.Fatalf("Request %d failed: %v", i+1, err)
+		}
+	}
+
+	elapsed := time.Since(start)
+
+	// With rate limiter at 5 req/s and burst 5, first 5 should be instant,
+	// next 6 should take roughly 6/5 = ~1.2 seconds of wait time
+	// We check that it took at least 1 second (accounting for timing variance and test overhead)
+	if elapsed < 800*time.Millisecond {
+		t.Errorf("Rate limiter did not throttle; expected >= 800ms, got %v", elapsed)
 	}
 }
