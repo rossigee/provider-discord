@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -145,9 +146,9 @@ var globalMetricsRecorder *metrics.MetricsRecorder
 
 // globalRateLimiter is a package-level rate limiter shared across all Discord client instances
 // to ensure the aggregate request rate respects Discord's API rate limits.
-// Configured conservatively at 5 req/s with a burst of 5 to stay well below Discord's global 50 req/s limit
-// and account for stricter per-route rate limits.
-var globalRateLimiter = rate.NewLimiter(rate.Limit(5), 5)
+// Configured at 2 req/s with a burst of 1 to avoid overwhelming Discord's per-route rate limits
+// when multiple reconcilers run in parallel. Each route typically allows ~5-10 req/5s.
+var globalRateLimiter = rate.NewLimiter(rate.Limit(2), 1)
 
 // SetGlobalMetricsRecorder sets the global metrics recorder for all Discord clients
 func SetGlobalMetricsRecorder(recorder *metrics.MetricsRecorder) {
@@ -304,9 +305,9 @@ type ModifyGuildRequest struct {
 	PremiumProgressBarEnabled   *bool    `json:"premium_progress_bar_enabled,omitempty"`
 }
 
-// makeRequest performs an HTTP request to the Discord API with rate limiting and backoff on 429 errors.
+// makeRequest performs an HTTP request to the Discord API with rate limiting and exponential backoff on 429 errors.
 func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
-	const maxRetries = 3
+	const maxRetries = 5
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
 		// Rate limit before making the request
@@ -321,17 +322,26 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 			return resp, err
 		}
 
-		// It's a 429 — extract the Retry-After duration and wait
-		waitDuration := c.extractRetryAfter(err)
+		// It's a 429 — use exponential backoff with jitter, prefer Retry-After if present
+		retryAfter := c.extractRetryAfter(err)
+		// If no explicit Retry-After, use exponential backoff: 2s, 4s, 8s, 16s, 32s
+		if retryAfter <= 1*time.Second {
+			retryAfter = time.Duration(1<<uint(attempt)) * time.Second
+		}
+		// Add jitter: ±20% of wait duration
+		jitter := time.Duration(int64(retryAfter) * int64(20+(rand.Intn(40)%40)) / 100)
+		waitDuration := retryAfter + jitter
+
 		if attempt < maxRetries {
 			c.logger.Info("Rate limited by Discord API, will retry",
 				"method", method,
 				"url", c.baseURL+endpoint,
 				"attempt", attempt+1,
 				"max_retries", maxRetries,
+				"retry_after_header", retryAfter,
 				"wait_duration", waitDuration)
 
-			// Wait the indicated duration or a backoff, respecting context cancellation
+			// Wait the indicated duration, respecting context cancellation
 			select {
 			case <-ctx.Done():
 				lastErr = err
@@ -343,7 +353,8 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 			c.logger.Error(nil, "Rate limited by Discord API after retries exhausted",
 				"method", method,
 				"url", c.baseURL+endpoint,
-				"max_retries", maxRetries)
+				"max_retries", maxRetries,
+				"final_wait_duration", waitDuration)
 			lastErr = err
 		}
 	}
