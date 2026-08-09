@@ -81,16 +81,20 @@ jobs:
       - name: Install Build Tools
         run: make build.init
 
-      - name: Build and Publish Artifacts
+      - name: Build Binary and Images
         env:
           VERSION: ${{ steps.version.outputs.version }}
-          BRANCH_NAME: master
         run: |
           set -e
           export VERSION="${{ steps.version.outputs.version }}"
-          export BRANCH_NAME="master"
+          make build.code build.artifacts PLATFORMS=linux_amd64,linux_arm64
 
-          # Build container image and xpkg using Crossplane makelib
+      - name: Publish Artifacts
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -e
+          export VERSION="${{ steps.version.outputs.version }}"
           make publish.artifacts \
             REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}" \
             XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}" \
