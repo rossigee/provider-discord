@@ -3,7 +3,7 @@
 #
 # This workflow handles ALL publishing for releases
 # - Only runs on version tag creation to avoid conflicts with CI
-# - Builds from source using Crossplane makelib and publishes to registry
+# - Builds from source using Docker and publishes to registry
 # - Verifies successful publication to registry
 # - Creates GitHub release with auto-generated notes
 # - Single source of truth for version and latest tags
@@ -63,11 +63,6 @@ jobs:
           echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"
 
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4
-        with:
-          platforms: linux/amd64,linux/arm64
-
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v4
 
@@ -78,30 +73,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Install Build Tools
-        run: make build.init
-
-      - name: Build Binary and Images
+      - name: Build and Publish Docker Image
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -e
-          export VERSION="${{ steps.version.outputs.version }}"
-          make build.code build.artifacts PLATFORMS=linux_amd64,linux_arm64
 
-      - name: Publish Artifacts
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          set -e
           export VERSION="${{ steps.version.outputs.version }}"
-          make publish.artifacts \
-            REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}" \
-            XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}" \
-            PLATFORMS=linux_amd64,linux_arm64 \
-            BRANCH_NAME=master
+          REGISTRY_PATH="ghcr.io/${{ github.repository_owner }}/provider-discord"
 
-          echo "✅ Published to ghcr.io/${{ github.repository_owner }}"
+          # Build and push Docker image for version tag
+          docker build . -t ${REGISTRY_PATH}:${VERSION} -t ${REGISTRY_PATH}:latest
+          docker push ${REGISTRY_PATH}:${VERSION}
+          docker push ${REGISTRY_PATH}:latest
+
+          echo "✅ Published to ${REGISTRY_PATH}"
+          echo "🏷️  Tags: ${VERSION}, latest"
 
       - name: Verify Publication
         run: |
@@ -122,9 +109,27 @@ jobs:
             exit 1
           fi
 
-          # Get digest for verification
+          # Verify latest tag exists and is pullable
+          if docker pull "${REGISTRY_PATH}:latest" > /dev/null 2>&1; then
+            echo "✅ Verified container image latest"
+          else
+            echo "❌ Failed to pull container image latest"
+            exit 1
+          fi
+
+          # Verify both tags point to same image
           VERSION_DIGEST=$(docker inspect "${REGISTRY_PATH}:${VERSION}" --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
-          echo "✅ Image digest: ${VERSION_DIGEST}"
+          LATEST_DIGEST=$(docker inspect "${REGISTRY_PATH}:latest" --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
+
+          if [ "$VERSION_DIGEST" = "$LATEST_DIGEST" ]; then
+            echo "✅ Version and latest tags point to identical image"
+            echo "   Digest: ${VERSION_DIGEST}"
+          else
+            echo "❌ Version and latest tags point to different images"
+            echo "   Version digest: ${VERSION_DIGEST}"
+            echo "   Latest digest:  ${LATEST_DIGEST}"
+            exit 1
+          fi
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
