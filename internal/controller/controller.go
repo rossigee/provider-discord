@@ -20,17 +20,26 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/rossigee/provider-discord/internal/clients"
 	"github.com/rossigee/provider-discord/internal/controller/application"
+	applicationv1beta1 "github.com/rossigee/provider-discord/internal/controller/application/v1beta1"
 	"github.com/rossigee/provider-discord/internal/controller/channel"
+	channelv1beta1 "github.com/rossigee/provider-discord/internal/controller/channel/v1beta1"
 	"github.com/rossigee/provider-discord/internal/controller/deduplication"
 	"github.com/rossigee/provider-discord/internal/controller/garbagecollection"
 	"github.com/rossigee/provider-discord/internal/controller/guild"
+	guildv1beta1 "github.com/rossigee/provider-discord/internal/controller/guild/v1beta1"
 	"github.com/rossigee/provider-discord/internal/controller/integration"
+	integrationv1beta1 "github.com/rossigee/provider-discord/internal/controller/integration/v1beta1"
 	"github.com/rossigee/provider-discord/internal/controller/invite"
+	invitev1beta1 "github.com/rossigee/provider-discord/internal/controller/invite/v1beta1"
 	"github.com/rossigee/provider-discord/internal/controller/member"
+	memberv1beta1 "github.com/rossigee/provider-discord/internal/controller/member/v1beta1"
 	"github.com/rossigee/provider-discord/internal/controller/providerconfig"
 	"github.com/rossigee/provider-discord/internal/controller/role"
+	rolev1beta1 "github.com/rossigee/provider-discord/internal/controller/role/v1beta1"
 	"github.com/rossigee/provider-discord/internal/controller/user"
+	userv1beta1 "github.com/rossigee/provider-discord/internal/controller/user/v1beta1"
 	"github.com/rossigee/provider-discord/internal/controller/webhook"
+	webhookv1beta1 "github.com/rossigee/provider-discord/internal/controller/webhook/v1beta1"
 	"github.com/rossigee/provider-discord/internal/metrics"
 	ctrl "sigs.k8s.io/controller-runtime"
 )
@@ -63,8 +72,16 @@ func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *m
 		user.Setup,
 		application.Setup,
 		integration.Setup,
-		// v1beta1 controllers (namespaced) - Planned for v2 migration
-		// Will be added once v1beta1 APIs are properly generated
+		// v1beta1 controllers (namespaced)
+		channelv1beta1.Setup,
+		guildv1beta1.Setup,
+		rolev1beta1.Setup,
+		webhookv1beta1.Setup,
+		invitev1beta1.Setup,
+		memberv1beta1.Setup,
+		userv1beta1.Setup,
+		applicationv1beta1.Setup,
+		integrationv1beta1.Setup,
 	} {
 		if err := setup(mgr, o); err != nil {
 			return err

@@ -7,7 +7,9 @@
 [build]: https://github.com/rossigee/provider-discord/actions/workflows/ci.yml
 [releases]: https://github.com/rossigee/provider-discord/releases
 
-An **enterprise-grade** Crossplane provider for managing Discord resources through Kubernetes APIs with comprehensive observability, resilience, and monitoring.
+An **enterprise-grade** Crossplane provider for managing Discord resources
+through Kubernetes APIs with comprehensive observability, resilience, and
+monitoring.
 
 ## Container Registry
 
@@ -20,6 +22,7 @@ An enterprise-grade Crossplane provider for managing Discord resources through K
 ## Features
 
 ### Core Discord Management
+
 - **Guild Management**: Create and manage Discord servers declaratively
 - **Channel Management**: Text, voice, and category channels with full configuration
 - **Role Management**: Permission management and role hierarchy control
@@ -32,6 +35,7 @@ An enterprise-grade Crossplane provider for managing Discord resources through K
 - **GitOps Ready**: Full integration with Kubernetes and GitOps workflows
 
 ### Enterprise Features
+
 - **🏥 Health Monitoring**: Built-in `/healthz` and `/readyz` endpoints with Discord API connectivity checks
 - **📊 Prometheus Metrics**: 10+ custom metrics for operations, rate limits, errors, and performance monitoring
 - **🔍 OpenTelemetry Tracing**: Distributed tracing with correlation IDs for debugging and analysis
@@ -40,36 +44,41 @@ An enterprise-grade Crossplane provider for managing Discord resources through K
 - **⚡ Performance Optimization**: Resource limits, health probes, and efficient resource management
 
 ### Production Ready
+
 - **Discord API v10**: Latest Discord API with rate limiting and error handling
 - **Test Coverage**: 62-100% test coverage across all modules with comprehensive validation
 - **Observability**: Structured logging, metrics collection, and tracing integration
 - **Deployment**: Production-ready configurations with monitoring and security
 
-## Supported Resources
+## Resource Types
 
-### Supported Resources
+Every resource is available in two API versions: cluster-scoped `v1alpha1`
+and namespaced `v1beta1` (`.m.` group), each with its own controller running
+side by side.
 
-| Resource | API Version | Description | Status |
-|----------|-------------|-------------|---------|
-| Guild | `guild.discord.crossplane.io/v1alpha1` | Discord servers with full configuration | ✅ v2-Native |
-| Channel | `channel.discord.crossplane.io/v1alpha1` | Text, voice, and category channels | ✅ v2-Native |
-| Role | `role.discord.crossplane.io/v1alpha1` | Permission management and role hierarchy | ✅ v2-Native |
-| Webhook | `webhook.discord.crossplane.io/v1alpha1` | Automated messaging and CI/CD integration | ✅ v2-Native |
-| Member | `member.discord.crossplane.io/v1alpha1` | Guild member management and role assignments | ✅ Production Ready |
-| User | `user.discord.crossplane.io/v1alpha1` | User profile management and current user operations | ✅ Production Ready |
-| Application | `application.discord.crossplane.io/v1alpha1` | Discord bot application configuration | ✅ Production Ready |
-| Integration | `integration.discord.crossplane.io/v1alpha1` | Third-party service integrations (Twitch, YouTube, etc.) | ✅ Production Ready |
-| Invite | `invite.discord.crossplane.io/v1alpha1` | Server invitations with expiration control | ✅ Production Ready |
-| ProviderConfig | `discord.crossplane.io/v1alpha1` | Provider authentication and configuration | ✅ Production Ready |
+| Resource | Cluster-scoped (v1alpha1) | Namespaced (v1beta1) | Description |
+| ---------- | --------------------------- | ----------------------- | ------------- |
+| Guild | `guild.discord.crossplane.io/v1alpha1` | `guild.discord.m.crossplane.io/v1beta1` | Discord servers with full configuration |
+| Channel | `channel.discord.crossplane.io/v1alpha1` | `channel.discord.m.crossplane.io/v1beta1` | Text, voice, and category channels |
+| Role | `role.discord.crossplane.io/v1alpha1` | `role.discord.m.crossplane.io/v1beta1` | Permission management and role hierarchy |
+| Webhook | `webhook.discord.crossplane.io/v1alpha1` | `webhook.discord.m.crossplane.io/v1beta1` | Automated messaging and CI/CD integration |
+| Member | `member.discord.crossplane.io/v1alpha1` | `member.discord.m.crossplane.io/v1beta1` | Guild member management and role assignments |
+| User | `user.discord.crossplane.io/v1alpha1` | `user.discord.m.crossplane.io/v1beta1` | User profile management |
+| Application | `application.discord.crossplane.io/v1alpha1` | `application.discord.m.crossplane.io/v1beta1` | Discord bot application configuration |
+| Integration | `integration.discord.crossplane.io/v1alpha1` | `integration.discord.m.crossplane.io/v1beta1` | Third-party service integrations (Twitch, YouTube, etc.) |
+| Invite | `invite.discord.crossplane.io/v1alpha1` | `invite.discord.m.crossplane.io/v1beta1` | Server invitations with expiration control |
+| ProviderConfig | `discord.crossplane.io/v1alpha1` | — | Provider authentication and configuration |
 
 ### 🎯 Crossplane v2 Native
 
-**Fully v2-Native Implementation**:
-- **Modern Architecture**: Built exclusively for Crossplane v2 with runtime configuration
+**Dual-scope implementation**:
+
+- **Modern Architecture**: Namespaced resources for multi-tenant isolation,
+  alongside legacy cluster-scoped resources for backward compatibility
 - **Enterprise Features**: Comprehensive observability, resilience, and security
 - **Production Ready**: Health monitoring, metrics, tracing, and circuit breakers
 
-## Quick Start
+## Getting Started
 
 ### Prerequisites
 
@@ -105,13 +114,15 @@ kubectl apply -f https://github.com/rossigee/provider-discord/releases/latest/do
 ### Configuration
 
 1. **Create Discord Bot Token Secret**:
+
 ```bash
 kubectl create secret generic discord-creds \
   -n crossplane-system \
   --from-literal=token=YOUR_BOT_TOKEN_HERE
 ```
 
-2. **Create ProviderConfig**:
+1. **Create ProviderConfig**:
+
 ```yaml
 apiVersion: discord.crossplane.io/v1alpha1
 kind: ProviderConfig
@@ -149,6 +160,7 @@ go run tools/discord-introspect.go -webhooks=true -invites=true
 ```
 
 The tool generates ready-to-use Crossplane manifests:
+
 - **Guild configurations** with all settings  
 - **Channel hierarchies** including categories and parent relationships
 - **Role definitions** with permissions and properties
@@ -405,6 +417,7 @@ The provider exposes comprehensive metrics at `/metrics`:
 #### OpenTelemetry Tracing
 
 Distributed tracing with correlation IDs for:
+
 - Resource reconciliation operations
 - Discord API calls
 - Error tracking and retry attempts
@@ -536,7 +549,7 @@ make run
 
 ### Enterprise Components
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────┐
 │                    Provider Discord                         │
 ├─────────────────────────────────────────────────────────────┤
@@ -623,6 +636,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 ## Roadmap
 
 ### ✅ v0.8.6 (Current - Enterprise Production Ready)
+
 - ✅ Complete Discord API v10 coverage with all resources
 - ✅ Guild, Channel, Role, Member, User, Application management
 - ✅ Integration, Webhook, and Invite management
@@ -638,6 +652,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - ✅ Crossplane v2 native architecture
 
 ### 📋 v0.9.0 (Planned)
+
 - Message management and automation
 - Enhanced permission validation and role hierarchy checks
 - Advanced Discord integration patterns
@@ -645,6 +660,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - Extended user operations and bulk member management
 
 ### 🎯 v1.0.0 (Production Certification)
+
 - Production certification and enterprise support
 - Full Discord API coverage
 - Advanced observability features
