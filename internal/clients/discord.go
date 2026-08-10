@@ -26,6 +26,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -149,6 +150,13 @@ var globalMetricsRecorder *metrics.MetricsRecorder
 // Configured at 2 req/s with a burst of 1 to avoid overwhelming Discord's per-route rate limits
 // when multiple reconcilers run in parallel. Each route typically allows ~5-10 req/5s.
 var globalRateLimiter = rate.NewLimiter(rate.Limit(2), 1)
+
+// globalRateLimitMutex protects globalRateLimitUntil
+var globalRateLimitMutex sync.Mutex
+
+// globalRateLimitUntil tracks when the global rate limit expires.
+// When any client gets rate-limited, ALL clients pause until this time.
+var globalRateLimitUntil time.Time
 
 // SetGlobalMetricsRecorder sets the global metrics recorder for all Discord clients
 func SetGlobalMetricsRecorder(recorder *metrics.MetricsRecorder) {
@@ -310,6 +318,28 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 	const maxRetries = 5
 	var lastErr error
 	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// Check if we're in a global rate-limit window set by ANY client
+		globalRateLimitMutex.Lock()
+		now := time.Now()
+		if now.Before(globalRateLimitUntil) {
+			// Wait until the global rate limit expires
+			waitDuration := globalRateLimitUntil.Sub(now)
+			globalRateLimitMutex.Unlock()
+
+			c.logger.Info("Global rate limit active, blocking all API calls",
+				"wait_until", globalRateLimitUntil,
+				"wait_duration", waitDuration)
+
+			select {
+			case <-ctx.Done():
+				return nil, errors.Wrap(ctx.Err(), "context cancelled during global rate limit wait")
+			case <-time.After(waitDuration):
+				// Continue to next attempt after global limit expires
+			}
+		} else {
+			globalRateLimitMutex.Unlock()
+		}
+
 		// Rate limit before making the request
 		if err := globalRateLimiter.Wait(ctx); err != nil {
 			return nil, errors.Wrap(err, "rate limiter context cancelled")
@@ -331,6 +361,17 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 		// Add jitter: ±20% of wait duration
 		jitter := time.Duration(int64(retryAfter) * int64(20+(rand.Intn(40)%40)) / 100)
 		waitDuration := retryAfter + jitter
+
+		// Update global rate limit window to block all clients during this backoff period
+		globalRateLimitMutex.Lock()
+		newLimit := time.Now().Add(waitDuration)
+		if newLimit.After(globalRateLimitUntil) {
+			globalRateLimitUntil = newLimit
+			c.logger.Info("Updated global rate limit window",
+				"new_limit", globalRateLimitUntil,
+				"wait_duration", waitDuration)
+		}
+		globalRateLimitMutex.Unlock()
 
 		if attempt < maxRetries {
 			c.logger.Info("Rate limited by Discord API, will retry",
