@@ -61,7 +61,10 @@ func (r *reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 	fresh := &v1alpha1.ProviderConfig{}
 	if err := r.kube.Get(ctx, client.ObjectKey{Name: pc.GetName()}, fresh); err != nil {
-		log.Error(err, "failed to get latest ProviderConfig for status update")
+		// ProviderConfig may not exist yet during initial startup; only log if it's not a NotFound error
+		if !errors.IsNotFound(err) {
+			log.Error(err, "failed to get latest ProviderConfig for status update")
+		}
 		return reconcile.Result{RequeueAfter: 30 * time.Second}, client.IgnoreNotFound(err)
 	}
 

@@ -322,13 +322,9 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 		globalRateLimitMutex.Lock()
 		now := time.Now()
 		if now.Before(globalRateLimitUntil) {
-			// Wait until the global rate limit expires
+			// Wait until the global rate limit expires (silently; we already logged when it was set)
 			waitDuration := globalRateLimitUntil.Sub(now)
 			globalRateLimitMutex.Unlock()
-
-			c.logger.Info("Global rate limit active, blocking all API calls",
-				"wait_until", globalRateLimitUntil,
-				"wait_duration", waitDuration)
 
 			select {
 			case <-ctx.Done():
@@ -469,18 +465,24 @@ func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint st
 
 		// For rate limit errors, capture the Retry-After header if present
 		errMsg := string(bodyBytes)
+		retryAfter := resp.Header.Get("Retry-After")
 		if resp.StatusCode == 429 {
-			if retryAfter := resp.Header.Get("Retry-After"); retryAfter != "" {
+			if retryAfter != "" {
 				errMsg = errMsg + " | Retry-After: " + retryAfter
 			}
+			// Log rate limits at info level since they're expected during heavy load
+			c.logger.Info("Discord API rate limited",
+				"method", method,
+				"url", url,
+				"retry_after_seconds", retryAfter)
+		} else {
+			// Log actual errors at error level
+			c.logger.Error(nil, "Discord API error",
+				"method", method,
+				"url", url,
+				"status", resp.StatusCode,
+				"response", string(bodyBytes))
 		}
-
-		c.logger.Error(nil, "Discord API error",
-			"method", method,
-			"url", url,
-			"status", resp.StatusCode,
-			"response", string(bodyBytes),
-			"retry_after", resp.Header.Get("Retry-After"))
 		return nil, errors.Errorf("Discord API error: %d - %s", resp.StatusCode, errMsg)
 	}
 
