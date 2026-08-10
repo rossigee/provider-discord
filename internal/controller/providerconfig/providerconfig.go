@@ -70,12 +70,15 @@ func (r *reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 	fresh.Status = pc.Status
 	if err := r.kube.Status().Update(ctx, fresh); err != nil {
-		log.Error(err, "failed to update ProviderConfig status")
+		// ProviderConfig may not exist yet during initial startup; only log if it's not a NotFound error
+		if !errors.IsNotFound(err) {
+			log.Error(err, "failed to update ProviderConfig status")
+		}
 		if errors.IsConflict(err) {
 			log.Info("conflict updating, will retry")
 			return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
 		}
-		return reconcile.Result{RequeueAfter: 30 * time.Second}, nil
+		return reconcile.Result{RequeueAfter: 30 * time.Second}, client.IgnoreNotFound(err)
 	}
 
 	return reconcile.Result{}, nil
