@@ -209,26 +209,68 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		for guildID, guildResult := range result.Guilds {
 			dupGroups := make([]deduplicationv1alpha1.DuplicateGroupInfo, 0, len(guildResult.DuplicateGroups))
 			for _, group := range guildResult.DuplicateGroups {
-				dupInfo := deduplicationv1alpha1.DuplicateGroupInfo{
-					ChannelName:   group.Name,
-					Count:         len(group.Channels),
-					KeptChannelID: group.Channels[group.KeepIndex].ID,
+				keptIDs := make([]string, 0, len(group.KeepIndices))
+				for _, i := range group.KeepIndices {
+					keptIDs = append(keptIDs, group.Channels[i].ID)
 				}
-				deletedIDs := make([]string, 0, len(group.Channels)-1)
-				for i, ch := range group.Channels {
+				deletedIDs := make([]string, 0, len(group.DeleteIndices))
+				for _, i := range group.DeleteIndices {
+					deletedIDs = append(deletedIDs, group.Channels[i].ID)
+				}
+				dupGroups = append(dupGroups, deduplicationv1alpha1.DuplicateGroupInfo{
+					ChannelName:       group.Name,
+					Count:             len(group.Channels),
+					KeptChannelIDs:    keptIDs,
+					DeletedChannelIDs: deletedIDs,
+					MessageCounts:     group.MessageCounts,
+					NeedsManualReview: group.NeedsManualReview,
+				})
+			}
+
+			webhookDupGroups := make([]deduplicationv1alpha1.WebhookDuplicateGroupInfo, 0, len(guildResult.WebhookDuplicateGroups))
+			for _, group := range guildResult.WebhookDuplicateGroups {
+				deletedIDs := make([]string, 0, len(group.Webhooks)-1)
+				for i, wh := range group.Webhooks {
 					if i != group.KeepIndex {
-						deletedIDs = append(deletedIDs, ch.ID)
+						deletedIDs = append(deletedIDs, wh.ID)
 					}
 				}
-				dupInfo.DeletedChannelIDs = deletedIDs
-				dupGroups = append(dupGroups, dupInfo)
+				webhookDupGroups = append(webhookDupGroups, deduplicationv1alpha1.WebhookDuplicateGroupInfo{
+					WebhookName:       group.Name,
+					Count:             len(group.Webhooks),
+					KeptWebhookID:     group.Webhooks[group.KeepIndex].ID,
+					DeletedWebhookIDs: deletedIDs,
+				})
 			}
+
+			roleDupGroups := make([]deduplicationv1alpha1.RoleDuplicateGroupInfo, 0, len(guildResult.RoleDuplicateGroups))
+			for _, group := range guildResult.RoleDuplicateGroups {
+				deletedIDs := make([]string, 0, len(group.Roles)-1)
+				for i, role := range group.Roles {
+					if i != group.KeepIndex {
+						deletedIDs = append(deletedIDs, role.ID)
+					}
+				}
+				roleDupGroups = append(roleDupGroups, deduplicationv1alpha1.RoleDuplicateGroupInfo{
+					RoleName:       group.Name,
+					Count:          len(group.Roles),
+					KeptRoleID:     group.Roles[group.KeepIndex].ID,
+					DeletedRoleIDs: deletedIDs,
+				})
+			}
+
 			dedupCRD.Status.Results[guildID] = deduplicationv1alpha1.GuildDeduplicationResult{
 				GuildID:                  guildResult.GuildID,
 				GuildName:                guildResult.GuildName,
 				TotalChannels:            guildResult.TotalChannels,
 				DuplicateGroups:          dupGroups,
 				ChannelsDeleted:          guildResult.ChannelsDeleted,
+				TotalWebhooks:            guildResult.TotalWebhooks,
+				WebhookDuplicateGroups:   webhookDupGroups,
+				WebhooksDeleted:          guildResult.WebhooksDeleted,
+				TotalRoles:               guildResult.TotalRoles,
+				RoleDuplicateGroups:      roleDupGroups,
+				RolesDeleted:             guildResult.RolesDeleted,
 				OrphanedResourcesDeleted: guildResult.OrphanedResourcesDeleted,
 				Errors:                   guildResult.Errors,
 			}

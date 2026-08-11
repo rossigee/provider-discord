@@ -182,10 +182,16 @@ spec:
                       type: integer
                     duplicateGroups:
                       description: DuplicateGroups contains information about each
-                        duplicate group found.
+                        duplicate channel group found.
                       items:
-                        description: DuplicateGroupInfo contains information about
-                          a group of duplicate channels.
+                        description: |-
+                          DuplicateGroupInfo contains information about a group of duplicate channels.
+
+                          Keep-selection for channels is message-history-based: a channel is only ever kept if
+                          it has real message history, or - only when every channel in the group is empty - as
+                          a last-resort tie-breaker by earliest creation. KeptChannelIDs can therefore contain
+                          more than one ID; when it does, NeedsManualReview is set and only the zero-message
+                          channels in DeletedChannelIDs were (or would be) auto-deleted.
                         properties:
                           channelName:
                             description: ChannelName is the name shared by all channels
@@ -197,14 +203,33 @@ spec:
                             type: integer
                           deletedChannelIds:
                             description: DeletedChannelIDs are the IDs of channels
-                              that were deleted.
+                              that were (or, in report mode, would be) deleted.
                             items:
                               type: string
                             type: array
-                          keptChannelId:
-                            description: KeptChannelID is the ID of the channel that
-                              was kept.
-                            type: string
+                          keptChannelIds:
+                            description: |-
+                              KeptChannelIDs are the IDs of channels that were kept (not deleted). Normally a
+                              single ID; more than one means multiple channels in this group had real message
+                              history - see NeedsManualReview.
+                            items:
+                              type: string
+                            type: array
+                          messageCounts:
+                            description: |-
+                              MessageCounts are the sampled message-history counts (capped at 100) for each
+                              channel in this group, in the same order the channels were discovered. Zero means
+                              no messages found; a channel with a non-zero count here is never auto-deleted.
+                            items:
+                              type: integer
+                            type: array
+                          needsManualReview:
+                            description: |-
+                              NeedsManualReview is true when more than one channel in this group has message
+                              history, so keep-selection could not be resolved automatically - only the
+                              zero-message channels were auto-deleted, and the remaining KeptChannelIDs need a
+                              human to decide which (if any) should be removed.
+                            type: boolean
                         required:
                         - channelName
                         - count
@@ -226,16 +251,100 @@ spec:
                       description: OrphanedResourcesDeleted is the count of resources
                         deleted in this guild (action mode only).
                       type: integer
+                    roleDuplicateGroups:
+                      description: RoleDuplicateGroups contains information about
+                        each duplicate role group found.
+                      items:
+                        description: |-
+                          RoleDuplicateGroupInfo contains information about a group of duplicate roles.
+                          Roles have no message-history concept, so keep-selection is always the earliest-created
+                          (lowest Discord snowflake ID) role - exactly one KeptRoleID.
+                        properties:
+                          count:
+                            description: Count is the number of duplicate roles with
+                              this name.
+                            type: integer
+                          deletedRoleIds:
+                            description: DeletedRoleIDs are the IDs of roles that
+                              were (or, in report mode, would be) deleted.
+                            items:
+                              type: string
+                            type: array
+                          keptRoleId:
+                            description: KeptRoleID is the ID of the role that was
+                              kept.
+                            type: string
+                          roleName:
+                            description: RoleName is the name shared by all roles
+                              in this group.
+                            type: string
+                        required:
+                        - count
+                        - roleName
+                        type: object
+                      type: array
+                    rolesDeleted:
+                      description: RolesDeleted is the count of roles deleted in this
+                        guild (action mode only).
+                      type: integer
                     totalChannels:
                       description: TotalChannels is the total number of channels in
                         the guild.
+                      type: integer
+                    totalRoles:
+                      description: TotalRoles is the total number of roles in the
+                        guild.
+                      type: integer
+                    totalWebhooks:
+                      description: TotalWebhooks is the total number of webhooks in
+                        the guild.
+                      type: integer
+                    webhookDuplicateGroups:
+                      description: WebhookDuplicateGroups contains information about
+                        each duplicate webhook group found.
+                      items:
+                        description: |-
+                          WebhookDuplicateGroupInfo contains information about a group of duplicate webhooks.
+                          Webhooks have no message-history concept of their own, so keep-selection is always the
+                          earliest-created (lowest Discord snowflake ID) webhook - exactly one KeptWebhookID.
+                        properties:
+                          count:
+                            description: Count is the number of duplicate webhooks
+                              with this name.
+                            type: integer
+                          deletedWebhookIds:
+                            description: DeletedWebhookIDs are the IDs of webhooks
+                              that were (or, in report mode, would be) deleted.
+                            items:
+                              type: string
+                            type: array
+                          keptWebhookId:
+                            description: KeptWebhookID is the ID of the webhook that
+                              was kept.
+                            type: string
+                          webhookName:
+                            description: WebhookName is the name shared by all webhooks
+                              in this group.
+                            type: string
+                        required:
+                        - count
+                        - webhookName
+                        type: object
+                      type: array
+                    webhooksDeleted:
+                      description: WebhooksDeleted is the count of webhooks deleted
+                        in this guild (action mode only).
                       type: integer
                   required:
                   - channelsDeleted
                   - guildId
                   - guildName
                   - orphanedResourcesDeleted
+                  - rolesDeleted
                   - totalChannels
+                  - totalRoles
+                  - totalWebhooks
+                  - webhooksDeleted
                   type: object
                 description: Results contains per-guild deduplication results.
                 type: object
@@ -259,25 +368,64 @@ spec:
                     description: OrphanedResourcesDeleted is the count of Crossplane
                       resources deleted (action mode only).
                     type: integer
+                  roleDuplicateGroupsFound:
+                    description: RoleDuplicateGroupsFound is the number of distinct
+                      duplicate role groups.
+                    type: integer
+                  rolesDeleted:
+                    description: RolesDeleted is the count of Discord roles actually
+                      deleted (action mode only).
+                    type: integer
                   totalChannelsAnalyzed:
                     description: TotalChannelsAnalyzed is the total number of channels
                       examined.
                     type: integer
                   totalDuplicateChannelsFound:
                     description: TotalDuplicateChannelsFound is the total count of
-                      duplicate channels (excluding the kept one in each group).
+                      duplicate channels (excluding the kept one(s) in each group).
+                    type: integer
+                  totalDuplicateRolesFound:
+                    description: TotalDuplicateRolesFound is the total count of duplicate
+                      roles (excluding the kept one in each group).
+                    type: integer
+                  totalDuplicateWebhooksFound:
+                    description: TotalDuplicateWebhooksFound is the total count of
+                      duplicate webhooks (excluding the kept one in each group).
                     type: integer
                   totalGuildsAnalyzed:
                     description: TotalGuildsAnalyzed is the number of guilds that
                       were analyzed.
                     type: integer
+                  totalRolesAnalyzed:
+                    description: TotalRolesAnalyzed is the total number of roles examined.
+                    type: integer
+                  totalWebhooksAnalyzed:
+                    description: TotalWebhooksAnalyzed is the total number of webhooks
+                      examined.
+                    type: integer
+                  webhookDuplicateGroupsFound:
+                    description: WebhookDuplicateGroupsFound is the number of distinct
+                      duplicate webhook groups.
+                    type: integer
+                  webhooksDeleted:
+                    description: WebhooksDeleted is the count of Discord webhooks
+                      actually deleted (action mode only).
+                    type: integer
                 required:
                 - channelsDeleted
                 - duplicateGroupsFound
                 - orphanedResourcesDeleted
+                - roleDuplicateGroupsFound
+                - rolesDeleted
                 - totalChannelsAnalyzed
                 - totalDuplicateChannelsFound
+                - totalDuplicateRolesFound
+                - totalDuplicateWebhooksFound
                 - totalGuildsAnalyzed
+                - totalRolesAnalyzed
+                - totalWebhooksAnalyzed
+                - webhookDuplicateGroupsFound
+                - webhooksDeleted
                 type: object
             type: object
         required:

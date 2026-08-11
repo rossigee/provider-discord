@@ -21,12 +21,42 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
+
+// respondEmptyForAncillaryEndpoints handles the /channels/*/messages, /guilds/*/webhooks,
+// and /guilds/*/roles GET requests that every analyzeGuild call now makes (message-history
+// sampling, webhook dedup, role dedup), so per-test mock servers below - which only care
+// about channel behavior - don't need to redefine them. Returns true if it handled the
+// request. Tests that specifically want non-empty message history call
+// json.NewEncoder(w).Encode(...) themselves for that path before falling back to this.
+func channelIDsAt(group DuplicateGroup, indices []int) []string {
+	ids := make([]string, len(indices))
+	for i, idx := range indices {
+		ids[i] = group.Channels[idx].ID
+	}
+	return ids
+}
+
+func respondEmptyForAncillaryEndpoints(w http.ResponseWriter, r *http.Request) bool {
+	if r.Method != "GET" {
+		return false
+	}
+	if strings.HasSuffix(r.URL.Path, "/messages") || strings.HasSuffix(r.URL.Path, "/webhooks") || strings.HasSuffix(r.URL.Path, "/roles") {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte("[]"))
+		return true
+	}
+	return false
+}
 
 // TestAnalyzeAndDeduplicate_NoDuplicates tests the service when no duplicates are found.
 func TestAnalyzeAndDeduplicate_NoDuplicates(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		switch r.URL.Path {
 		case "/users/@me/guilds":
 			guilds := []Guild{
@@ -69,6 +99,9 @@ func TestAnalyzeAndDeduplicate_NoDuplicates(t *testing.T) {
 // TestAnalyzeAndDeduplicate_WithDuplicates tests the service when duplicates are found.
 func TestAnalyzeAndDeduplicate_WithDuplicates(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		switch r.URL.Path {
 		case "/users/@me/guilds":
 			guilds := []Guild{
@@ -118,6 +151,9 @@ func TestAnalyzeAndDeduplicate_ActionMode_DeletesDuplicates(t *testing.T) {
 	deleteCount := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		switch r.URL.Path {
 		case "/users/@me/guilds":
 			guilds := []Guild{
@@ -161,6 +197,9 @@ func TestAnalyzeAndDeduplicate_ActionMode_DeletesDuplicates(t *testing.T) {
 // TestAnalyzeAndDeduplicate_MultipleGuilds tests deduplication across multiple guilds.
 func TestAnalyzeAndDeduplicate_MultipleGuilds(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		switch r.URL.Path {
 		case "/users/@me/guilds":
 			guilds := []Guild{
@@ -231,6 +270,9 @@ func TestAnalyzeAndDeduplicate_TargetGuilds(t *testing.T) {
 	guildsCalled := make(map[string]bool)
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		switch r.URL.Path {
 		case "/users/@me/guilds":
 			guilds := []Guild{
@@ -290,10 +332,24 @@ func TestAnalyzeAndDeduplicate_TargetGuilds(t *testing.T) {
 	}
 }
 
-// TestAnalyzeAndDeduplicate_KeepsOldestChannel tests that the oldest (lowest position) channel is kept.
-func TestAnalyzeAndDeduplicate_KeepsOldestChannel(t *testing.T) {
+// TestAnalyzeAndDeduplicate_KeepsChannelWithMessageHistory tests that keep-selection is
+// message-history-based, not ID- or position-based: the channel with real message history
+// must be kept even though it has neither the lowest position nor the lowest (earliest)
+// snowflake ID - both of which point at a different, empty channel. This is the core
+// safety property of the deduplication fix: never discard a channel with history.
+func TestAnalyzeAndDeduplicate_KeepsChannelWithMessageHistory(t *testing.T) {
 	deleteCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// ch3 has the highest ID/position of the three but is the one with real
+		// message history - it must be the one kept.
+		if r.URL.Path == "/channels/ch3/messages" {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode([]map[string]string{{"id": "msg1"}})
+			return
+		}
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		switch r.URL.Path {
 		case "/users/@me/guilds":
 			guilds := []Guild{
@@ -302,12 +358,12 @@ func TestAnalyzeAndDeduplicate_KeepsOldestChannel(t *testing.T) {
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(guilds)
 		case "/guilds/guild1/channels":
-			// Create channels with positions: 5, 0, 3
-			// Position 0 should be kept (oldest)
+			// ch1 has the lowest ID and lowest position - under the old (removed)
+			// position/ID-based logic it would incorrectly be kept, but it's empty.
 			channels := []Channel{
-				{ID: "ch1", Name: "general", Type: 0, GuildID: "guild1", Position: 5},
-				{ID: "ch2", Name: "general", Type: 0, GuildID: "guild1", Position: 0}, // keeper (lowest position)
-				{ID: "ch3", Name: "general", Type: 0, GuildID: "guild1", Position: 3},
+				{ID: "ch1", Name: "general", Type: 0, GuildID: "guild1", Position: 0},
+				{ID: "ch2", Name: "general", Type: 0, GuildID: "guild1", Position: 1},
+				{ID: "ch3", Name: "general", Type: 0, GuildID: "guild1", Position: 3}, // keeper: has message history
 			}
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode(channels)
@@ -327,17 +383,18 @@ func TestAnalyzeAndDeduplicate_KeepsOldestChannel(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	// Verify the result shows the correct kept channel
 	guild := result.Guilds["guild1"]
 	if len(guild.DuplicateGroups) != 1 {
 		t.Fatalf("expected 1 duplicate group, got %d", len(guild.DuplicateGroups))
 	}
 
 	dupGroup := guild.DuplicateGroups[0]
-	if dupGroup.Channels[dupGroup.KeepIndex].ID != "ch2" {
-		t.Errorf("expected to keep channel ch2 (position 0), but kept %s (position %d)",
-			dupGroup.Channels[dupGroup.KeepIndex].ID,
-			dupGroup.Channels[dupGroup.KeepIndex].Position)
+	kept := channelIDsAt(dupGroup, dupGroup.KeepIndices)
+	if len(kept) != 1 || kept[0] != "ch3" {
+		t.Errorf("expected to keep only channel ch3 (has message history), got kept=%v", kept)
+	}
+	if dupGroup.NeedsManualReview {
+		t.Error("expected NeedsManualReview=false (only one channel has history)")
 	}
 
 	if guild.ChannelsDeleted != 2 {
@@ -349,9 +406,105 @@ func TestAnalyzeAndDeduplicate_KeepsOldestChannel(t *testing.T) {
 	}
 }
 
+// TestAnalyzeAndDeduplicate_AllEmptyFallsBackToOldestID tests that when every channel in
+// a duplicate group is empty, keep-selection falls back to the lowest (earliest-created)
+// snowflake ID, since there's no history-based signal to use and nothing is lost either way.
+func TestAnalyzeAndDeduplicate_AllEmptyFallsBackToOldestID(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
+		switch r.URL.Path {
+		case "/users/@me/guilds":
+			guilds := []Guild{{ID: "guild1", Name: "Test Guild"}}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(guilds)
+		case "/guilds/guild1/channels":
+			channels := []Channel{
+				{ID: "100", Name: "general", Type: 0, GuildID: "guild1"},
+				{ID: "300", Name: "general", Type: 0, GuildID: "guild1"},
+				{ID: "200", Name: "general", Type: 0, GuildID: "guild1"},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(channels)
+		}
+	}))
+	defer server.Close()
+
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+
+	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	guild := result.Guilds["guild1"]
+	dupGroup := guild.DuplicateGroups[0]
+	kept := channelIDsAt(dupGroup, dupGroup.KeepIndices)
+	if len(kept) != 1 || kept[0] != "100" {
+		t.Errorf("expected to keep channel 100 (lowest numeric ID), got kept=%v", kept)
+	}
+}
+
+// TestAnalyzeAndDeduplicate_ManualReviewWhenMultipleHaveHistory tests that a duplicate
+// group with more than one channel showing real message history is flagged for manual
+// review rather than auto-picking one to keep - only the genuinely empty channels (if any)
+// are auto-deleted.
+func TestAnalyzeAndDeduplicate_ManualReviewWhenMultipleHaveHistory(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/channels/ch1/messages" || r.URL.Path == "/channels/ch2/messages" {
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode([]map[string]string{{"id": "msg1"}})
+			return
+		}
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
+		switch r.URL.Path {
+		case "/users/@me/guilds":
+			guilds := []Guild{{ID: "guild1", Name: "Test Guild"}}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(guilds)
+		case "/guilds/guild1/channels":
+			channels := []Channel{
+				{ID: "ch1", Name: "general", Type: 0, GuildID: "guild1"}, // has history
+				{ID: "ch2", Name: "general", Type: 0, GuildID: "guild1"}, // has history
+				{ID: "ch3", Name: "general", Type: 0, GuildID: "guild1"}, // empty
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(channels)
+		}
+	}))
+	defer server.Close()
+
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+
+	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	guild := result.Guilds["guild1"]
+	dupGroup := guild.DuplicateGroups[0]
+	if !dupGroup.NeedsManualReview {
+		t.Error("expected NeedsManualReview=true (two channels have message history)")
+	}
+	kept := channelIDsAt(dupGroup, dupGroup.KeepIndices)
+	deleted := channelIDsAt(dupGroup, dupGroup.DeleteIndices)
+	if len(kept) != 2 {
+		t.Errorf("expected 2 channels kept (both with history), got %v", kept)
+	}
+	if len(deleted) != 1 || deleted[0] != "ch3" {
+		t.Errorf("expected only the empty channel ch3 marked for deletion, got %v", deleted)
+	}
+}
+
 // TestAnalyzeAndDeduplicate_APIError tests handling of Discord API errors.
 func TestAnalyzeAndDeduplicate_APIError(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		if r.URL.Path == "/users/@me/guilds" {
 			w.WriteHeader(500)
 			_, _ = w.Write([]byte(`{"error": "Internal Server Error"}`))
@@ -376,6 +529,9 @@ func TestAnalyzeAndDeduplicate_DeleteError(t *testing.T) {
 	deleteCount := 0
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		switch r.URL.Path {
 		case "/users/@me/guilds":
 			guilds := []Guild{
@@ -421,6 +577,9 @@ func TestAnalyzeAndDeduplicate_DeleteError(t *testing.T) {
 // TestEmptyGuild tests handling of guilds with no channels.
 func TestEmptyGuild(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		switch r.URL.Path {
 		case "/users/@me/guilds":
 			guilds := []Guild{
@@ -458,6 +617,9 @@ func TestEmptyGuild(t *testing.T) {
 // TestNoGuilds tests handling when bot is in no guilds.
 func TestNoGuilds(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
 		if r.URL.Path == "/users/@me/guilds" {
 			w.Header().Set("Content-Type", "application/json")
 			_ = json.NewEncoder(w).Encode([]Guild{})
