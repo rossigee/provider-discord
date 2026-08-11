@@ -152,20 +152,30 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		ObjectMeta: metav1.ObjectMeta{Name: dedupName},
 	}
 	startTime := time.Now()
+	// Deduplication has a status subresource: the API server ignores .Status changes
+	// submitted through the main resource endpoint (client.Update/client.Create), and
+	// silently resets any in-memory .Status mutation back to whatever's already stored
+	// once that call returns. So the spec-only CreateOrUpdate below and the status write
+	// after it must be two fully separate calls, in that order - never interleaved, and
+	// never followed by another plain Update() (which would immediately clobber the
+	// status write again).
 	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, dedupCRD, func() error {
 		dedupCRD.Spec.ProviderConfigRef = deduplicationv1alpha1.ProviderConfigReference{Name: pc.Name}
 		dedupCRD.Spec.Mode = mode
 		dedupCRD.Spec.DeleteOrphanedResources = spec.DeleteOrphanedResources
 		dedupCRD.Spec.TargetGuilds = spec.TargetGuilds
-		dedupCRD.Status.Phase = "analyzing"
-		if dedupCRD.Status.StartTime == nil {
-			dedupCRD.Status.StartTime = &metav1.Time{Time: startTime}
-		}
 		return nil
 	})
 	if err != nil {
 		log.Error(err, "failed to create Deduplication CRD")
 		return ctrl.Result{}, err
+	}
+	dedupCRD.Status.Phase = "analyzing"
+	if dedupCRD.Status.StartTime == nil {
+		dedupCRD.Status.StartTime = &metav1.Time{Time: startTime}
+	}
+	if err := r.Status().Update(ctx, dedupCRD); err != nil {
+		log.Error(err, "failed to persist initial Deduplication status")
 	}
 
 	// Step 3: Stamp the idempotency annotation BEFORE the destructive operation so that
@@ -189,97 +199,99 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil {
 		log.Error(err, "deduplication analysis failed")
 		r.Recorder.Eventf(pc, nil, corev1.EventTypeWarning, "DeduplicationFailed", "analysis", "Analysis failed: %v", err)
-		// Best-effort: update CRD to reflect failure so operators can see what happened
-		_, _ = controllerutil.CreateOrUpdate(ctx, r.Client, dedupCRD, func() error {
-			dedupCRD.Status.Phase = "failed"
-			dedupCRD.Status.CompletionTime = &metav1.Time{Time: time.Now()}
-			dedupCRD.Status.LastError = err.Error()
-			return nil
-		})
+		// Best-effort: record failure directly on the status subresource so operators can
+		// see what happened (no spec change needed here, so no CreateOrUpdate/plain-Update
+		// step to clobber it - see the comment on the Step 2 status write above).
+		dedupCRD.Status.Phase = "failed"
+		dedupCRD.Status.CompletionTime = &metav1.Time{Time: time.Now()}
+		dedupCRD.Status.LastError = err.Error()
+		if statusErr := r.Status().Update(ctx, dedupCRD); statusErr != nil {
+			log.Error(statusErr, "failed to persist failed Deduplication status")
+		}
 		return ctrl.Result{}, err
 	}
 
-	// Step 5: Update CRD with final results
-	_, updateErr := controllerutil.CreateOrUpdate(ctx, r.Client, dedupCRD, func() error {
-		dedupCRD.Status.Phase = "completed"
-		dedupCRD.Status.CompletionTime = &metav1.Time{Time: time.Now()}
-		dedupCRD.Status.Summary = result.Summary
-		dedupCRD.Status.Results = make(map[string]deduplicationv1alpha1.GuildDeduplicationResult)
+	// Step 5: Record final results directly on the status subresource (status-only, so no
+	// spec-touching CreateOrUpdate/plain-Update step that would clobber it - see the
+	// comment on the Step 2 status write above).
+	dedupCRD.Status.Phase = "completed"
+	dedupCRD.Status.CompletionTime = &metav1.Time{Time: time.Now()}
+	dedupCRD.Status.Summary = result.Summary
+	dedupCRD.Status.Results = make(map[string]deduplicationv1alpha1.GuildDeduplicationResult)
 
-		for guildID, guildResult := range result.Guilds {
-			dupGroups := make([]deduplicationv1alpha1.DuplicateGroupInfo, 0, len(guildResult.DuplicateGroups))
-			for _, group := range guildResult.DuplicateGroups {
-				keptIDs := make([]string, 0, len(group.KeepIndices))
-				for _, i := range group.KeepIndices {
-					keptIDs = append(keptIDs, group.Channels[i].ID)
-				}
-				deletedIDs := make([]string, 0, len(group.DeleteIndices))
-				for _, i := range group.DeleteIndices {
-					deletedIDs = append(deletedIDs, group.Channels[i].ID)
-				}
-				dupGroups = append(dupGroups, deduplicationv1alpha1.DuplicateGroupInfo{
-					ChannelName:       group.Name,
-					Count:             len(group.Channels),
-					KeptChannelIDs:    keptIDs,
-					DeletedChannelIDs: deletedIDs,
-					MessageCounts:     group.MessageCounts,
-					NeedsManualReview: group.NeedsManualReview,
-				})
+	for guildID, guildResult := range result.Guilds {
+		dupGroups := make([]deduplicationv1alpha1.DuplicateGroupInfo, 0, len(guildResult.DuplicateGroups))
+		for _, group := range guildResult.DuplicateGroups {
+			keptIDs := make([]string, 0, len(group.KeepIndices))
+			for _, i := range group.KeepIndices {
+				keptIDs = append(keptIDs, group.Channels[i].ID)
 			}
-
-			webhookDupGroups := make([]deduplicationv1alpha1.WebhookDuplicateGroupInfo, 0, len(guildResult.WebhookDuplicateGroups))
-			for _, group := range guildResult.WebhookDuplicateGroups {
-				deletedIDs := make([]string, 0, len(group.Webhooks)-1)
-				for i, wh := range group.Webhooks {
-					if i != group.KeepIndex {
-						deletedIDs = append(deletedIDs, wh.ID)
-					}
-				}
-				webhookDupGroups = append(webhookDupGroups, deduplicationv1alpha1.WebhookDuplicateGroupInfo{
-					WebhookName:       group.Name,
-					Count:             len(group.Webhooks),
-					KeptWebhookID:     group.Webhooks[group.KeepIndex].ID,
-					DeletedWebhookIDs: deletedIDs,
-				})
+			deletedIDs := make([]string, 0, len(group.DeleteIndices))
+			for _, i := range group.DeleteIndices {
+				deletedIDs = append(deletedIDs, group.Channels[i].ID)
 			}
-
-			roleDupGroups := make([]deduplicationv1alpha1.RoleDuplicateGroupInfo, 0, len(guildResult.RoleDuplicateGroups))
-			for _, group := range guildResult.RoleDuplicateGroups {
-				deletedIDs := make([]string, 0, len(group.Roles)-1)
-				for i, role := range group.Roles {
-					if i != group.KeepIndex {
-						deletedIDs = append(deletedIDs, role.ID)
-					}
-				}
-				roleDupGroups = append(roleDupGroups, deduplicationv1alpha1.RoleDuplicateGroupInfo{
-					RoleName:       group.Name,
-					Count:          len(group.Roles),
-					KeptRoleID:     group.Roles[group.KeepIndex].ID,
-					DeletedRoleIDs: deletedIDs,
-				})
-			}
-
-			dedupCRD.Status.Results[guildID] = deduplicationv1alpha1.GuildDeduplicationResult{
-				GuildID:                  guildResult.GuildID,
-				GuildName:                guildResult.GuildName,
-				TotalChannels:            guildResult.TotalChannels,
-				DuplicateGroups:          dupGroups,
-				ChannelsDeleted:          guildResult.ChannelsDeleted,
-				TotalWebhooks:            guildResult.TotalWebhooks,
-				WebhookDuplicateGroups:   webhookDupGroups,
-				WebhooksDeleted:          guildResult.WebhooksDeleted,
-				TotalRoles:               guildResult.TotalRoles,
-				RoleDuplicateGroups:      roleDupGroups,
-				RolesDeleted:             guildResult.RolesDeleted,
-				OrphanedResourcesDeleted: guildResult.OrphanedResourcesDeleted,
-				Errors:                   guildResult.Errors,
-			}
+			dupGroups = append(dupGroups, deduplicationv1alpha1.DuplicateGroupInfo{
+				ChannelName:       group.Name,
+				Count:             len(group.Channels),
+				KeptChannelIDs:    keptIDs,
+				DeletedChannelIDs: deletedIDs,
+				MessageCounts:     group.MessageCounts,
+				NeedsManualReview: group.NeedsManualReview,
+			})
 		}
-		return nil
-	})
-	if updateErr != nil {
-		// Non-fatal: the operation completed successfully; idempotency annotation is already set.
-		log.Error(updateErr, "failed to update Deduplication CRD with results (operation still succeeded)")
+
+		webhookDupGroups := make([]deduplicationv1alpha1.WebhookDuplicateGroupInfo, 0, len(guildResult.WebhookDuplicateGroups))
+		for _, group := range guildResult.WebhookDuplicateGroups {
+			deletedIDs := make([]string, 0, len(group.Webhooks)-1)
+			for i, wh := range group.Webhooks {
+				if i != group.KeepIndex {
+					deletedIDs = append(deletedIDs, wh.ID)
+				}
+			}
+			webhookDupGroups = append(webhookDupGroups, deduplicationv1alpha1.WebhookDuplicateGroupInfo{
+				WebhookName:       group.Name,
+				Count:             len(group.Webhooks),
+				KeptWebhookID:     group.Webhooks[group.KeepIndex].ID,
+				DeletedWebhookIDs: deletedIDs,
+			})
+		}
+
+		roleDupGroups := make([]deduplicationv1alpha1.RoleDuplicateGroupInfo, 0, len(guildResult.RoleDuplicateGroups))
+		for _, group := range guildResult.RoleDuplicateGroups {
+			deletedIDs := make([]string, 0, len(group.Roles)-1)
+			for i, role := range group.Roles {
+				if i != group.KeepIndex {
+					deletedIDs = append(deletedIDs, role.ID)
+				}
+			}
+			roleDupGroups = append(roleDupGroups, deduplicationv1alpha1.RoleDuplicateGroupInfo{
+				RoleName:       group.Name,
+				Count:          len(group.Roles),
+				KeptRoleID:     group.Roles[group.KeepIndex].ID,
+				DeletedRoleIDs: deletedIDs,
+			})
+		}
+
+		dedupCRD.Status.Results[guildID] = deduplicationv1alpha1.GuildDeduplicationResult{
+			GuildID:                  guildResult.GuildID,
+			GuildName:                guildResult.GuildName,
+			TotalChannels:            guildResult.TotalChannels,
+			DuplicateGroups:          dupGroups,
+			ChannelsDeleted:          guildResult.ChannelsDeleted,
+			TotalWebhooks:            guildResult.TotalWebhooks,
+			WebhookDuplicateGroups:   webhookDupGroups,
+			WebhooksDeleted:          guildResult.WebhooksDeleted,
+			TotalRoles:               guildResult.TotalRoles,
+			RoleDuplicateGroups:      roleDupGroups,
+			RolesDeleted:             guildResult.RolesDeleted,
+			OrphanedResourcesDeleted: guildResult.OrphanedResourcesDeleted,
+			Errors:                   guildResult.Errors,
+		}
+	}
+	if statusErr := r.Status().Update(ctx, dedupCRD); statusErr != nil {
+		// Non-fatal: the operation completed successfully; idempotency annotation is
+		// already set.
+		log.Error(statusErr, "failed to persist final Deduplication status (operation still succeeded)")
 	}
 
 	// Record summary event
