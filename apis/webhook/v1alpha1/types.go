@@ -81,7 +81,7 @@ type WebhookObservation struct {
 type WebhookSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
 	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
-	ForProvider                      WebhookParameters     `json:"forProvider"`
+	ForProvider                      WebhookParameters          `json:"forProvider"`
 }
 
 // A WebhookStatus represents the observed state of a Webhook.
@@ -92,6 +92,7 @@ type WebhookStatus struct {
 
 // +kubebuilder:object:root=true
 // +kubebuilder:object:generate=true
+// +kubebuilder:storageversion
 
 // A Webhook is a managed resource that represents a Discord webhook.
 // +kubebuilder:printcolumn:name="NAME",type="string",JSONPath=".spec.forProvider.name"

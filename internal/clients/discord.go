@@ -350,9 +350,14 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 
 		// It's a 429 — use exponential backoff with jitter, prefer Retry-After if present
 		retryAfter := c.extractRetryAfter(err)
-		// If no explicit Retry-After, use exponential backoff: 2s, 4s, 8s, 16s, 32s
+		// If no explicit Retry-After, use exponential backoff: 1s, 2s, 4s, 8s, 15s (capped)
 		if retryAfter <= 1*time.Second {
-			retryAfter = time.Duration(1<<uint(attempt)) * time.Second
+			backoff := time.Duration(1<<uint(attempt)) * time.Second
+			// Cap at 15 seconds to avoid exceeding HTTP client timeout (30s)
+			if backoff > 15*time.Second {
+				backoff = 15 * time.Second
+			}
+			retryAfter = backoff
 		}
 		// Add jitter: ±20% of wait duration
 		jitter := time.Duration(int64(retryAfter) * int64(20+(rand.Intn(40)%40)) / 100)
