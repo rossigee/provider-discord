@@ -40,7 +40,9 @@ repos:
     rev: v1.0.0-rc.1
     hooks:
       - id: go-fmt
+        exclude: 'zz_generated\..*\.go$'
       - id: go-imports
+        exclude: 'zz_generated\..*\.go$'
       - id: go-vet-mod
       - id: go-mod-tidy
 
