@@ -4,30 +4,36 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: roles.role.discord.crossplane.io
+  name: integrations.integration.discord.m.crossplane.io
 spec:
-  group: role.discord.crossplane.io
+  group: integration.discord.m.crossplane.io
   names:
     categories:
     - crossplane
     - managed
     - discord
-    kind: Role
-    listKind: RoleList
-    plural: roles
-    singular: role
+    kind: Integration
+    listKind: IntegrationList
+    plural: integrations
+    singular: integration
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.forProvider.name
-      name: NAME
-      type: string
     - jsonPath: .spec.forProvider.guildId
       name: GUILD
       type: string
-    - jsonPath: .spec.forProvider.position
-      name: POSITION
-      type: integer
+    - jsonPath: .spec.forProvider.integrationId
+      name: INTEGRATION
+      type: string
+    - jsonPath: .status.atProvider.name
+      name: NAME
+      type: string
+    - jsonPath: .status.atProvider.type
+      name: TYPE
+      type: string
+    - jsonPath: .status.atProvider.enabled
+      name: ENABLED
+      type: boolean
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: READY
       type: string
@@ -40,7 +46,8 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A Role is an example API type.
+        description: A Integration is a managed resource that represents a Discord
+          guild integration
         properties:
           apiVersion:
             description: |-
@@ -60,38 +67,24 @@ spec:
           metadata:
             type: object
           spec:
-            description: A RoleSpec defines the desired state of a Role.
+            description: A IntegrationSpec defines the desired state of a Integration.
             properties:
               forProvider:
-                description: RoleParameters are the configurable fields of a Role.
+                description: IntegrationParameters defines the desired state of a
+                  Discord guild integration
                 properties:
-                  color:
-                    description: Color integer representation of hexadecimal color
-                      code
-                    type: integer
                   guildId:
-                    description: GuildID is the ID of the guild this role belongs
-                      to
+                    description: GuildID is the ID of the Discord guild
                     type: string
-                  hoist:
-                    description: Whether to display role members separately from other
-                      members
-                    type: boolean
-                  mentionable:
-                    description: Whether the role can be mentioned
-                    type: boolean
-                  name:
-                    description: Name of the role
+                  integrationId:
+                    description: |-
+                      IntegrationID is the ID of the Discord integration to manage
+                      This is mainly used for deletion operations since integrations
+                      are typically created externally through Discord's OAuth2 flow
                     type: string
-                  permissions:
-                    description: Permission bit set
-                    type: string
-                  position:
-                    description: Position of the role in the role hierarchy
-                    type: integer
                 required:
                 - guildId
-                - name
+                - integrationId
                 type: object
               managementPolicies:
                 default:
@@ -152,17 +145,71 @@ spec:
             - forProvider
             type: object
           status:
-            description: A RoleStatus represents the observed state of a Role.
+            description: A IntegrationStatus represents the observed state of a Integration.
             properties:
               atProvider:
-                description: RoleObservation are the observable fields of a Role.
+                description: IntegrationObservation represents the observed state
+                  of a Discord integration
                 properties:
-                  id:
-                    description: ID of the role on Discord
+                  accountId:
+                    description: AccountID is the integration account ID
                     type: string
-                  managed:
-                    description: Whether this role is managed by an integration
+                  accountName:
+                    description: AccountName is the integration account name
+                    type: string
+                  applicationId:
+                    description: ApplicationID is the ID of the application for Discord
+                      integrations
+                    type: string
+                  enableEmoticons:
+                    description: EnableEmoticons indicates whether emoticons are enabled
                     type: boolean
+                  enabled:
+                    description: Enabled indicates whether this integration is enabled
+                    type: boolean
+                  expireBehavior:
+                    description: ExpireBehavior is the behavior used for expired subscribers
+                    type: integer
+                  expireGracePeriod:
+                    description: ExpireGracePeriod is the grace period (in days) for
+                      expired subscribers
+                    type: integer
+                  id:
+                    description: ID is the integration's unique Discord ID
+                    type: string
+                  name:
+                    description: Name is the integration name
+                    type: string
+                  revoked:
+                    description: Revoked indicates whether the integration was revoked
+                    type: boolean
+                  roleId:
+                    description: RoleID is the ID of the role this integration uses
+                      for subscribers
+                    type: string
+                  scopes:
+                    description: Scopes are the OAuth2 scopes the application has
+                      been authorized for
+                    items:
+                      type: string
+                    type: array
+                  subscriberCount:
+                    description: SubscriberCount is how many subscribers this integration
+                      has
+                    type: integer
+                  syncedAt:
+                    description: SyncedAt is when this integration was last synced
+                    type: string
+                  syncing:
+                    description: Syncing indicates whether this integration is syncing
+                    type: boolean
+                  type:
+                    description: Type is the integration type (twitch, youtube, discord,
+                      etc.)
+                    type: string
+                  userId:
+                    description: UserID is the ID of the user for this integration
+                    type: string
                 type: object
               conditions:
                 description: Conditions of the resource.

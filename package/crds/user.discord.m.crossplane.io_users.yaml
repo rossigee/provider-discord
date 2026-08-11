@@ -4,30 +4,33 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: roles.role.discord.crossplane.io
+  name: users.user.discord.m.crossplane.io
 spec:
-  group: role.discord.crossplane.io
+  group: user.discord.m.crossplane.io
   names:
     categories:
     - crossplane
     - managed
     - discord
-    kind: Role
-    listKind: RoleList
-    plural: roles
-    singular: role
+    kind: User
+    listKind: UserList
+    plural: users
+    singular: user
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.forProvider.name
-      name: NAME
+    - jsonPath: .spec.forProvider.userId
+      name: USER_ID
       type: string
-    - jsonPath: .spec.forProvider.guildId
-      name: GUILD
+    - jsonPath: .status.atProvider.username
+      name: USERNAME
       type: string
-    - jsonPath: .spec.forProvider.position
-      name: POSITION
-      type: integer
+    - jsonPath: .status.atProvider.discriminator
+      name: DISCRIMINATOR
+      type: string
+    - jsonPath: .status.atProvider.bot
+      name: BOT
+      type: boolean
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: READY
       type: string
@@ -40,7 +43,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A Role is an example API type.
+        description: A User is a managed resource that represents a Discord user
         properties:
           apiVersion:
             description: |-
@@ -60,38 +63,33 @@ spec:
           metadata:
             type: object
           spec:
-            description: A RoleSpec defines the desired state of a Role.
+            description: A UserSpec defines the desired state of a User.
             properties:
               forProvider:
-                description: RoleParameters are the configurable fields of a Role.
+                description: UserParameters defines the desired state of a Discord
+                  user
                 properties:
-                  color:
-                    description: Color integer representation of hexadecimal color
-                      code
-                    type: integer
-                  guildId:
-                    description: GuildID is the ID of the guild this role belongs
-                      to
+                  avatar:
+                    description: |-
+                      Avatar is the user's avatar image data (base64 encoded)
+                      Only applicable when modifying current user
                     type: string
-                  hoist:
-                    description: Whether to display role members separately from other
-                      members
-                    type: boolean
-                  mentionable:
-                    description: Whether the role can be mentioned
-                    type: boolean
-                  name:
-                    description: Name of the role
+                  banner:
+                    description: |-
+                      Banner is the user's banner image data (base64 encoded)
+                      Only applicable when modifying current user
                     type: string
-                  permissions:
-                    description: Permission bit set
+                  userId:
+                    description: |-
+                      UserID is the Discord user ID to retrieve/manage
+                      For current user operations, use "@me"
                     type: string
-                  position:
-                    description: Position of the role in the role hierarchy
-                    type: integer
+                  username:
+                    description: Username is the user's username (only for modifying
+                      current user)
+                    type: string
                 required:
-                - guildId
-                - name
+                - userId
                 type: object
               managementPolicies:
                 default:
@@ -152,16 +150,64 @@ spec:
             - forProvider
             type: object
           status:
-            description: A RoleStatus represents the observed state of a Role.
+            description: A UserStatus represents the observed state of a User.
             properties:
               atProvider:
-                description: RoleObservation are the observable fields of a Role.
+                description: UserObservation represents the observed state of a Discord
+                  user
                 properties:
-                  id:
-                    description: ID of the role on Discord
+                  accentColor:
+                    description: AccentColor is the user's banner color encoded as
+                      integer
+                    type: integer
+                  avatar:
+                    description: Avatar is the user's avatar hash
                     type: string
-                  managed:
-                    description: Whether this role is managed by an integration
+                  avatarDecorationData:
+                    description: AvatarDecorationData contains avatar decoration information
+                    type: string
+                  banner:
+                    description: Banner is the user's banner hash
+                    type: string
+                  bot:
+                    description: Bot indicates whether the user is a bot
+                    type: boolean
+                  discriminator:
+                    description: Discriminator is the user's 4-digit discriminator
+                    type: string
+                  email:
+                    description: Email is the user's email (only visible for current
+                      user)
+                    type: string
+                  flags:
+                    description: Flags are the user's public flags
+                    type: integer
+                  globalName:
+                    description: GlobalName is the user's display name
+                    type: string
+                  id:
+                    description: ID is the user's unique Discord ID
+                    type: string
+                  locale:
+                    description: Locale is the user's chosen language option
+                    type: string
+                  mfaEnabled:
+                    description: MFAEnabled indicates whether the user has MFA enabled
+                    type: boolean
+                  premiumType:
+                    description: PremiumType is the user's Nitro subscription type
+                    type: integer
+                  publicFlags:
+                    description: PublicFlags are the user's public flags
+                    type: integer
+                  system:
+                    description: System indicates whether the user is a system user
+                    type: boolean
+                  username:
+                    description: Username is the user's username
+                    type: string
+                  verified:
+                    description: Verified indicates whether the email is verified
                     type: boolean
                 type: object
               conditions:

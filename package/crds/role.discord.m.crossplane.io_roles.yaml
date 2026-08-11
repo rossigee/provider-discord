@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: roles.role.discord.crossplane.io
+  name: roles.role.discord.m.crossplane.io
 spec:
-  group: role.discord.crossplane.io
+  group: role.discord.m.crossplane.io
   names:
     categories:
     - crossplane

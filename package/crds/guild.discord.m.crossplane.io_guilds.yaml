@@ -4,29 +4,29 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: roles.role.discord.crossplane.io
+  name: guilds.guild.discord.m.crossplane.io
 spec:
-  group: role.discord.crossplane.io
+  group: guild.discord.m.crossplane.io
   names:
     categories:
     - crossplane
     - managed
     - discord
-    kind: Role
-    listKind: RoleList
-    plural: roles
-    singular: role
+    kind: Guild
+    listKind: GuildList
+    plural: guilds
+    singular: guild
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.forProvider.name
       name: NAME
       type: string
-    - jsonPath: .spec.forProvider.guildId
-      name: GUILD
+    - jsonPath: .status.atProvider.id
+      name: GUILD-ID
       type: string
-    - jsonPath: .spec.forProvider.position
-      name: POSITION
+    - jsonPath: .status.atProvider.memberCount
+      name: MEMBERS
       type: integer
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: READY
@@ -37,10 +37,11 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: AGE
       type: date
-    name: v1alpha1
+    name: v1beta1
     schema:
       openAPIV3Schema:
-        description: A Role is an example API type.
+        description: A Guild is a managed resource that represents a Discord guild
+          (server).
         properties:
           apiVersion:
             description: |-
@@ -60,37 +61,58 @@ spec:
           metadata:
             type: object
           spec:
-            description: A RoleSpec defines the desired state of a Role.
+            description: A GuildSpec defines the desired state of a Guild.
             properties:
               forProvider:
-                description: RoleParameters are the configurable fields of a Role.
+                description: GuildParameters are the configurable fields of a Guild.
                 properties:
-                  color:
-                    description: Color integer representation of hexadecimal color
-                      code
+                  afkChannelId:
+                    description: AFKChannelID is the ID of the AFK channel.
+                    type: string
+                  afkTimeout:
+                    description: AFKTimeout is the AFK timeout in seconds.
+                    maximum: 3600
+                    minimum: 60
                     type: integer
-                  guildId:
-                    description: GuildID is the ID of the guild this role belongs
-                      to
+                  defaultMessageNotifications:
+                    description: |-
+                      DefaultMessageNotifications is the default message notification level.
+                      0 = All messages, 1 = Only mentions
+                    maximum: 1
+                    minimum: 0
+                    type: integer
+                  explicitContentFilter:
+                    description: |-
+                      ExplicitContentFilter is the explicit content filter level.
+                      0 = Disabled, 1 = Members without roles, 2 = All members
+                    maximum: 2
+                    minimum: 0
+                    type: integer
+                  icon:
+                    description: Icon is the icon hash for the guild.
                     type: string
-                  hoist:
-                    description: Whether to display role members separately from other
-                      members
-                    type: boolean
-                  mentionable:
-                    description: Whether the role can be mentioned
-                    type: boolean
                   name:
-                    description: Name of the role
+                    description: Name is the name of the Discord guild (server).
+                    maxLength: 100
+                    minLength: 2
                     type: string
-                  permissions:
-                    description: Permission bit set
+                  region:
+                    description: Region is the voice region for the guild.
                     type: string
-                  position:
-                    description: Position of the role in the role hierarchy
+                  systemChannelFlags:
+                    description: SystemChannelFlags are the system channel flags.
+                    type: integer
+                  systemChannelId:
+                    description: SystemChannelID is the ID of the system channel.
+                    type: string
+                  verificationLevel:
+                    description: |-
+                      VerificationLevel is the verification level for the guild.
+                      0 = None, 1 = Low, 2 = Medium, 3 = High, 4 = Very High
+                    maximum: 4
+                    minimum: 0
                     type: integer
                 required:
-                - guildId
                 - name
                 type: object
               managementPolicies:
@@ -152,17 +174,68 @@ spec:
             - forProvider
             type: object
           status:
-            description: A RoleStatus represents the observed state of a Role.
+            description: A GuildStatus represents the observed state of a Guild.
             properties:
               atProvider:
-                description: RoleObservation are the observable fields of a Role.
+                description: GuildObservation are the observable fields of a Guild.
                 properties:
-                  id:
-                    description: ID of the role on Discord
+                  afkChannelId:
+                    description: AFKChannelID is the ID of the AFK channel.
                     type: string
-                  managed:
-                    description: Whether this role is managed by an integration
-                    type: boolean
+                  afkTimeout:
+                    description: AFKTimeout is the AFK timeout in seconds.
+                    type: integer
+                  createdAt:
+                    description: CreatedAt is the timestamp when the guild was created.
+                    format: date-time
+                    type: string
+                  defaultMessageNotifications:
+                    description: DefaultMessageNotifications is the default message
+                      notification level.
+                    type: integer
+                  explicitContentFilter:
+                    description: ExplicitContentFilter is the explicit content filter
+                      level.
+                    type: integer
+                  features:
+                    description: Features are the features enabled for the guild.
+                    items:
+                      type: string
+                    type: array
+                  icon:
+                    description: Icon is the icon hash of the guild.
+                    type: string
+                  id:
+                    description: ID is the unique identifier of the guild in Discord.
+                    type: string
+                  memberCount:
+                    description: MemberCount is the total number of members in the
+                      guild.
+                    type: integer
+                  name:
+                    description: Name is the current name of the guild.
+                    type: string
+                  ownerId:
+                    description: OwnerID is the ID of the guild owner.
+                    type: string
+                  region:
+                    description: Region is the voice region of the guild.
+                    type: string
+                  systemChannelFlags:
+                    description: SystemChannelFlags are the system channel flags.
+                    type: integer
+                  systemChannelId:
+                    description: SystemChannelID is the ID of the system channel.
+                    type: string
+                  updatedAt:
+                    description: UpdatedAt is the timestamp when the guild was last
+                      updated.
+                    format: date-time
+                    type: string
+                  verificationLevel:
+                    description: VerificationLevel is the verification level of the
+                      guild.
+                    type: integer
                 type: object
               conditions:
                 description: Conditions of the resource.

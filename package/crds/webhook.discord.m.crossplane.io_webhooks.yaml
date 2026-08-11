@@ -4,29 +4,32 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: roles.role.discord.crossplane.io
+  name: webhooks.webhook.discord.m.crossplane.io
 spec:
-  group: role.discord.crossplane.io
+  group: webhook.discord.m.crossplane.io
   names:
     categories:
     - crossplane
     - managed
     - discord
-    kind: Role
-    listKind: RoleList
-    plural: roles
-    singular: role
+    kind: Webhook
+    listKind: WebhookList
+    plural: webhooks
+    singular: webhook
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .spec.forProvider.name
       name: NAME
       type: string
-    - jsonPath: .spec.forProvider.guildId
-      name: GUILD
+    - jsonPath: .spec.forProvider.channelId
+      name: CHANNEL
       type: string
-    - jsonPath: .spec.forProvider.position
-      name: POSITION
+    - jsonPath: .status.atProvider.id
+      name: WEBHOOK-ID
+      type: string
+    - jsonPath: .status.atProvider.type
+      name: TYPE
       type: integer
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: READY
@@ -37,10 +40,10 @@ spec:
     - jsonPath: .metadata.creationTimestamp
       name: AGE
       type: date
-    name: v1alpha1
+    name: v1beta1
     schema:
       openAPIV3Schema:
-        description: A Role is an example API type.
+        description: A Webhook is a managed resource that represents a Discord webhook.
         properties:
           apiVersion:
             description: |-
@@ -60,37 +63,26 @@ spec:
           metadata:
             type: object
           spec:
-            description: A RoleSpec defines the desired state of a Role.
+            description: A WebhookSpec defines the desired state of a Webhook.
             properties:
               forProvider:
-                description: RoleParameters are the configurable fields of a Role.
+                description: WebhookParameters are the configurable fields of a Webhook.
                 properties:
-                  color:
-                    description: Color integer representation of hexadecimal color
-                      code
-                    type: integer
-                  guildId:
-                    description: GuildID is the ID of the guild this role belongs
-                      to
+                  avatar:
+                    description: Avatar is the avatar image data for the webhook (base64
+                      encoded image).
                     type: string
-                  hoist:
-                    description: Whether to display role members separately from other
-                      members
-                    type: boolean
-                  mentionable:
-                    description: Whether the role can be mentioned
-                    type: boolean
+                  channelId:
+                    description: ChannelID is the ID of the channel this webhook will
+                      post to.
+                    type: string
                   name:
-                    description: Name of the role
+                    description: Name is the name of the Discord webhook.
+                    maxLength: 80
+                    minLength: 1
                     type: string
-                  permissions:
-                    description: Permission bit set
-                    type: string
-                  position:
-                    description: Position of the role in the role hierarchy
-                    type: integer
                 required:
-                - guildId
+                - channelId
                 - name
                 type: object
               managementPolicies:
@@ -152,17 +144,46 @@ spec:
             - forProvider
             type: object
           status:
-            description: A RoleStatus represents the observed state of a Role.
+            description: A WebhookStatus represents the observed state of a Webhook.
             properties:
               atProvider:
-                description: RoleObservation are the observable fields of a Role.
+                description: WebhookObservation are the observable fields of a Webhook.
                 properties:
-                  id:
-                    description: ID of the role on Discord
+                  applicationId:
+                    description: ApplicationID is the bot/OAuth2 application that
+                      created this webhook.
                     type: string
-                  managed:
-                    description: Whether this role is managed by an integration
-                    type: boolean
+                  avatar:
+                    description: Avatar is the webhook's avatar hash.
+                    type: string
+                  channelId:
+                    description: ChannelID is the ID of the channel this webhook posts
+                      to.
+                    type: string
+                  createdAt:
+                    description: CreatedAt is the timestamp when the webhook was created.
+                    format: date-time
+                    type: string
+                  guildId:
+                    description: GuildID is the ID of the guild this webhook belongs
+                      to.
+                    type: string
+                  id:
+                    description: ID is the unique identifier of the webhook in Discord.
+                    type: string
+                  name:
+                    description: Name is the current name of the webhook.
+                    type: string
+                  type:
+                    description: |-
+                      Type is the type of webhook.
+                      1 = Incoming, 2 = Channel Follower, 3 = Application
+                    type: integer
+                  updatedAt:
+                    description: UpdatedAt is the timestamp when the webhook was last
+                      updated.
+                    format: date-time
+                    type: string
                 type: object
               conditions:
                 description: Conditions of the resource.

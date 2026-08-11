@@ -4,30 +4,30 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: roles.role.discord.crossplane.io
+  name: members.member.discord.m.crossplane.io
 spec:
-  group: role.discord.crossplane.io
+  group: member.discord.m.crossplane.io
   names:
     categories:
     - crossplane
     - managed
     - discord
-    kind: Role
-    listKind: RoleList
-    plural: roles
-    singular: role
+    kind: Member
+    listKind: MemberList
+    plural: members
+    singular: member
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.forProvider.name
-      name: NAME
-      type: string
     - jsonPath: .spec.forProvider.guildId
       name: GUILD
       type: string
-    - jsonPath: .spec.forProvider.position
-      name: POSITION
-      type: integer
+    - jsonPath: .spec.forProvider.userId
+      name: USER
+      type: string
+    - jsonPath: .spec.forProvider.nick
+      name: NICK
+      type: string
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: READY
       type: string
@@ -40,7 +40,8 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A Role is an example API type.
+        description: A Member is a managed resource that represents a Discord guild
+          member
         properties:
           apiVersion:
             description: |-
@@ -60,38 +61,54 @@ spec:
           metadata:
             type: object
           spec:
-            description: A RoleSpec defines the desired state of a Role.
+            description: A MemberSpec defines the desired state of a Member.
             properties:
               forProvider:
-                description: RoleParameters are the configurable fields of a Role.
+                description: MemberParameters defines the desired state of a Discord
+                  guild member
                 properties:
-                  color:
-                    description: Color integer representation of hexadecimal color
-                      code
+                  accessToken:
+                    description: |-
+                      AccessToken is required for adding new members via OAuth2
+                      Only used for PUT operations when adding a user to the guild
+                    type: string
+                  channelId:
+                    description: ChannelID is the ID of the voice channel to move
+                      the user to
+                    type: string
+                  communicationDisabledUntil:
+                    description: |-
+                      CommunicationDisabledUntil sets when the user's timeout expires
+                      Set to null/empty to remove timeout
+                    type: string
+                  deaf:
+                    description: Deaf indicates whether the user is deafened in voice
+                      channels
+                    type: boolean
+                  flags:
+                    description: Flags represents guild member flags as a bit set
                     type: integer
                   guildId:
-                    description: GuildID is the ID of the guild this role belongs
-                      to
+                    description: GuildID is the ID of the Discord guild
                     type: string
-                  hoist:
-                    description: Whether to display role members separately from other
-                      members
+                  mute:
+                    description: Mute indicates whether the user is muted in voice
+                      channels
                     type: boolean
-                  mentionable:
-                    description: Whether the role can be mentioned
-                    type: boolean
-                  name:
-                    description: Name of the role
+                  nick:
+                    description: Nick is the user's nickname in the guild
                     type: string
-                  permissions:
-                    description: Permission bit set
+                  roles:
+                    description: Roles is an array of role IDs assigned to the member
+                    items:
+                      type: string
+                    type: array
+                  userId:
+                    description: UserID is the ID of the Discord user to manage
                     type: string
-                  position:
-                    description: Position of the role in the role hierarchy
-                    type: integer
                 required:
                 - guildId
-                - name
+                - userId
                 type: object
               managementPolicies:
                 default:
@@ -152,17 +169,90 @@ spec:
             - forProvider
             type: object
           status:
-            description: A RoleStatus represents the observed state of a Role.
+            description: A MemberStatus represents the observed state of a Member.
             properties:
               atProvider:
-                description: RoleObservation are the observable fields of a Role.
+                description: MemberObservation represents the observed state of a
+                  Discord guild member
                 properties:
-                  id:
-                    description: ID of the role on Discord
+                  avatar:
+                    description: Avatar is the user's avatar hash
                     type: string
-                  managed:
-                    description: Whether this role is managed by an integration
+                  avatarDecorationData:
+                    description: AvatarDecorationData contains avatar decoration information
+                    type: string
+                  banner:
+                    description: Banner is the user's banner hash
+                    type: string
+                  communicationDisabledUntil:
+                    description: CommunicationDisabledUntil is when the member's timeout
+                      expires
+                    type: string
+                  deaf:
+                    description: Deaf indicates if the member is deafened in voice
+                      channels
                     type: boolean
+                  discriminator:
+                    description: Discriminator is the user's 4-digit discriminator
+                    type: string
+                  flags:
+                    description: Flags represents guild member flags
+                    type: integer
+                  guildAvatar:
+                    description: GuildAvatar is the member's guild-specific avatar
+                      hash
+                    type: string
+                  guildBanner:
+                    description: GuildBanner is the member's guild-specific banner
+                      hash
+                    type: string
+                  id:
+                    description: ID is the user ID (same as UserID parameter)
+                    type: string
+                  joinedAt:
+                    description: JoinedAt is when the user joined the guild
+                    type: string
+                  mute:
+                    description: Mute indicates if the member is muted in voice channels
+                    type: boolean
+                  nick:
+                    description: Nick is the member's nickname in the guild
+                    type: string
+                  pending:
+                    description: Pending indicates if the user has passed Membership
+                      Screening
+                    type: boolean
+                  permissions:
+                    description: Permissions are the total permissions in the guild
+                    type: string
+                  premiumSince:
+                    description: PremiumSince is when the user started boosting the
+                      guild
+                    type: string
+                  roles:
+                    description: Roles are the role IDs assigned to this member
+                    items:
+                      type: string
+                    type: array
+                  user:
+                    description: User is the user object for this member
+                    properties:
+                      avatar:
+                        type: string
+                      discriminator:
+                        type: string
+                      id:
+                        type: string
+                      username:
+                        type: string
+                    required:
+                    - discriminator
+                    - id
+                    - username
+                    type: object
+                  username:
+                    description: Username is the Discord username
+                    type: string
                 type: object
               conditions:
                 description: Conditions of the resource.

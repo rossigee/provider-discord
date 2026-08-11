@@ -4,30 +4,36 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.21.0
-  name: roles.role.discord.crossplane.io
+  name: invites.invite.discord.m.crossplane.io
 spec:
-  group: role.discord.crossplane.io
+  group: invite.discord.m.crossplane.io
   names:
     categories:
     - crossplane
     - managed
     - discord
-    kind: Role
-    listKind: RoleList
-    plural: roles
-    singular: role
+    kind: Invite
+    listKind: InviteList
+    plural: invites
+    singular: invite
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.forProvider.name
-      name: NAME
+    - jsonPath: .status.atProvider.code
+      name: CODE
       type: string
-    - jsonPath: .spec.forProvider.guildId
-      name: GUILD
+    - jsonPath: .spec.forProvider.channelId
+      name: CHANNEL
       type: string
-    - jsonPath: .spec.forProvider.position
-      name: POSITION
+    - jsonPath: .status.atProvider.uses
+      name: USES
       type: integer
+    - jsonPath: .status.atProvider.maxUses
+      name: MAX-USES
+      type: integer
+    - jsonPath: .status.atProvider.expiresAt
+      name: EXPIRES
+      type: date
     - jsonPath: .status.conditions[?(@.type=='Ready')].status
       name: READY
       type: string
@@ -40,7 +46,7 @@ spec:
     name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: A Role is an example API type.
+        description: An Invite is a managed resource that represents a Discord invite.
         properties:
           apiVersion:
             description: |-
@@ -60,38 +66,46 @@ spec:
           metadata:
             type: object
           spec:
-            description: A RoleSpec defines the desired state of a Role.
+            description: An InviteSpec defines the desired state of an Invite.
             properties:
               forProvider:
-                description: RoleParameters are the configurable fields of a Role.
+                description: InviteParameters are the configurable fields of an Invite.
                 properties:
-                  color:
-                    description: Color integer representation of hexadecimal color
-                      code
+                  channelId:
+                    description: ChannelID is the ID of the channel this invite is
+                      for.
+                    type: string
+                  maxAge:
+                    default: 86400
+                    description: |-
+                      MaxAge is the duration of invite in seconds before expiry, or 0 for never.
+                      Default is 86400 (24 hours).
+                    maximum: 604800
+                    minimum: 0
                     type: integer
-                  guildId:
-                    description: GuildID is the ID of the guild this role belongs
-                      to
-                    type: string
-                  hoist:
-                    description: Whether to display role members separately from other
-                      members
-                    type: boolean
-                  mentionable:
-                    description: Whether the role can be mentioned
-                    type: boolean
-                  name:
-                    description: Name of the role
-                    type: string
-                  permissions:
-                    description: Permission bit set
-                    type: string
-                  position:
-                    description: Position of the role in the role hierarchy
+                  maxUses:
+                    default: 0
+                    description: |-
+                      MaxUses is the max number of uses, or 0 for unlimited.
+                      Default is 0 (unlimited).
+                    maximum: 100
+                    minimum: 0
                     type: integer
+                  temporary:
+                    default: false
+                    description: |-
+                      Temporary specifies whether this invite only grants temporary membership.
+                      Default is false.
+                    type: boolean
+                  unique:
+                    default: false
+                    description: |-
+                      Unique specifies whether this invite should be unique.
+                      If true, don't try to reuse a similar invite.
+                      Default is false.
+                    type: boolean
                 required:
-                - guildId
-                - name
+                - channelId
                 type: object
               managementPolicies:
                 default:
@@ -152,17 +166,66 @@ spec:
             - forProvider
             type: object
           status:
-            description: A RoleStatus represents the observed state of a Role.
+            description: An InviteStatus represents the observed state of an Invite.
             properties:
               atProvider:
-                description: RoleObservation are the observable fields of a Role.
+                description: InviteObservation are the observable fields of an Invite.
                 properties:
-                  id:
-                    description: ID of the role on Discord
+                  approximateMemberCount:
+                    description: ApproximateMemberCount is the approximate count of
+                      total members.
+                    type: integer
+                  approximatePresenceCount:
+                    description: ApproximatePresenceCount is the approximate count
+                      of online members.
+                    type: integer
+                  channelId:
+                    description: ChannelID is the ID of the channel this invite is
+                      for.
                     type: string
-                  managed:
-                    description: Whether this role is managed by an integration
+                  code:
+                    description: Code is the invite code.
+                    type: string
+                  createdAt:
+                    description: CreatedAt is the timestamp when the invite was created.
+                    format: date-time
+                    type: string
+                  expiresAt:
+                    description: ExpiresAt is the expiration date of this invite.
+                    format: date-time
+                    type: string
+                  guildId:
+                    description: GuildID is the ID of the guild this invite is for.
+                    type: string
+                  inviterId:
+                    description: InviterID is the ID of the user who created the invite.
+                    type: string
+                  maxAge:
+                    description: MaxAge is the max age of the invite in seconds.
+                    type: integer
+                  maxUses:
+                    description: MaxUses is the max number of uses for the invite.
+                    type: integer
+                  targetApplicationId:
+                    description: TargetApplicationID is the ID of the embedded application
+                      to open for this invite.
+                    type: string
+                  targetType:
+                    description: TargetType is the type of target for this voice channel
+                      invite.
+                    type: integer
+                  targetUserId:
+                    description: TargetUserID is the ID of the target user for this
+                      invite.
+                    type: string
+                  temporary:
+                    description: Temporary indicates whether the invite grants temporary
+                      membership.
                     type: boolean
+                  uses:
+                    description: Uses is the number of times this invite has been
+                      used.
+                    type: integer
                 type: object
               conditions:
                 description: Conditions of the resource.
