@@ -18,6 +18,11 @@ package channel
 
 import (
 	"context"
+	"fmt"
+	"sync"
+	"testing"
+	"time"
+
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
@@ -26,7 +31,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 // MockChannelClient implements a mock Discord client for testing
@@ -290,6 +294,10 @@ func TestCreate(t *testing.T) {
 				GuildID: guildID,
 			}, nil
 		},
+		ListGuildChannelsFunc: func(ctx context.Context, guildID string) ([]discordclient.Channel, error) {
+			// No existing channels: Create's race-guard re-check should find nothing and proceed to create.
+			return nil, nil
+		},
 	}
 
 	channel := &channelv1alpha1.Channel{
@@ -307,6 +315,127 @@ func TestCreate(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, channelID, meta.GetExternalName(channel))
+}
+
+// TestCreate_ConcurrentDuplicateAdopted verifies the TOCTOU fix: if a
+// concurrent reconcile already created a channel with this name by the time
+// Create's re-check runs, Create adopts it instead of creating a duplicate.
+func TestCreate_ConcurrentDuplicateAdopted(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	existingChannelID := "111111111111111111"
+
+	createCalled := false
+	mockClient := &MockChannelClient{
+		CreateChannelFunc: func(ctx context.Context, req *discordclient.CreateChannelRequest) (*discordclient.Channel, error) {
+			createCalled = true
+			return &discordclient.Channel{ID: "222222222222222222", Name: req.Name, Type: req.Type, GuildID: guildID}, nil
+		},
+		ListGuildChannelsFunc: func(ctx context.Context, guildID string) ([]discordclient.Channel, error) {
+			return []discordclient.Channel{{ID: existingChannelID, Name: "test-channel", Type: 0, GuildID: guildID}}, nil
+		},
+	}
+
+	channel := &channelv1alpha1.Channel{
+		Spec: channelv1alpha1.ChannelSpec{
+			ForProvider: channelv1alpha1.ChannelParameters{
+				Name:    "test-channel",
+				Type:    0,
+				GuildID: guildID,
+			},
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Create(ctx, channel)
+
+	require.NoError(t, err)
+	assert.False(t, createCalled, "CreateChannel must not be called when a same-named channel already exists")
+	assert.Equal(t, existingChannelID, meta.GetExternalName(channel))
+}
+
+// TestCreate_ConcurrentReconcilesDoNotDuplicate is a regression test for the
+// TOCTOU race that caused real duplicate Discord channels in production: two
+// Channel CRs resolving to the same guild+name, reconciled concurrently by
+// different goroutines (as controller-runtime's worker pool does), must
+// result in exactly one Discord channel being created.
+func TestCreate_ConcurrentReconcilesDoNotDuplicate(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	var mu sync.Mutex
+	var existing []discordclient.Channel
+	createCount := 0
+
+	newClient := func() *MockChannelClient {
+		return &MockChannelClient{
+			ListGuildChannelsFunc: func(ctx context.Context, guildID string) ([]discordclient.Channel, error) {
+				mu.Lock()
+				defer mu.Unlock()
+				out := make([]discordclient.Channel, len(existing))
+				copy(out, existing)
+				return out, nil
+			},
+			CreateChannelFunc: func(ctx context.Context, req *discordclient.CreateChannelRequest) (*discordclient.Channel, error) {
+				// Widen the race window: without the lock, both goroutines would
+				// already be past their "not found" check by the time either
+				// creates, so a delay here makes the bug reproduce reliably.
+				time.Sleep(5 * time.Millisecond)
+
+				mu.Lock()
+				defer mu.Unlock()
+				createCount++
+				ch := discordclient.Channel{
+					ID:      fmt.Sprintf("%d", 900000000000000000+createCount),
+					Name:    req.Name,
+					Type:    req.Type,
+					GuildID: guildID,
+				}
+				existing = append(existing, ch)
+				return &ch, nil
+			},
+		}
+	}
+
+	const racers = 8
+	var wg sync.WaitGroup
+	results := make([]string, racers)
+	errs := make([]error, racers)
+
+	for i := 0; i < racers; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			e := &external{service: newClient(), kube: nil}
+			channel := &channelv1alpha1.Channel{
+				Spec: channelv1alpha1.ChannelSpec{
+					ForProvider: channelv1alpha1.ChannelParameters{
+						Name:    "race-channel",
+						Type:    0,
+						GuildID: guildID,
+					},
+				},
+			}
+			_, err := e.Create(ctx, channel)
+			errs[i] = err
+			results[i] = meta.GetExternalName(channel)
+		}(i)
+	}
+	wg.Wait()
+
+	for i, err := range errs {
+		require.NoError(t, err, "racer %d", i)
+	}
+
+	mu.Lock()
+	finalCount := createCount
+	mu.Unlock()
+	assert.Equal(t, 1, finalCount, "exactly one Discord channel should have been created despite %d concurrent reconciles", racers)
+
+	firstID := results[0]
+	for i, id := range results {
+		assert.Equal(t, firstID, id, "racer %d ended up with a different external-name than racer 0", i)
+	}
 }
 
 func TestUpdate(t *testing.T) {

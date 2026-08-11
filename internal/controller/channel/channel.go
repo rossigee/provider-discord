@@ -18,6 +18,12 @@ package channel
 
 import (
 	"context"
+	"regexp"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
+
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
@@ -29,12 +35,8 @@ import (
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
 	"github.com/rossigee/provider-discord/internal/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"regexp"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -59,52 +61,97 @@ func isDiscordNotFound(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "Discord API error: 404")
 }
 
-// checkChannelExistsByName checks if a channel with the same name already exists in the guild
+// channelNameLocks serializes the check-then-create sequence for a given
+// (guildID, name) pair. Discord has no atomic "create if not exists" for
+// channels, and two Channel custom resources that resolve to the same
+// guild+name can be reconciled concurrently by different goroutines in the
+// controller's worker pool. Without this lock, both can list the guild's
+// channels, both see no match, and both create a duplicate. The lock is
+// acquired in Create (see below) around a re-check-then-create sequence, so
+// the second racer always observes the first racer's newly created channel
+// and adopts it instead of creating another one.
+var (
+	channelNameLocksMu sync.Mutex
+	channelNameLocks   = make(map[string]*sync.Mutex)
+)
+
+func lockForChannelName(guildID, name string) func() {
+	key := guildID + "/" + name
+	channelNameLocksMu.Lock()
+	m, ok := channelNameLocks[key]
+	if !ok {
+		m = &sync.Mutex{}
+		channelNameLocks[key] = m
+	}
+	channelNameLocksMu.Unlock()
+
+	m.Lock()
+	return m.Unlock
+}
+
+// findChannelByName looks up a channel by name within a guild, returning nil
+// (not an error) if no channel with that name exists.
+func (c *external) findChannelByName(ctx context.Context, guildID, name string) (*clients.Channel, error) {
+	channels, err := c.service.ListGuildChannels(ctx, guildID)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list guild channels")
+	}
+	for i := range channels {
+		if channels[i].Name == name {
+			return &channels[i], nil
+		}
+	}
+	return nil, nil
+}
+
+// adoptChannel populates cr's external-name and observed status from an
+// existing Discord channel found by name, rather than creating a new one.
+func adoptChannel(cr *channelv1alpha1.Channel, channel *clients.Channel) managed.ExternalObservation {
+	meta.SetExternalName(cr, channel.ID)
+
+	now := &metav1.Time{Time: time.Now()}
+	cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
+		ID:        channel.ID,
+		Name:      channel.Name,
+		Type:      channel.Type,
+		GuildID:   channel.GuildID,
+		Position:  channel.Position,
+		ParentID:  channel.ParentID,
+		UpdatedAt: now,
+	}
+
+	// Since we matched by name, only position and parentID can differ
+	needsUpdate := cr.Spec.ForProvider.Position != nil && *cr.Spec.ForProvider.Position != channel.Position
+	if cr.Spec.ForProvider.ParentID != nil && *cr.Spec.ForProvider.ParentID != channel.ParentID {
+		needsUpdate = true
+	}
+
+	return managed.ExternalObservation{
+		ResourceExists:   true,
+		ResourceUpToDate: !needsUpdate,
+	}
+}
+
+// checkChannelExistsByName checks if a channel with the same name already exists in the guild.
+//
+// This lookup is best-effort and NOT itself race-free: two concurrent
+// reconciles for the same guild+name can both pass through here and both see
+// "not found". That's fine — the actual duplicate-creation guard lives in
+// Create, which re-checks atomically under channelNameLocks before creating
+// anything. See the comment there.
 func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1alpha1.Channel) (managed.ExternalObservation, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(4).Info("Checking for existing channel by name", "name", cr.Spec.ForProvider.Name, "guildID", cr.Spec.ForProvider.GuildID)
 
-	// List all channels in the guild
-	channels, err := c.service.ListGuildChannels(ctx, cr.Spec.ForProvider.GuildID)
+	channel, err := c.findChannelByName(ctx, cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
 	if err != nil {
 		// Return error instead of assuming non-existence to prevent duplicate creation
-		return managed.ExternalObservation{}, errors.Wrap(err, "failed to list guild channels")
+		return managed.ExternalObservation{}, err
 	}
 
-	// Check if any existing channel has the same name
-	for _, channel := range channels {
-		if channel.Name == cr.Spec.ForProvider.Name {
-			log.V(4).Info("Found existing channel by name, adopting", "name", channel.Name, "id", channel.ID)
-
-			// Set the external name to the existing channel's ID
-			meta.SetExternalName(cr, channel.ID)
-
-			// Update status with observed values
-			now := &metav1.Time{Time: time.Now()}
-			cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
-				ID:        channel.ID,
-				Name:      channel.Name,
-				Type:      channel.Type,
-				GuildID:   channel.GuildID,
-				Position:  channel.Position,
-				ParentID:  channel.ParentID,
-				UpdatedAt: now,
-			}
-
-			// Since we matched by name, only position and parentID can differ
-			needsUpdate := false
-			if cr.Spec.ForProvider.Position != nil && *cr.Spec.ForProvider.Position != channel.Position {
-				needsUpdate = true
-			}
-			if cr.Spec.ForProvider.ParentID != nil && *cr.Spec.ForProvider.ParentID != channel.ParentID {
-				needsUpdate = true
-			}
-
-			return managed.ExternalObservation{
-				ResourceExists:   true,
-				ResourceUpToDate: !needsUpdate,
-			}, nil
-		}
+	if channel != nil {
+		log.V(4).Info("Found existing channel by name, adopting", "name", channel.Name, "id", channel.ID)
+		return adoptChannel(cr, channel), nil
 	}
 
 	log.V(4).Info("Channel not found by name, will create", "name", cr.Spec.ForProvider.Name)
@@ -337,6 +384,27 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	cr, ok := mg.(*channelv1alpha1.Channel)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotChannel)
+	}
+
+	// Close the TOCTOU window from Observe's name-based lookup: hold a
+	// per-(guildID, name) lock and re-check for an existing channel before
+	// creating. If another reconcile won the race and created it first while
+	// we were waiting for the lock, adopt that channel instead of creating a
+	// duplicate. See channelNameLocks above.
+	if meta.GetExternalName(cr) == "" || !isValidDiscordID(meta.GetExternalName(cr)) {
+		unlock := lockForChannelName(cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
+		defer unlock()
+
+		existing, err := c.findChannelByName(ctx, cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
+		if err != nil {
+			return managed.ExternalCreation{}, err
+		}
+		if existing != nil {
+			ctrl.LoggerFrom(ctx).V(4).Info("Channel created by a concurrent reconcile, adopting instead of creating duplicate", "name", existing.Name, "id", existing.ID)
+			adoptChannel(cr, existing)
+			cr.SetConditions(xpv1.Available())
+			return managed.ExternalCreation{}, nil
+		}
 	}
 
 	cr.SetConditions(xpv1.Creating())
