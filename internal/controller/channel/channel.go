@@ -391,20 +391,24 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	// creating. If another reconcile won the race and created it first while
 	// we were waiting for the lock, adopt that channel instead of creating a
 	// duplicate. See channelNameLocks above.
-	if meta.GetExternalName(cr) == "" || !isValidDiscordID(meta.GetExternalName(cr)) {
-		unlock := lockForChannelName(cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
-		defer unlock()
+	//
+	// This check MUST always run — even when externalName holds a valid Discord
+	// ID — because that ID may point to a channel that was deleted out-of-band.
+	// Skipping the check in that case lets a reconcile loop create a new channel
+	// on every cycle, because the staleness of externalName is not detected
+	// until after the channel is created.
+	unlock := lockForChannelName(cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
+	defer unlock()
 
-		existing, err := c.findChannelByName(ctx, cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
-		if err != nil {
-			return managed.ExternalCreation{}, err
-		}
-		if existing != nil {
-			ctrl.LoggerFrom(ctx).V(4).Info("Channel created by a concurrent reconcile, adopting instead of creating duplicate", "name", existing.Name, "id", existing.ID)
-			adoptChannel(cr, existing)
-			cr.SetConditions(xpv1.Available())
-			return managed.ExternalCreation{}, nil
-		}
+	existing, err := c.findChannelByName(ctx, cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
+	if err != nil {
+		return managed.ExternalCreation{}, err
+	}
+	if existing != nil {
+		ctrl.LoggerFrom(ctx).V(4).Info("Channel created by a concurrent reconcile, adopting instead of creating duplicate", "name", existing.Name, "id", existing.ID)
+		adoptChannel(cr, existing)
+		cr.SetConditions(xpv1.Available())
+		return managed.ExternalCreation{}, nil
 	}
 
 	cr.SetConditions(xpv1.Creating())
