@@ -40,6 +40,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
+	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	sigzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
@@ -109,9 +110,12 @@ func main() {
 		LeaderElectionID:           "crossplane-leader-election-provider-discord",
 		LeaderElectionNamespace:    *leaderElectionNS,
 		LeaderElectionResourceLock: "leases",
-		Scheme:                           s,
+		Scheme:                     s,
 		LeaseDuration:              func() *time.Duration { d := 60 * time.Second; return &d }(),
 		RenewDeadline:              func() *time.Duration { d := 50 * time.Second; return &d }(),
+		Controller: config.Controller{
+			CacheSyncTimeout: 10 * time.Minute,
+		},
 	})
 	if err != nil {
 		kingpin.FatalIfError(err, "Cannot create controller manager")
