@@ -18,6 +18,7 @@ package controller
 
 import (
 	"context"
+	"os"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
@@ -140,7 +141,7 @@ func setupRBAC(c client.Client, l logging.Logger) error {
 	binding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{Name: "crossplane:provider:provider-discord:system"},
 		RoleRef:    rbacv1.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: "crossplane:provider:provider-discord:system"},
-		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: "provider-discord", Namespace: "crossplane-system"}},
+		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: os.Getenv("REVISION_NAME"), Namespace: "crossplane-system"}},
 	}
 	if err := c.Create(ctx, binding); err != nil && !errors.IsAlreadyExists(err) {
 		return err
