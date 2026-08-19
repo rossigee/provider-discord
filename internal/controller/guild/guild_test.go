@@ -18,6 +18,8 @@ package guild
 
 import (
 	"context"
+	"testing"
+
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
 	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
@@ -26,7 +28,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"testing"
 )
 
 // MockGuildClient implements a mock Discord client for testing

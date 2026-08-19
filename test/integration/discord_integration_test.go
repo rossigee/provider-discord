@@ -19,10 +19,11 @@ package integration
 import (
 	"context"
 	"fmt"
-	"github.com/rossigee/provider-discord/internal/clients"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/rossigee/provider-discord/internal/clients"
 )
 
 // TestDiscordAPIIntegration tests real Discord API integration

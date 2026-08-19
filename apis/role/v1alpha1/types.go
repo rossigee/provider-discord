@@ -1,10 +1,9 @@
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
 
 //+kubebuilder:object:generate=true
 
@@ -52,7 +51,7 @@ type RoleObservation struct {
 type RoleSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
 	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
-	ForProvider                      RoleParameters        `json:"forProvider"`
+	ForProvider                      RoleParameters             `json:"forProvider"`
 }
 
 // A RoleStatus represents the observed state of a Role.

@@ -19,10 +19,11 @@ package resilience
 import (
 	"context"
 	"errors"
-	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestDefaultRetryConfig(t *testing.T) {

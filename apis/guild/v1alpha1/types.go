@@ -132,7 +132,7 @@ type GuildObservation struct {
 type GuildSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
 	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
-	ForProvider                      GuildParameters       `json:"forProvider"`
+	ForProvider                      GuildParameters            `json:"forProvider"`
 }
 
 // A GuildStatus represents the observed state of a Guild.

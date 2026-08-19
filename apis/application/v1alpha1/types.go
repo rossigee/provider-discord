@@ -17,10 +17,9 @@ limitations under the License.
 package v1alpha1
 
 import (
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
 
 // ApplicationParameters defines the desired state of a Discord application
 type ApplicationParameters struct {
@@ -163,7 +162,7 @@ type ApplicationObservation struct {
 type ApplicationSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
 	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
-	ForProvider                      ApplicationParameters `json:"forProvider"`
+	ForProvider                      ApplicationParameters      `json:"forProvider"`
 }
 
 // A ApplicationStatus represents the observed state of a Application.

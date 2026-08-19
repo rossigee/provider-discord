@@ -173,7 +173,7 @@ type ChannelObservation struct {
 type ChannelSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
 	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
-	ForProvider                      ChannelParameters     `json:"forProvider"`
+	ForProvider                      ChannelParameters          `json:"forProvider"`
 }
 
 // A ChannelStatus represents the observed state of a Channel.

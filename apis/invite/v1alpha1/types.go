@@ -112,7 +112,7 @@ type InviteObservation struct {
 type InviteSpec struct {
 	xpv1.ManagedResourceSpec         `json:",inline"`
 	WriteConnectionSecretToReference *xpv1.LocalSecretReference `json:"writeConnectionSecretToRef,omitempty"`
-	ForProvider                      InviteParameters      `json:"forProvider"`
+	ForProvider                      InviteParameters           `json:"forProvider"`
 }
 
 // An InviteStatus represents the observed state of an Invite.
