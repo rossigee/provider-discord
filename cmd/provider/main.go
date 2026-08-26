@@ -31,7 +31,17 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/feature"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 	"github.com/rossigee/provider-discord/apis"
+	applicationv1alpha1 "github.com/rossigee/provider-discord/apis/application/v1alpha1"
+	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	integrationv1alpha1 "github.com/rossigee/provider-discord/apis/integration/v1alpha1"
+	invitev1alpha1 "github.com/rossigee/provider-discord/apis/invite/v1alpha1"
+	memberv1alpha1 "github.com/rossigee/provider-discord/apis/member/v1alpha1"
+	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	userv1alpha1 "github.com/rossigee/provider-discord/apis/user/v1alpha1"
+	webhookv1alpha1 "github.com/rossigee/provider-discord/apis/webhook/v1alpha1"
 	"github.com/rossigee/provider-discord/internal/controller"
 	"github.com/rossigee/provider-discord/internal/features"
 	"github.com/rossigee/provider-discord/internal/metrics"
@@ -43,6 +53,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/config"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	sigzap "sigs.k8s.io/controller-runtime/pkg/log/zap"
+	crmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
+	metricserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 )
 
 func main() {
@@ -55,6 +67,8 @@ func main() {
 		maxReconcileRate         = app.Flag("max-reconcile-rate", "The global maximum rate per second at which resources may checked for drift from the desired state.").Default("10").Int()
 		syncPeriod               = app.Flag("sync", "How often all resources will be double-checked for drift from the desired state.").Short('s').Default("1h").Duration()
 		enableManagementPolicies = app.Flag("enable-management-policies", "Enable support for management policies.").Default("true").OverrideDefaultFromEnvar("ENABLE_MANAGEMENT_POLICIES").Bool()
+		pollStateMetricInterval  = app.Flag("poll-state-metric", "State metric recording interval").Default("5s").Duration()
+		metricsBindAddress       = app.Flag("metrics-bind-address", "The address the metrics endpoint binds to.").Default(":8080").String()
 	)
 
 	kingpin.MustParse(app.Parse(os.Args[1:]))
@@ -111,8 +125,11 @@ func main() {
 		LeaderElectionNamespace:    *leaderElectionNS,
 		LeaderElectionResourceLock: "leases",
 		Scheme:                     s,
-		LeaseDuration:              func() *time.Duration { d := 60 * time.Second; return &d }(),
-		RenewDeadline:              func() *time.Duration { d := 50 * time.Second; return &d }(),
+		Metrics: metricserver.Options{
+			BindAddress: *metricsBindAddress,
+		},
+		LeaseDuration: func() *time.Duration { d := 60 * time.Second; return &d }(),
+		RenewDeadline: func() *time.Duration { d := 50 * time.Second; return &d }(),
 		Controller: config.Controller{
 			CacheSyncTimeout: 10 * time.Minute,
 		},
@@ -121,12 +138,21 @@ func main() {
 		kingpin.FatalIfError(err, "Cannot create controller manager")
 	}
 
+	mrStateMetrics := statemetrics.NewMRStateMetrics()
+	crmetrics.Registry.MustRegister(mrStateMetrics)
+
+	mo := xpcontroller.MetricOptions{
+		PollStateMetricInterval: *pollStateMetricInterval,
+		MRStateMetrics:          mrStateMetrics,
+	}
+
 	o := xpcontroller.Options{
 		Logger:                  log,
 		MaxConcurrentReconciles: *maxReconcileRate,
 		PollInterval:            *pollInterval,
 		GlobalRateLimiter:       ratelimiter.NewGlobal(*maxReconcileRate),
 		Features:                &feature.Flags{},
+		MetricOptions:           &mo,
 	}
 
 	if *enableManagementPolicies {
@@ -142,6 +168,17 @@ func main() {
 		kingpin.FatalIfError(err, "Cannot setup Discord controllers")
 	}
 	log.Info("Successfully set up Discord controllers")
+
+	// Register state metrics for managed resources
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &guildv1alpha1.GuildList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Guild")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &channelv1alpha1.ChannelList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Channel")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &rolev1alpha1.RoleList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Role")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &memberv1alpha1.MemberList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Member")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &invitev1alpha1.InviteList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Invite")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &applicationv1alpha1.ApplicationList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Application")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &integrationv1alpha1.IntegrationList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Integration")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &webhookv1alpha1.WebhookList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Webhook")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &userv1alpha1.UserList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for User")
 
 	kingpin.FatalIfError(mgr.AddHealthzCheck("healthz", healthz.Ping), "Cannot add health check")
 	kingpin.FatalIfError(mgr.AddReadyzCheck("readyz", healthz.Ping), "Cannot add ready check")
