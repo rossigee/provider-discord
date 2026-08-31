@@ -61,6 +61,16 @@ func isDiscordNotFound(err error) bool {
 	return err != nil && strings.Contains(err.Error(), "Discord API error: 404")
 }
 
+// isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
+func isDiscordPermissionDenied(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 403")
+}
+
+// isDiscordUnauthorized reports whether a Discord API error is a 401 Unauthorized response.
+func isDiscordUnauthorized(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 401")
+}
+
 // channelNameLocks serializes the check-then-create sequence for a given
 // (guildID, name) pair. Discord has no atomic "create if not exists" for
 // channels, and two Channel custom resources that resolve to the same
@@ -94,6 +104,10 @@ func lockForChannelName(guildID, name string) func() {
 func (c *external) findChannelByName(ctx context.Context, guildID, name string) (*clients.Channel, error) {
 	channels, err := c.service.ListGuildChannels(ctx, guildID)
 	if err != nil {
+		// Don't wrap permission/auth errors to allow callers to detect and handle them
+		if isDiscordPermissionDenied(err) || isDiscordUnauthorized(err) {
+			return nil, err
+		}
 		return nil, errors.Wrap(err, "failed to list guild channels")
 	}
 	for i := range channels {
@@ -145,6 +159,17 @@ func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1al
 
 	channel, err := c.findChannelByName(ctx, cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
 	if err != nil {
+		// Handle permission errors gracefully
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to list guild channels"))
+			log.Error(err, "Permission denied: bot lacks permissions to list guild channels")
+			return managed.ExternalObservation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalObservation{}, nil
+		}
 		// Return error instead of assuming non-existence to prevent duplicate creation
 		return managed.ExternalObservation{}, err
 	}
@@ -257,6 +282,20 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		if isDiscordNotFound(err) {
 			// Channel was deleted externally; let Crossplane recreate it
 			return managed.ExternalObservation{ResourceExists: false}, nil
+		}
+		if isDiscordPermissionDenied(err) {
+			// Permission denied - set unhealthy condition and return no error to stop retrying
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to observe channel"))
+			cr.Status.SetConditions(xpv1.ReconcileError(err))
+			log.Error(err, "Permission denied: bot lacks permissions to observe channel")
+			return managed.ExternalObservation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			// Invalid token - set unhealthy condition
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			cr.Status.SetConditions(xpv1.ReconcileError(err))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalObservation{}, nil
 		}
 		// Propagate transient errors (rate-limit, 5xx, network) so Crossplane
 		// retries rather than accidentally provisioning a duplicate channel
@@ -440,6 +479,17 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	channel, err := c.service.CreateChannel(ctx, req)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to create channel"))
+			log.Error(err, "Permission denied: bot lacks permissions to create channel")
+			return managed.ExternalCreation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalCreation{}, nil
+		}
 		return managed.ExternalCreation{}, errors.Wrap(err, "failed to create channel")
 	}
 
@@ -508,6 +558,17 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	channel, err := c.service.ModifyChannel(ctx, meta.GetExternalName(cr), req)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to update channel"))
+			log.Error(err, "Permission denied: bot lacks permissions to update channel")
+			return managed.ExternalUpdate{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalUpdate{}, nil
+		}
 		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update channel")
 	}
 
@@ -568,8 +629,19 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	err := c.service.DeleteChannel(ctx, meta.GetExternalName(cr))
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
 		// Check if the error is a 404 (channel not found), which means it's already deleted
 		if isDiscordNotFound(err) {
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to delete channel"))
+			log.Error(err, "Permission denied: bot lacks permissions to delete channel")
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
 			return managed.ExternalDelete{}, nil
 		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete channel")

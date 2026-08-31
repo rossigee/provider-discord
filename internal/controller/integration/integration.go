@@ -2,6 +2,7 @@ package integration
 
 import (
 	"context"
+	"strings"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
@@ -25,6 +26,16 @@ const (
 	errGetPC          = "cannot get ProviderConfig"
 	errGetCreds       = "cannot get credentials"
 )
+
+// isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
+func isDiscordPermissionDenied(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 403")
+}
+
+// isDiscordUnauthorized reports whether a Discord API error is a 401 Unauthorized response.
+func isDiscordUnauthorized(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 401")
+}
 
 // Setup adds a controller that reconciles Integration managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
@@ -127,6 +138,17 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// Get all integrations for the guild
 	integrations, err := e.discord.GetGuildIntegrations(ctx, cr.Spec.ForProvider.GuildID)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to observe integrations"))
+			log.Error(err, "Permission denied: bot lacks permissions to observe integrations")
+			return managed.ExternalObservation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalObservation{}, nil
+		}
 		return managed.ExternalObservation{}, errors.Wrap(err, "failed to get guild integrations")
 	}
 
@@ -233,8 +255,19 @@ func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	err := e.discord.DeleteGuildIntegration(ctx, cr.Spec.ForProvider.GuildID, integrationID)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
 		if err.Error() == "integration not found" {
 			// Integration already removed
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to delete integration"))
+			log.Error(err, "Permission denied: bot lacks permissions to delete integration")
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
 			return managed.ExternalDelete{}, nil
 		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete integration")

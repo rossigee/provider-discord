@@ -2,6 +2,7 @@ package user
 
 import (
 	"context"
+	"strings"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
@@ -25,6 +26,16 @@ const (
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
 )
+
+// isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
+func isDiscordPermissionDenied(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 403")
+}
+
+// isDiscordUnauthorized reports whether a Discord API error is a 401 Unauthorized response.
+func isDiscordUnauthorized(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 401")
+}
 
 // Setup adds a controller that reconciles User managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
@@ -140,6 +151,17 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 				ResourceExists: false,
 			}, nil
 		}
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to observe user"))
+			log.Error(err, "Permission denied: bot lacks permissions to observe user")
+			return managed.ExternalObservation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalObservation{}, nil
+		}
 		return managed.ExternalObservation{}, errors.Wrap(err, "failed to get user")
 	}
 
@@ -229,6 +251,17 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	_, err := e.discord.ModifyCurrentUser(ctx, req)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to update user"))
+			log.Error(err, "Permission denied: bot lacks permissions to update user")
+			return managed.ExternalUpdate{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalUpdate{}, nil
+		}
 		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update current user")
 	}
 

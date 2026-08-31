@@ -2,6 +2,7 @@ package role
 
 import (
 	"context"
+	"strings"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
@@ -10,6 +11,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
 	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
@@ -20,6 +22,16 @@ import (
 const (
 	errNotRole = "managed resource is not a Role custom resource"
 )
+
+// isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
+func isDiscordPermissionDenied(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 403")
+}
+
+// isDiscordUnauthorized reports whether a Discord API error is a 401 Unauthorized response.
+func isDiscordUnauthorized(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 401")
+}
 
 // Setup adds a controller that reconciles Role managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
@@ -112,6 +124,17 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 				ResourceExists: false,
 			}, nil
 		}
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to observe role"))
+			log.Error(err, "Permission denied: bot lacks permissions to observe role")
+			return managed.ExternalObservation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalObservation{}, nil
+		}
 		return managed.ExternalObservation{}, errors.Wrap(err, "failed to get role")
 	}
 
@@ -159,6 +182,17 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	// Create the role
 	role, err := e.discord.CreateRole(ctx, cr.Spec.ForProvider.GuildID, req)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to create role"))
+			log.Error(err, "Permission denied: bot lacks permissions to create role")
+			return managed.ExternalCreation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalCreation{}, nil
+		}
 		return managed.ExternalCreation{}, errors.Wrap(err, "failed to create role")
 	}
 
@@ -210,6 +244,17 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	// Update the role
 	_, err := e.discord.ModifyRole(ctx, cr.Spec.ForProvider.GuildID, roleID, req)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to update role"))
+			log.Error(err, "Permission denied: bot lacks permissions to update role")
+			return managed.ExternalUpdate{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalUpdate{}, nil
+		}
 		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update role")
 	}
 
@@ -231,8 +276,19 @@ func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 	// Delete the role
 	err := e.discord.DeleteRole(ctx, cr.Spec.ForProvider.GuildID, roleID)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
 		// If role is already gone, don't error
 		if err.Error() == "role not found" {
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to delete role"))
+			log.Error(err, "Permission denied: bot lacks permissions to delete role")
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
 			return managed.ExternalDelete{}, nil
 		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete role")
