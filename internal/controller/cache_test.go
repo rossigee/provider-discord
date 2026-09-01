@@ -25,46 +25,46 @@ import (
 
 func TestShouldSkipObserve(t *testing.T) {
 	tests := []struct {
-		name           string
-		lastSyncTime   *metav1.Time
-		wantSkip       bool
-		description    string
+		name         string
+		lastSyncTime *metav1.Time
+		wantSkip     bool
+		description  string
 	}{
 		{
-			name:        "nil_timestamp",
+			name:         "nil_timestamp",
 			lastSyncTime: nil,
-			wantSkip:    false,
-			description: "Never synced before - should observe",
+			wantSkip:     false,
+			description:  "Never synced before - should observe",
 		},
 		{
-			name:        "recently_synced",
+			name:         "recently_synced",
 			lastSyncTime: &metav1.Time{Time: time.Now().Add(-1 * time.Minute)},
-			wantSkip:    true,
-			description: "Synced 1 minute ago - still within cache window",
+			wantSkip:     true,
+			description:  "Synced 1 minute ago - still within cache window",
 		},
 		{
-			name:        "just_synced",
+			name:         "just_synced",
 			lastSyncTime: &metav1.Time{Time: time.Now()},
-			wantSkip:    true,
-			description: "Just synced - definitely within cache",
+			wantSkip:     true,
+			description:  "Just synced - definitely within cache",
 		},
 		{
-			name:        "cache_expired",
+			name:         "cache_expired",
 			lastSyncTime: &metav1.Time{Time: time.Now().Add(-6 * time.Minute)},
-			wantSkip:    false,
-			description: "Synced 6 minutes ago - cache expired",
+			wantSkip:     false,
+			description:  "Synced 6 minutes ago - cache expired",
 		},
 		{
-			name:        "at_cache_boundary",
+			name:         "at_cache_boundary",
 			lastSyncTime: &metav1.Time{Time: time.Now().Add(-5 * time.Minute)},
-			wantSkip:    false,
-			description: "Synced exactly 5 minutes ago - at/past boundary",
+			wantSkip:     false,
+			description:  "Synced exactly 5 minutes ago - at/past boundary",
 		},
 		{
-			name:        "near_cache_boundary",
+			name:         "near_cache_boundary",
 			lastSyncTime: &metav1.Time{Time: time.Now().Add(-4*time.Minute - 59*time.Second)},
-			wantSkip:    true,
-			description: "Synced 4:59 ago - just within cache window",
+			wantSkip:     true,
+			description:  "Synced 4:59 ago - just within cache window",
 		},
 	}
 
@@ -132,15 +132,15 @@ func TestUpdateSyncTime(t *testing.T) {
 			}
 
 			if tt.wantWithinDelta && syncTime != nil {
-				timeDiff := syncTime.Time.Sub(beforeCheck)
+				timeDiff := syncTime.Sub(beforeCheck)
 				if timeDiff < 0 || timeDiff > tt.delta {
 					t.Errorf("%s: UpdateSyncTime set to %v, expected within %v of %v",
-						tt.description, syncTime.Time, tt.delta, beforeCheck)
+						tt.description, syncTime, tt.delta, beforeCheck)
 				}
 				// Also verify it's before the "after" check
-				if syncTime.Time.After(afterCheck) {
+				if syncTime.After(afterCheck) {
 					t.Errorf("%s: UpdateSyncTime set to future time %v (after check was %v)",
-						tt.description, syncTime.Time, afterCheck)
+						tt.description, syncTime, afterCheck)
 				}
 			}
 		})

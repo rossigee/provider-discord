@@ -126,6 +126,11 @@ type GuildObservation struct {
 
 	// UpdatedAt is the timestamp when the guild was last updated.
 	UpdatedAt *metav1.Time `json:"updatedAt,omitempty"`
+
+	// LastSyncTime is the timestamp of the last successful API sync.
+	// Used for rate-limit optimization - controllers skip API calls for recently synced resources.
+	// +optional
+	LastSyncTime *metav1.Time `json:"lastSyncTime,omitempty"`
 }
 
 // A GuildSpec defines the desired state of a Guild.

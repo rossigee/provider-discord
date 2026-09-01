@@ -44,12 +44,22 @@ const (
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
+	cacheTTL        = 5 * time.Minute
 )
 
 var (
 	// Discord snowflake IDs are 18-19 digit numbers
 	discordSnowflakeRegex = regexp.MustCompile(`^\d{18,19}$`)
 )
+
+// shouldSkipObserve returns true if a resource was recently synced and can skip
+// the Observe call to reduce API load. Used to implement status-driven reconciliation.
+func shouldSkipObserve(lastSyncTime *metav1.Time) bool {
+	if lastSyncTime == nil {
+		return false
+	}
+	return time.Since(lastSyncTime.Time) < cacheTTL
+}
 
 // isValidDiscordID checks if the provided string is a valid Discord snowflake ID
 func isValidDiscordID(id string) bool {
@@ -276,6 +286,15 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		return c.checkChannelExistsByName(ctx, cr)
 	}
 
+	// Cache optimization: skip API call if recently synced
+	if shouldSkipObserve(cr.Status.AtProvider.LastSyncTime) {
+		log.V(3).Info("Skipping Observe due to recent sync", "lastSyncTime", cr.Status.AtProvider.LastSyncTime)
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true,
+		}, nil
+	}
+
 	// If we have a valid external name (Discord channel ID), try to get by ID
 	channel, err := c.service.GetChannel(ctx, externalName)
 	if err != nil {
@@ -311,13 +330,14 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	// Update status with observed values
 	now := &metav1.Time{Time: time.Now()}
 	cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
-		ID:        channel.ID,
-		Name:      channel.Name,
-		Type:      channel.Type,
-		GuildID:   channel.GuildID,
-		Position:  channel.Position,
-		ParentID:  channel.ParentID,
-		UpdatedAt: now,
+		ID:           channel.ID,
+		Name:         channel.Name,
+		Type:         channel.Type,
+		GuildID:      channel.GuildID,
+		Position:     channel.Position,
+		ParentID:     channel.ParentID,
+		UpdatedAt:    now,
+		LastSyncTime: now,
 	}
 	// Populate permission overwrites in status
 	if len(channel.PermissionOverwrites) > 0 {

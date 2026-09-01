@@ -19,6 +19,7 @@ package guild
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
@@ -828,6 +829,136 @@ func TestDeletePermissionDenied(t *testing.T) {
 
 	// Should return nil error (no retry on permission error)
 	assert.NoError(t, err)
+}
+
+// TestObserveCacheSkipsAPI validates that recently synced resources skip API calls.
+func TestObserveCacheSkipsAPI(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	now := metav1.Now()
+	guild := &guildv1alpha1.Guild{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: guildID,
+			},
+		},
+		Spec: guildv1alpha1.GuildSpec{
+			ForProvider: guildv1alpha1.GuildParameters{
+				Name: "test-guild",
+			},
+		},
+		Status: guildv1alpha1.GuildStatus{
+			AtProvider: guildv1alpha1.GuildObservation{
+				ID:   guildID,
+				Name: "test-guild",
+				// Set LastSyncTime to now (within 5min cache TTL)
+				LastSyncTime: &now,
+			},
+		},
+	}
+
+	apiCallCount := 0
+	mockClient := &MockGuildClient{
+		GetGuildFunc: func(ctx context.Context, id string) (*discordclient.Guild, error) {
+			apiCallCount++
+			return nil, errors.New("should not be called")
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Observe(ctx, guild)
+
+	// Should not make API call for recently synced resource
+	assert.NoError(t, err)
+	assert.Equal(t, 0, apiCallCount, "Expected no API calls for recently synced resource")
+}
+
+// TestObserveUpdatesSyncTime validates that Observe updates LastSyncTime.
+func TestObserveUpdatesSyncTime(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	guild := &guildv1alpha1.Guild{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: guildID,
+			},
+		},
+		Spec: guildv1alpha1.GuildSpec{
+			ForProvider: guildv1alpha1.GuildParameters{
+				Name: "test-guild",
+			},
+		},
+		// No LastSyncTime set (first observe)
+		Status: guildv1alpha1.GuildStatus{
+			AtProvider: guildv1alpha1.GuildObservation{},
+		},
+	}
+
+	mockClient := &MockGuildClient{
+		GetGuildFunc: func(ctx context.Context, id string) (*discordclient.Guild, error) {
+			return &discordclient.Guild{
+				ID:   guildID,
+				Name: "test-guild",
+			}, nil
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Observe(ctx, guild)
+
+	// Should complete without error
+	assert.NoError(t, err)
+	// After successful observe, LastSyncTime should be set
+	assert.NotNil(t, guild.Status.AtProvider.LastSyncTime, "Expected LastSyncTime to be set after successful observe")
+}
+
+// TestObserveCacheExpiry validates that cache expires after 5 minutes.
+func TestObserveCacheExpiry(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	// Create a timestamp 5 minutes + 1 second in the past
+	oldTime := metav1.NewTime(time.Now().Add(-5*time.Minute - 1*time.Second))
+	guild := &guildv1alpha1.Guild{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: guildID,
+			},
+		},
+		Spec: guildv1alpha1.GuildSpec{
+			ForProvider: guildv1alpha1.GuildParameters{
+				Name: "test-guild",
+			},
+		},
+		Status: guildv1alpha1.GuildStatus{
+			AtProvider: guildv1alpha1.GuildObservation{
+				ID:   guildID,
+				Name: "test-guild",
+				// Set LastSyncTime to 5min + 1sec ago (cache expired)
+				LastSyncTime: &oldTime,
+			},
+		},
+	}
+
+	apiCallCount := 0
+	mockClient := &MockGuildClient{
+		GetGuildFunc: func(ctx context.Context, id string) (*discordclient.Guild, error) {
+			apiCallCount++
+			return &discordclient.Guild{
+				ID:   guildID,
+				Name: "test-guild-updated",
+			}, nil
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Observe(ctx, guild)
+
+	// Should make API call because cache is expired
+	assert.NoError(t, err)
+	assert.Equal(t, 1, apiCallCount, "Expected API call for expired cache")
 }
 
 // Helper functions

@@ -41,7 +41,17 @@ const (
 	errTrackPCUsage = "cannot track ProviderConfig usage"
 	errGetPC        = "cannot get ProviderConfig"
 	errGetCreds     = "cannot get credentials"
+	cacheTTL        = 5 * time.Minute
 )
+
+// shouldSkipObserve returns true if a resource was recently synced and can skip
+// the Observe call to reduce API load. Used to implement status-driven reconciliation.
+func shouldSkipObserve(lastSyncTime *metav1.Time) bool {
+	if lastSyncTime == nil {
+		return false
+	}
+	return time.Since(lastSyncTime.Time) < cacheTTL
+}
 
 // isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
 func isDiscordPermissionDenied(err error) bool {
@@ -126,6 +136,15 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	// If we have an external name (guild ID), try to get by ID
 	if meta.GetExternalName(cr) != "" {
+		// Cache optimization: skip API call if recently synced
+		if shouldSkipObserve(cr.Status.AtProvider.LastSyncTime) {
+			log.V(3).Info("Skipping Observe due to recent sync", "lastSyncTime", cr.Status.AtProvider.LastSyncTime)
+			return managed.ExternalObservation{
+				ResourceExists:   true,
+				ResourceUpToDate: true,
+			}, nil
+		}
+
 		guild, err := c.service.GetGuild(ctx, meta.GetExternalName(cr))
 		if err != nil {
 			// Check if it's a 404 (guild not found)
@@ -167,6 +186,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			AFKTimeout:                  guild.AFKTimeout,
 			SystemChannelFlags:          guild.SystemChannelFlags,
 			UpdatedAt:                   now,
+			LastSyncTime:                now,
 		}
 
 		if guild.Region != nil {

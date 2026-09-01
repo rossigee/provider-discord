@@ -787,5 +787,150 @@ func TestDeletePermissionDenied(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+// TestObserveCacheSkipsAPI validates that recently synced resources skip API calls.
+func TestObserveCacheSkipsAPI(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	channelID := "987654321098765432"
+
+	now := metav1.Now()
+	channel := &channelv1alpha1.Channel{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: channelID,
+			},
+		},
+		Spec: channelv1alpha1.ChannelSpec{
+			ForProvider: channelv1alpha1.ChannelParameters{
+				Name:    "test-channel",
+				Type:    0,
+				GuildID: guildID,
+			},
+		},
+		Status: channelv1alpha1.ChannelStatus{
+			AtProvider: channelv1alpha1.ChannelObservation{
+				ID:   channelID,
+				Name: "test-channel",
+				Type: 0,
+				// Set LastSyncTime to now (within 5min cache TTL)
+				LastSyncTime: &now,
+			},
+		},
+	}
+
+	apiCallCount := 0
+	mockClient := &MockChannelClient{
+		GetChannelFunc: func(ctx context.Context, id string) (*discordclient.Channel, error) {
+			apiCallCount++
+			return nil, errors.New("should not be called")
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Observe(ctx, channel)
+
+	// Should not make API call for recently synced resource
+	assert.NoError(t, err)
+	assert.Equal(t, 0, apiCallCount, "Expected no API calls for recently synced resource")
+}
+
+// TestObserveUpdatesSyncTime validates that Observe updates LastSyncTime.
+func TestObserveUpdatesSyncTime(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	channelID := "987654321098765432"
+
+	channel := &channelv1alpha1.Channel{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: channelID,
+			},
+		},
+		Spec: channelv1alpha1.ChannelSpec{
+			ForProvider: channelv1alpha1.ChannelParameters{
+				Name:    "test-channel",
+				Type:    0,
+				GuildID: guildID,
+			},
+		},
+		// No LastSyncTime set (first observe)
+		Status: channelv1alpha1.ChannelStatus{
+			AtProvider: channelv1alpha1.ChannelObservation{},
+		},
+	}
+
+	mockClient := &MockChannelClient{
+		GetChannelFunc: func(ctx context.Context, id string) (*discordclient.Channel, error) {
+			return &discordclient.Channel{
+				ID:      channelID,
+				Name:    "test-channel",
+				Type:    0,
+				GuildID: guildID,
+			}, nil
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Observe(ctx, channel)
+
+	// Should complete without error
+	assert.NoError(t, err)
+	// After successful observe, LastSyncTime should be set
+	assert.NotNil(t, channel.Status.AtProvider.LastSyncTime, "Expected LastSyncTime to be set after successful observe")
+}
+
+// TestObserveCacheExpiry validates that cache expires after 5 minutes.
+func TestObserveCacheExpiry(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	channelID := "987654321098765432"
+
+	// Create a timestamp 5 minutes + 1 second in the past
+	oldTime := metav1.NewTime(time.Now().Add(-5*time.Minute - 1*time.Second))
+	channel := &channelv1alpha1.Channel{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: channelID,
+			},
+		},
+		Spec: channelv1alpha1.ChannelSpec{
+			ForProvider: channelv1alpha1.ChannelParameters{
+				Name:    "test-channel",
+				Type:    0,
+				GuildID: guildID,
+			},
+		},
+		Status: channelv1alpha1.ChannelStatus{
+			AtProvider: channelv1alpha1.ChannelObservation{
+				ID:   channelID,
+				Name: "test-channel",
+				Type: 0,
+				// Set LastSyncTime to 5min + 1sec ago (cache expired)
+				LastSyncTime: &oldTime,
+			},
+		},
+	}
+
+	apiCallCount := 0
+	mockClient := &MockChannelClient{
+		GetChannelFunc: func(ctx context.Context, id string) (*discordclient.Channel, error) {
+			apiCallCount++
+			return &discordclient.Channel{
+				ID:      channelID,
+				Name:    "test-channel-updated",
+				Type:    0,
+				GuildID: guildID,
+			}, nil
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Observe(ctx, channel)
+
+	// Should make API call because cache is expired
+	assert.NoError(t, err)
+	assert.Equal(t, 1, apiCallCount, "Expected API call for expired cache")
+}
+
 // Helper functions
 // Helper functions removed - unused

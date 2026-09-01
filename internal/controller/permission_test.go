@@ -19,8 +19,8 @@ package controller
 import (
 	"testing"
 
-	corev1 "k8s.io/api/core/v1"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // TestPermissionErrorDetection validates the helper functions for detecting permission errors.

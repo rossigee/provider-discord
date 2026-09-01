@@ -45,6 +45,11 @@ type RoleObservation struct {
 
 	// Whether this role is managed by an integration
 	Managed bool `json:"managed,omitempty"`
+
+	// LastSyncTime is the timestamp of the last successful API sync.
+	// Used for rate-limit optimization - controllers skip API calls for recently synced resources.
+	// +optional
+	LastSyncTime *metav1.Time `json:"lastSyncTime,omitempty"`
 }
 
 // A RoleSpec defines the desired state of a Role.

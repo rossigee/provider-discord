@@ -19,6 +19,7 @@ package role
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
@@ -601,4 +602,142 @@ func TestTypeAssertions(t *testing.T) {
 	_, err = e.Delete(ctx, wrongType)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), errNotRole)
+}
+
+// TestObserveCacheSkipsAPI validates that recently synced resources skip API calls.
+func TestObserveCacheSkipsAPI(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	roleID := "987654321098765432"
+
+	now := metav1.Now()
+	role := &rolev1alpha1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: roleID,
+			},
+		},
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
+				Name:    "test-role",
+				GuildID: guildID,
+			},
+		},
+		Status: rolev1alpha1.RoleStatus{
+			AtProvider: rolev1alpha1.RoleObservation{
+				ID:           roleID,
+				Managed:      false,
+				LastSyncTime: &now,
+			},
+		},
+	}
+
+	apiCallCount := 0
+	e := &external{
+		discord: &MockDiscordClient{
+			GetRoleFunc: func(ctx context.Context, guildID, roleID string) (*discordclient.Role, error) {
+				apiCallCount++
+				return nil, errors.New("should not be called")
+			},
+		},
+	}
+
+	_, err := e.Observe(ctx, role)
+
+	// Should not make API call for recently synced resource
+	assert.NoError(t, err)
+	assert.Equal(t, 0, apiCallCount, "Expected no API calls for recently synced resource")
+}
+
+// TestObserveUpdatesSyncTime validates that Observe updates LastSyncTime.
+func TestObserveUpdatesSyncTime(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	roleID := "987654321098765432"
+
+	role := &rolev1alpha1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: roleID,
+			},
+		},
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
+				Name:    "test-role",
+				GuildID: guildID,
+			},
+		},
+		Status: rolev1alpha1.RoleStatus{
+			AtProvider: rolev1alpha1.RoleObservation{},
+		},
+	}
+
+	e := &external{
+		discord: &MockDiscordClient{
+			GetRoleFunc: func(ctx context.Context, guildID, roleID string) (*discordclient.Role, error) {
+				return &discordclient.Role{
+					ID:      roleID,
+					Name:    "test-role",
+					Managed: false,
+				}, nil
+			},
+		},
+	}
+
+	_, err := e.Observe(ctx, role)
+
+	// Should complete without error
+	assert.NoError(t, err)
+	// After successful observe, LastSyncTime should be set
+	assert.NotNil(t, role.Status.AtProvider.LastSyncTime, "Expected LastSyncTime to be set after successful observe")
+}
+
+// TestObserveCacheExpiry validates that cache expires after 5 minutes.
+func TestObserveCacheExpiry(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	roleID := "987654321098765432"
+
+	// Create a timestamp 5 minutes + 1 second in the past
+	oldTime := metav1.NewTime(time.Now().Add(-5*time.Minute - 1*time.Second))
+	role := &rolev1alpha1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: roleID,
+			},
+		},
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
+				Name:    "test-role",
+				GuildID: guildID,
+			},
+		},
+		Status: rolev1alpha1.RoleStatus{
+			AtProvider: rolev1alpha1.RoleObservation{
+				ID:           roleID,
+				Managed:      false,
+				LastSyncTime: &oldTime,
+			},
+		},
+	}
+
+	apiCallCount := 0
+	e := &external{
+		discord: &MockDiscordClient{
+			GetRoleFunc: func(ctx context.Context, guildID, roleID string) (*discordclient.Role, error) {
+				apiCallCount++
+				return &discordclient.Role{
+					ID:      roleID,
+					Name:    "test-role-updated",
+					Managed: false,
+				}, nil
+			},
+		},
+	}
+
+	_, err := e.Observe(ctx, role)
+
+	// Should make API call because cache is expired
+	assert.NoError(t, err)
+	assert.Equal(t, 1, apiCallCount, "Expected API call for expired cache")
 }

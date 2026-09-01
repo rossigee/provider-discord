@@ -167,6 +167,11 @@ type ChannelObservation struct {
 	// Used to prevent accidental deletion of channels with valuable history.
 	// +optional
 	HasMessages *bool `json:"hasMessages,omitempty"`
+
+	// LastSyncTime is the timestamp of the last successful API sync.
+	// Used for rate-limit optimization - controllers skip API calls for recently synced resources.
+	// +optional
+	LastSyncTime *metav1.Time `json:"lastSyncTime,omitempty"`
 }
 
 // A ChannelSpec defines the desired state of a Channel.

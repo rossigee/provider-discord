@@ -3,6 +3,7 @@ package role
 import (
 	"context"
 	"strings"
+	"time"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
@@ -15,13 +16,24 @@ import (
 	"github.com/pkg/errors"
 	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
 	errNotRole = "managed resource is not a Role custom resource"
+	cacheTTL   = 5 * time.Minute
 )
+
+// shouldSkipObserve returns true if a resource was recently synced and can skip
+// the Observe call to reduce API load. Used to implement status-driven reconciliation.
+func shouldSkipObserve(lastSyncTime *metav1.Time) bool {
+	if lastSyncTime == nil {
+		return false
+	}
+	return time.Since(lastSyncTime.Time) < cacheTTL
+}
 
 // isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
 func isDiscordPermissionDenied(err error) bool {
@@ -116,6 +128,16 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}
 	}
 
+	// Cache optimization: skip API call if recently synced
+	if shouldSkipObserve(cr.Status.AtProvider.LastSyncTime) {
+		log := ctrl.LoggerFrom(ctx)
+		log.V(3).Info("Skipping Observe due to recent sync", "lastSyncTime", cr.Status.AtProvider.LastSyncTime)
+		return managed.ExternalObservation{
+			ResourceExists:   true,
+			ResourceUpToDate: true,
+		}, nil
+	}
+
 	// Get the role from Discord
 	role, err := e.discord.GetRole(ctx, cr.Spec.ForProvider.GuildID, roleID)
 	if err != nil {
@@ -139,8 +161,10 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Update status
+	now := metav1.NewTime(time.Now())
 	cr.Status.AtProvider.ID = role.ID
 	cr.Status.AtProvider.Managed = role.Managed
+	cr.Status.AtProvider.LastSyncTime = &now
 
 	// Check if update is needed
 	needsUpdate := role.Name != cr.Spec.ForProvider.Name ||
