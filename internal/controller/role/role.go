@@ -166,6 +166,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	cr.Status.AtProvider.ID = role.ID
 	cr.Status.AtProvider.Managed = role.Managed
 	cr.Status.AtProvider.LastSyncTime = &now
+	cr.SetConditions(xpv1.Available())
 
 	// Check if update is needed
 	needsUpdate := role.Name != cr.Spec.ForProvider.Name ||
@@ -225,6 +226,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	meta.SetExternalName(cr, role.ID)
 	cr.Status.AtProvider.ID = role.ID
 	cr.Status.AtProvider.Managed = role.Managed
+	cr.SetConditions(xpv1.Available())
 
 	// Handle position separately if specified
 	if cr.Spec.ForProvider.Position != nil {
@@ -282,6 +284,8 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		}
 		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update role")
 	}
+
+	cr.SetConditions(xpv1.Available())
 
 	return managed.ExternalUpdate{}, nil
 }
