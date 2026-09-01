@@ -409,6 +409,174 @@ func stringPtr(s string) *string {
 	return &s
 }
 
+// TestObservePermissionDenied validates that 403 errors set Unavailable condition and don't retry
+func TestObservePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	roleID := "987654321098765432"
+
+	role := &rolev1alpha1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: roleID,
+			},
+		},
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
+				Name:    "test-role",
+				GuildID: guildID,
+			},
+		},
+	}
+
+	e := &external{
+		discord: &MockDiscordClient{
+			GetRoleFunc: func(ctx context.Context, guildID, roleID string) (*discordclient.Role, error) {
+				return nil, errors.New("Discord API error: 403 - Missing Permissions")
+			},
+		},
+	}
+
+	obs, err := e.Observe(ctx, role)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+	// Resource should show as non-existent
+	assert.False(t, obs.ResourceExists)
+}
+
+// TestObserveUnauthorized validates that 401 errors set Unavailable condition and don't retry
+func TestObserveUnauthorized(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	roleID := "987654321098765432"
+
+	role := &rolev1alpha1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: roleID,
+			},
+		},
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
+				Name:    "test-role",
+				GuildID: guildID,
+			},
+		},
+	}
+
+	e := &external{
+		discord: &MockDiscordClient{
+			GetRoleFunc: func(ctx context.Context, guildID, roleID string) (*discordclient.Role, error) {
+				return nil, errors.New("Discord API error: 401 - Unauthorized")
+			},
+		},
+	}
+
+	obs, err := e.Observe(ctx, role)
+
+	// Should return nil error (no retry on auth error)
+	assert.NoError(t, err)
+	// Resource should show as non-existent
+	assert.False(t, obs.ResourceExists)
+}
+
+// TestCreatePermissionDenied validates that 403 errors in Create don't retry
+func TestCreatePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	role := &rolev1alpha1.Role{
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
+				Name:    "test-role",
+				GuildID: guildID,
+			},
+		},
+	}
+
+	e := &external{
+		discord: &MockDiscordClient{
+			CreateRoleFunc: func(ctx context.Context, guildID string, req discordclient.CreateRoleRequest) (*discordclient.Role, error) {
+				return nil, errors.New("Discord API error: 403 - Missing Permissions")
+			},
+		},
+	}
+
+	_, err := e.Create(ctx, role)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+}
+
+// TestUpdatePermissionDenied validates that 403 errors in Update don't retry
+func TestUpdatePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	roleID := "987654321098765432"
+
+	role := &rolev1alpha1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: roleID,
+			},
+		},
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
+				Name:    "updated-role",
+				GuildID: guildID,
+			},
+		},
+	}
+
+	e := &external{
+		discord: &MockDiscordClient{
+			ModifyRoleFunc: func(ctx context.Context, guildID, roleID string, req discordclient.ModifyRoleRequest) (*discordclient.Role, error) {
+				return nil, errors.New("Discord API error: 403 - Missing Permissions")
+			},
+		},
+	}
+
+	_, err := e.Update(ctx, role)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+}
+
+// TestDeletePermissionDenied validates that 403 errors in Delete don't retry
+func TestDeletePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	roleID := "987654321098765432"
+
+	role := &rolev1alpha1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: roleID,
+			},
+		},
+		Spec: rolev1alpha1.RoleSpec{
+			ForProvider: rolev1alpha1.RoleParameters{
+				Name:    "test-role",
+				GuildID: guildID,
+			},
+		},
+	}
+
+	e := &external{
+		discord: &MockDiscordClient{
+			DeleteRoleFunc: func(ctx context.Context, guildID, roleID string) error {
+				return errors.New("Discord API error: 403 - Missing Permissions")
+			},
+		},
+	}
+
+	_, err := e.Delete(ctx, role)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+}
+
 // Test type assertions
 func TestTypeAssertions(t *testing.T) {
 	ctx := context.Background()

@@ -613,5 +613,179 @@ func TestTypeAssertions(t *testing.T) {
 	}
 }
 
+// TestObservePermissionDenied validates that 403 Forbidden errors set Unavailable condition and don't retry
+func TestObservePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	channelID := "987654321098765432"
+
+	channel := &channelv1alpha1.Channel{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: channelID,
+			},
+		},
+		Spec: channelv1alpha1.ChannelSpec{
+			ForProvider: channelv1alpha1.ChannelParameters{
+				Name:    "test-channel",
+				Type:    0,
+				GuildID: guildID,
+			},
+		},
+	}
+
+	mockClient := &MockChannelClient{
+		GetChannelFunc: func(ctx context.Context, id string) (*discordclient.Channel, error) {
+			return nil, errors.New("Discord API error: 403 - Missing Permissions")
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	obs, err := e.Observe(ctx, channel)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+	// Resource should show as non-existent (can't verify state due to permissions)
+	assert.False(t, obs.ResourceExists)
+}
+
+// TestObserveUnauthorized validates that 401 Unauthorized errors set Unavailable condition and don't retry
+func TestObserveUnauthorized(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	channelID := "987654321098765432"
+
+	channel := &channelv1alpha1.Channel{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: channelID,
+			},
+		},
+		Spec: channelv1alpha1.ChannelSpec{
+			ForProvider: channelv1alpha1.ChannelParameters{
+				Name:    "test-channel",
+				Type:    0,
+				GuildID: guildID,
+			},
+		},
+	}
+
+	mockClient := &MockChannelClient{
+		GetChannelFunc: func(ctx context.Context, id string) (*discordclient.Channel, error) {
+			return nil, errors.New("Discord API error: 401 - Unauthorized")
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	obs, err := e.Observe(ctx, channel)
+
+	// Should return nil error (no retry on auth error)
+	assert.NoError(t, err)
+	// Resource should show as non-existent
+	assert.False(t, obs.ResourceExists)
+}
+
+// TestCreatePermissionDenied validates that 403 errors in Create don't retry
+func TestCreatePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	channel := &channelv1alpha1.Channel{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "test-channel",
+		},
+		Spec: channelv1alpha1.ChannelSpec{
+			ForProvider: channelv1alpha1.ChannelParameters{
+				Name:    "test-channel",
+				Type:    0,
+				GuildID: guildID,
+			},
+		},
+	}
+
+	mockClient := &MockChannelClient{
+		ListGuildChannelsFunc: func(ctx context.Context, guildID string) ([]discordclient.Channel, error) {
+			return []discordclient.Channel{}, nil
+		},
+		CreateChannelFunc: func(ctx context.Context, req *discordclient.CreateChannelRequest) (*discordclient.Channel, error) {
+			return nil, errors.New("Discord API error: 403 - Missing Permissions")
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Create(ctx, channel)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+}
+
+// TestUpdatePermissionDenied validates that 403 errors in Update don't retry
+func TestUpdatePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	channelID := "987654321098765432"
+
+	channel := &channelv1alpha1.Channel{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: channelID,
+			},
+		},
+		Spec: channelv1alpha1.ChannelSpec{
+			ForProvider: channelv1alpha1.ChannelParameters{
+				Name:    "updated-name",
+				Type:    0,
+				GuildID: guildID,
+			},
+		},
+	}
+
+	mockClient := &MockChannelClient{
+		ModifyChannelFunc: func(ctx context.Context, id string, req *discordclient.ModifyChannelRequest) (*discordclient.Channel, error) {
+			return nil, errors.New("Discord API error: 403 - Missing Permissions")
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Update(ctx, channel)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+}
+
+// TestDeletePermissionDenied validates that 403 errors in Delete don't retry
+func TestDeletePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+	channelID := "987654321098765432"
+
+	channel := &channelv1alpha1.Channel{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: channelID,
+			},
+		},
+		Spec: channelv1alpha1.ChannelSpec{
+			ForProvider: channelv1alpha1.ChannelParameters{
+				Name:    "test-channel",
+				Type:    0,
+				GuildID: guildID,
+			},
+		},
+	}
+
+	mockClient := &MockChannelClient{
+		DeleteChannelFunc: func(ctx context.Context, id string) error {
+			return errors.New("Discord API error: 403 - Missing Permissions")
+		},
+	}
+
+	e := &external{service: mockClient, kube: nil}
+	_, err := e.Delete(ctx, channel)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+}
+
 // Helper functions
 // Helper functions removed - unused

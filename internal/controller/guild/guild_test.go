@@ -667,6 +667,169 @@ func TestIsUpToDate(t *testing.T) {
 	}
 }
 
+// TestObservePermissionDenied validates that 403 errors set Unavailable condition and don't retry
+func TestObservePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	guild := &guildv1alpha1.Guild{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: guildID,
+			},
+		},
+		Spec: guildv1alpha1.GuildSpec{
+			ForProvider: guildv1alpha1.GuildParameters{
+				Name: "test-guild",
+			},
+		},
+	}
+
+	e := &external{
+		service: &MockGuildClient{
+			GetGuildFunc: func(ctx context.Context, guildID string) (*discordclient.Guild, error) {
+				return nil, errors.New("Discord API error: 403 - Missing Permissions")
+			},
+		},
+	}
+
+	obs, err := e.Observe(ctx, guild)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+	// Resource should show as non-existent
+	assert.False(t, obs.ResourceExists)
+}
+
+// TestObserveUnauthorized validates that 401 errors set Unavailable condition and don't retry
+func TestObserveUnauthorized(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	guild := &guildv1alpha1.Guild{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: guildID,
+			},
+		},
+		Spec: guildv1alpha1.GuildSpec{
+			ForProvider: guildv1alpha1.GuildParameters{
+				Name: "test-guild",
+			},
+		},
+	}
+
+	e := &external{
+		service: &MockGuildClient{
+			GetGuildFunc: func(ctx context.Context, guildID string) (*discordclient.Guild, error) {
+				return nil, errors.New("Discord API error: 401 - Unauthorized")
+			},
+		},
+	}
+
+	obs, err := e.Observe(ctx, guild)
+
+	// Should return nil error (no retry on auth error)
+	assert.NoError(t, err)
+	// Resource should show as non-existent
+	assert.False(t, obs.ResourceExists)
+}
+
+// TestCreatePermissionDenied validates that 403 errors in Create don't retry
+func TestCreatePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+
+	guild := &guildv1alpha1.Guild{
+		Spec: guildv1alpha1.GuildSpec{
+			ForProvider: guildv1alpha1.GuildParameters{
+				Name: "test-guild",
+			},
+		},
+	}
+
+	e := &external{
+		service: &MockGuildClient{
+			CreateGuildFunc: func(ctx context.Context, req *discordclient.CreateGuildRequest) (*discordclient.Guild, error) {
+				return nil, errors.New("Discord API error: 403 - Missing Permissions")
+			},
+		},
+	}
+
+	_, err := e.Create(ctx, guild)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+}
+
+// TestUpdatePermissionDenied validates that 403 errors in Update don't retry
+func TestUpdatePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	guild := &guildv1alpha1.Guild{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: guildID,
+			},
+		},
+		Spec: guildv1alpha1.GuildSpec{
+			ForProvider: guildv1alpha1.GuildParameters{
+				Name: "updated-guild",
+			},
+		},
+		Status: guildv1alpha1.GuildStatus{
+			AtProvider: guildv1alpha1.GuildObservation{
+				Name: "test-guild",
+			},
+		},
+	}
+
+	e := &external{
+		service: &MockGuildClient{
+			ModifyGuildFunc: func(ctx context.Context, guildID string, req *discordclient.ModifyGuildRequest) (*discordclient.Guild, error) {
+				return nil, errors.New("Discord API error: 403 - Missing Permissions")
+			},
+		},
+	}
+
+	_, err := e.Update(ctx, guild)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+}
+
+// TestDeletePermissionDenied validates that 403 errors in Delete don't retry
+func TestDeletePermissionDenied(t *testing.T) {
+	ctx := context.Background()
+	guildID := "123456789012345678"
+
+	guild := &guildv1alpha1.Guild{
+		ObjectMeta: metav1.ObjectMeta{
+			Annotations: map[string]string{
+				meta.AnnotationKeyExternalName: guildID,
+			},
+		},
+		Spec: guildv1alpha1.GuildSpec{
+			ForProvider: guildv1alpha1.GuildParameters{
+				Name: "test-guild",
+			},
+		},
+	}
+
+	e := &external{
+		service: &MockGuildClient{
+			DeleteGuildFunc: func(ctx context.Context, guildID string) error {
+				return errors.New("Discord API error: 403 - Missing Permissions")
+			},
+		},
+	}
+
+	_, err := e.Delete(ctx, guild)
+
+	// Should return nil error (no retry on permission error)
+	assert.NoError(t, err)
+}
+
 // Helper functions
 func intPtr(i int) *int {
 	return &i
