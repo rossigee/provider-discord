@@ -112,7 +112,10 @@ spec:
                 type: object
               managementPolicies:
                 default:
-                - '*'
+                - Observe
+                - Create
+                - Update
+                - LateInitialize
                 description: |-
                   THIS IS A BETA FIELD. It is on by default but can be opted out
                   through a Crossplane feature flag.
