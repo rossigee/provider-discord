@@ -13,7 +13,7 @@ monitoring.
 
 ## Container Registry
 
-- **Primary**: `ghcr.io/rossigee/provider-discord:v0.10.0`
+- **Primary**: `ghcr.io/rossigee/provider-discord:v0.14.12`
 
 ## Overview
 
@@ -94,6 +94,20 @@ side by side.
    - Manage Webhooks (for webhook operations)
    - Create Instant Invite (for invite operations)
    - View Channels (for resource observation)
+
+#### Important: Role Hierarchy
+
+The bot needs **Manage Roles** permission, BUT this alone is not sufficient.
+The bot's role in Discord must be **positioned HIGHER in the role list** than
+any role it needs to manage. Discord's role permissions only apply to roles
+ranked below the bot's highest role.
+
+To fix permission issues:
+
+1. In Discord server settings, drag the bot's role **above** the roles it needs
+   to manage
+2. Ensure the bot has the Administrator permission OR is above all target
+   roles in hierarchy
 
 ### Installation
 
