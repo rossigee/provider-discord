@@ -43,6 +43,16 @@ const (
 	errGetCreds     = "cannot get credentials"
 )
 
+// isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
+func isDiscordPermissionDenied(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 403")
+}
+
+// isDiscordUnauthorized reports whether a Discord API error is a 401 Unauthorized response.
+func isDiscordUnauthorized(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 401")
+}
+
 // Setup adds a controller that reconciles Guild managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
 	name := managed.ControllerName(guildv1alpha1.GuildGroupKind.String())
@@ -124,6 +134,16 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 				return managed.ExternalObservation{
 					ResourceExists: false,
 				}, nil
+			}
+			if isDiscordPermissionDenied(err) {
+				cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to observe guild"))
+				log.Error(err, "Permission denied: bot lacks permissions to observe guild")
+				return managed.ExternalObservation{}, nil
+			}
+			if isDiscordUnauthorized(err) {
+				cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+				log.Error(err, "Invalid or expired bot token")
+				return managed.ExternalObservation{}, nil
 			}
 			return managed.ExternalObservation{}, errors.Wrap(err, "failed to get guild by ID")
 		}
@@ -276,6 +296,17 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	guild, err := c.service.CreateGuild(ctx, req)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to create guild"))
+			log.Error(err, "Permission denied: bot lacks permissions to create guild")
+			return managed.ExternalCreation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalCreation{}, nil
+		}
 		return managed.ExternalCreation{}, errors.Wrap(err, "failed to create guild")
 	}
 
@@ -339,6 +370,17 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 	if needsUpdate {
 		_, err := c.service.ModifyGuild(ctx, meta.GetExternalName(cr), req)
 		if err != nil {
+			log := ctrl.LoggerFrom(ctx)
+			if isDiscordPermissionDenied(err) {
+				cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to update guild"))
+				log.Error(err, "Permission denied: bot lacks permissions to update guild")
+				return managed.ExternalUpdate{}, nil
+			}
+			if isDiscordUnauthorized(err) {
+				cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+				log.Error(err, "Invalid or expired bot token")
+				return managed.ExternalUpdate{}, nil
+			}
 			return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update guild")
 		}
 	}
@@ -356,8 +398,19 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	err := c.service.DeleteGuild(ctx, meta.GetExternalName(cr))
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
 		// Check if the error is a 404 (guild not found), which means it's already deleted
 		if strings.Contains(err.Error(), "Discord API error: 404") {
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to delete guild"))
+			log.Error(err, "Permission denied: bot lacks permissions to delete guild")
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
 			return managed.ExternalDelete{}, nil
 		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete guild")

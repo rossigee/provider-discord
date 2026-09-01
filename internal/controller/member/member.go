@@ -2,6 +2,7 @@ package member
 
 import (
 	"context"
+	"strings"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
@@ -9,6 +10,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/reconciler/managed"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
+	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
 	memberv1alpha1 "github.com/rossigee/provider-discord/apis/member/v1alpha1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
@@ -19,6 +21,16 @@ import (
 const (
 	errNotMember = "managed resource is not a Member custom resource"
 )
+
+// isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
+func isDiscordPermissionDenied(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 403")
+}
+
+// isDiscordUnauthorized reports whether a Discord API error is a 401 Unauthorized response.
+func isDiscordUnauthorized(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 401")
+}
 
 // Setup adds a controller that reconciles Member managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
@@ -110,6 +122,17 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 			return managed.ExternalObservation{
 				ResourceExists: false,
 			}, nil
+		}
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to observe member"))
+			log.Error(err, "Permission denied: bot lacks permissions to observe member")
+			return managed.ExternalObservation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalObservation{}, nil
 		}
 		return managed.ExternalObservation{}, errors.Wrap(err, "failed to get member")
 	}
@@ -233,6 +256,17 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	_, err := e.discord.ModifyGuildMember(ctx, cr.Spec.ForProvider.GuildID, userID, req)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to update member"))
+			log.Error(err, "Permission denied: bot lacks permissions to update member")
+			return managed.ExternalUpdate{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalUpdate{}, nil
+		}
 		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update member")
 	}
 
@@ -253,8 +287,19 @@ func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	err := e.discord.RemoveGuildMember(ctx, cr.Spec.ForProvider.GuildID, userID)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
 		if err.Error() == "member not found" {
 			// Member already removed
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to delete member"))
+			log.Error(err, "Permission denied: bot lacks permissions to delete member")
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
 			return managed.ExternalDelete{}, nil
 		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to remove member")

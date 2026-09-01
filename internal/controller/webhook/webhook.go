@@ -44,6 +44,16 @@ const (
 	errGetCreds     = "cannot get credentials"
 )
 
+// isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
+func isDiscordPermissionDenied(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 403")
+}
+
+// isDiscordUnauthorized reports whether a Discord API error is a 401 Unauthorized response.
+func isDiscordUnauthorized(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "Discord API error: 401")
+}
+
 var (
 	// Discord snowflake IDs are 18-19 digit numbers
 	discordSnowflakeRegex = regexp.MustCompile(`^\d{18,19}$`)
@@ -203,6 +213,17 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	webhook, err := c.service.CreateWebhook(ctx, cr.Spec.ForProvider.ChannelID, req)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to create webhook"))
+			log.Error(err, "Permission denied: bot lacks permissions to create webhook")
+			return managed.ExternalCreation{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalCreation{}, nil
+		}
 		return managed.ExternalCreation{}, errors.Wrap(err, "failed to create webhook")
 	}
 
@@ -246,6 +267,17 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	_, err := c.service.ModifyWebhook(ctx, meta.GetExternalName(cr), req)
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to update webhook"))
+			log.Error(err, "Permission denied: bot lacks permissions to update webhook")
+			return managed.ExternalUpdate{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
+			return managed.ExternalUpdate{}, nil
+		}
 		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update webhook")
 	}
 
@@ -262,8 +294,19 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	err := c.service.DeleteWebhook(ctx, meta.GetExternalName(cr))
 	if err != nil {
+		log := ctrl.LoggerFrom(ctx)
 		// Check if the error is a 404 (webhook not found), which means it's already deleted
 		if strings.Contains(err.Error(), "Discord API error: 404") {
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordPermissionDenied(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to delete webhook"))
+			log.Error(err, "Permission denied: bot lacks permissions to delete webhook")
+			return managed.ExternalDelete{}, nil
+		}
+		if isDiscordUnauthorized(err) {
+			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
+			log.Error(err, "Invalid or expired bot token")
 			return managed.ExternalDelete{}, nil
 		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete webhook")
