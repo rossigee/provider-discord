@@ -133,6 +133,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	if shouldSkipObserve(cr.Status.AtProvider.LastSyncTime) {
 		log := ctrl.LoggerFrom(ctx)
 		log.V(3).Info("Skipping Observe due to recent sync", "lastSyncTime", cr.Status.AtProvider.LastSyncTime)
+		cr.SetConditions(xpv1.Available())
 		return managed.ExternalObservation{
 			ResourceExists:   true,
 			ResourceUpToDate: true,
