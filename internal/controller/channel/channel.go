@@ -214,6 +214,7 @@ func SetupWithClient(mgr ctrl.Manager, o controller.Options, newServiceFn func(t
 		}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
+		managed.WithManagementPolicies(),
 		managed.WithRecorder(event.NewAPIRecorder(mgr.GetEventRecorder(name))))
 
 	return ctrl.NewControllerManagedBy(mgr).
