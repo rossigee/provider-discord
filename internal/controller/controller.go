@@ -18,7 +18,7 @@ package controller
 
 import (
 	"context"
-	"os"
+	"fmt"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/controller"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/logging"
@@ -53,8 +53,9 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 // the supplied manager.
 func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *metrics.MetricsRecorder) error {
 	// Self-managed RBAC (stable names, no more per-revision pinning)
+	// RBAC MUST succeed - provider cannot function without proper ClusterRole permissions
 	if err := setupRBAC(mgr.GetClient(), o.Logger); err != nil {
-		o.Logger.Info("RBAC setup warning (may be transient)", "error", err)
+		return fmt.Errorf("failed to setup provider RBAC: %w", err)
 	}
 
 	if err := providerconfig.Setup(mgr); err != nil {
@@ -104,6 +105,8 @@ func SetupWithMetrics(mgr ctrl.Manager, o controller.Options, metricsRecorder *m
 func setupRBAC(c client.Client, l logging.Logger) error {
 	ctx := context.Background()
 
+	l.Info("RBAC setup starting")
+
 	rules := []rbacv1.PolicyRule{
 		{APIGroups: []string{"application.discord.crossplane.io"}, Resources: []string{"applications", "applications/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{APIGroups: []string{"channel.discord.crossplane.io"}, Resources: []string{"channels", "channels/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
@@ -132,16 +135,17 @@ func setupRBAC(c client.Client, l logging.Logger) error {
 		Rules: rules,
 	}
 	if err := c.Create(ctx, system); err != nil && !errors.IsAlreadyExists(err) {
+		l.Info("failed to create system ClusterRole", "error", err)
 		return err
 	}
 	if err := c.Update(ctx, system); err != nil {
-		l.Info("system role update", "err", err)
+		l.Info("system role update", "error", err)
 	}
 
 	binding := &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{Name: "crossplane:provider:provider-discord:system"},
 		RoleRef:    rbacv1.RoleRef{APIGroup: "rbac.authorization.k8s.io", Kind: "ClusterRole", Name: "crossplane:provider:provider-discord:system"},
-		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: os.Getenv("REVISION_NAME"), Namespace: "crossplane-system"}},
+		Subjects:   []rbacv1.Subject{{Kind: "ServiceAccount", Name: "provider-discord", Namespace: "crossplane-system"}},
 	}
 	if err := c.Create(ctx, binding); err != nil && !errors.IsAlreadyExists(err) {
 		return err
