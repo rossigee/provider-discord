@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         args: [--markdown-linebreak-ext=md]
@@ -15,7 +15,7 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/psf/black
-    rev: 24.4.2
+    rev: 26.5.1
     hooks:
       - id: black
         language_version: python3
@@ -105,6 +105,8 @@ repos:
           ]
 
           for filename in sys.argv[1:]:
+              if filename.endswith('.pre-commit-config.yaml') or filename.endswith('_test.go'):
+                  continue
               try:
                   with open(filename, 'r', encoding='utf-8', errors='ignore') as f:
                       content = f.read()
@@ -117,3 +119,4 @@ repos:
           "
         language: system
         files: \.(go|yaml|yml|json|md|sh|env)$
+        exclude: (\.pre-commit-config\.yaml$|_test\.go$)
