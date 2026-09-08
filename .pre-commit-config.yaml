@@ -40,11 +40,13 @@ repos:
     rev: v1.0.0-rc.1
     hooks:
       - id: go-fmt
-        exclude: 'zz_generated\..*\.go$'
+        exclude: 'zz_generated\..*\.go$|tools/'
       - id: go-imports
-        exclude: 'zz_generated\..*\.go$'
+        exclude: 'zz_generated\..*\.go$|tools/'
       - id: go-vet-mod
+        exclude: 'tools/'
       - id: go-mod-tidy
+        exclude: 'tools/'
 
   - repo: https://github.com/adrienverge/yamllint
     rev: v1.35.1
