@@ -22,9 +22,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-logr/logr"
 	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
 	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
-	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
