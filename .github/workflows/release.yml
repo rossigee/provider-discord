@@ -142,6 +142,7 @@ jobs:
       - name: Build and Publish Artifacts
         env:
           BRANCH_NAME: master
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -e
           echo "Building version ${VERSION}"
