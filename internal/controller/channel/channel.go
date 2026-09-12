@@ -86,7 +86,12 @@ func isDiscordUnauthorized(err error) bool {
 // channels, and two Channel custom resources that resolve to the same
 // guild+name can be reconciled concurrently by different goroutines in the
 // controller's worker pool. Without this lock, both can list the guild's
-// channels, both see no match, and both create a duplicate. The lock is
+// channels, both see no match, and both create a duplicate.
+//
+// IMPORTANT: The lock is acquired in Observe (not just Create) to close the
+// TOCTOU gap between observing and creating. This ensures that if two
+// resources race to create the same channel, the first one to acquire the
+// lock will create/adopt, and the second will see it exists and adopt. The lock is
 // acquired in Create (see below) around a re-check-then-create sequence, so
 // the second racer always observes the first racer's newly created channel
 // and adopts it instead of creating another one.
@@ -277,13 +282,18 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	// If external-name is empty or not a valid Discord ID, check if channel exists by name.
 	// Crossplane runtime defaults external-name to metadata.name for new resources.
+	// We acquire a lock here to prevent TOCTOU race between Observe and Create.
 	if externalName == "" {
+		unlock := lockForChannelName(cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
+		defer unlock()
 		return c.checkChannelExistsByName(ctx, cr)
 	}
 
 	// Check if external-name is a valid Discord snowflake ID (18-19 digits)
 	if !isValidDiscordID(externalName) {
 		// For non-snowflake external names, check if channel exists by name
+		unlock := lockForChannelName(cr.Spec.ForProvider.GuildID, cr.Spec.ForProvider.Name)
+		defer unlock()
 		return c.checkChannelExistsByName(ctx, cr)
 	}
 
