@@ -24,7 +24,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/google/go-cmp/cmp"
 	"github.com/pkg/errors"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -65,12 +65,12 @@ func TestGetConfig(t *testing.T) {
 					},
 				},
 				objects: []client.Object{
-					&v1alpha1.ProviderConfig{
+					&v1beta1.ProviderConfig{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-provider-config",
 						},
-						Spec: v1alpha1.ProviderConfigSpec{
-							Credentials: v1alpha1.ProviderCredentials{
+						Spec: v1beta1.ProviderConfigSpec{
+							Credentials: v1beta1.ProviderCredentials{
 								Source: xpv1.CredentialsSourceSecret,
 								CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
 									SecretRef: &xpv1.SecretKeySelector{
@@ -110,7 +110,7 @@ func TestGetConfig(t *testing.T) {
 				objects: []client.Object{},
 			},
 			want: want{
-				err: errors.Wrap(errors.New("providerconfigs.discord.crossplane.io \"non-existent\" not found"), errGetProviderConfig),
+				err: errors.Wrap(errors.New("providerconfigs.discord.m.crossplane.io \"non-existent\" not found"), errGetProviderConfig),
 			},
 		},
 		"SecretNotFound": {
@@ -122,12 +122,12 @@ func TestGetConfig(t *testing.T) {
 					},
 				},
 				objects: []client.Object{
-					&v1alpha1.ProviderConfig{
+					&v1beta1.ProviderConfig{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-provider-config",
 						},
-						Spec: v1alpha1.ProviderConfigSpec{
-							Credentials: v1alpha1.ProviderCredentials{
+						Spec: v1beta1.ProviderConfigSpec{
+							Credentials: v1beta1.ProviderCredentials{
 								Source: xpv1.CredentialsSourceSecret,
 								CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
 									SecretRef: &xpv1.SecretKeySelector{
@@ -156,12 +156,12 @@ func TestGetConfig(t *testing.T) {
 					},
 				},
 				objects: []client.Object{
-					&v1alpha1.ProviderConfig{
+					&v1beta1.ProviderConfig{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-provider-config",
 						},
-						Spec: v1alpha1.ProviderConfigSpec{
-							Credentials: v1alpha1.ProviderCredentials{
+						Spec: v1beta1.ProviderConfigSpec{
+							Credentials: v1beta1.ProviderCredentials{
 								Source: xpv1.CredentialsSourceSecret,
 								CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
 									SecretRef: &xpv1.SecretKeySelector{
@@ -199,12 +199,12 @@ func TestGetConfig(t *testing.T) {
 					},
 				},
 				objects: []client.Object{
-					&v1alpha1.ProviderConfig{
+					&v1beta1.ProviderConfig{
 						ObjectMeta: metav1.ObjectMeta{
 							Name: "test-provider-config",
 						},
-						Spec: v1alpha1.ProviderConfigSpec{
-							Credentials: v1alpha1.ProviderCredentials{
+						Spec: v1beta1.ProviderConfigSpec{
+							Credentials: v1beta1.ProviderCredentials{
 								Source: xpv1.CredentialsSourceSecret,
 							},
 						},
@@ -219,7 +219,7 @@ func TestGetConfig(t *testing.T) {
 
 	// Create scheme once
 	scheme := runtime.NewScheme()
-	_ = v1alpha1.AddToScheme(scheme)
+	_ = v1beta1.AddToScheme(scheme)
 	_ = corev1.AddToScheme(scheme)
 
 	for name, tc := range cases {

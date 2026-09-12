@@ -33,15 +33,15 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/ratelimiter"
 	"github.com/crossplane/crossplane-runtime/v2/pkg/statemetrics"
 	"github.com/rossigee/provider-discord/apis"
-	applicationv1alpha1 "github.com/rossigee/provider-discord/apis/application/v1alpha1"
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
-	integrationv1alpha1 "github.com/rossigee/provider-discord/apis/integration/v1alpha1"
-	invitev1alpha1 "github.com/rossigee/provider-discord/apis/invite/v1alpha1"
-	memberv1alpha1 "github.com/rossigee/provider-discord/apis/member/v1alpha1"
-	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	userv1alpha1 "github.com/rossigee/provider-discord/apis/user/v1alpha1"
-	webhookv1alpha1 "github.com/rossigee/provider-discord/apis/webhook/v1alpha1"
+	applicationv1beta1 "github.com/rossigee/provider-discord/apis/application/v1beta1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
+	guildv1beta1 "github.com/rossigee/provider-discord/apis/guild/v1beta1"
+	integrationv1beta1 "github.com/rossigee/provider-discord/apis/integration/v1beta1"
+	invitev1beta1 "github.com/rossigee/provider-discord/apis/invite/v1beta1"
+	memberv1beta1 "github.com/rossigee/provider-discord/apis/member/v1beta1"
+	rolev1beta1 "github.com/rossigee/provider-discord/apis/role/v1beta1"
+	userv1beta1 "github.com/rossigee/provider-discord/apis/user/v1beta1"
+	webhookv1beta1 "github.com/rossigee/provider-discord/apis/webhook/v1beta1"
 	"github.com/rossigee/provider-discord/internal/controller"
 	"github.com/rossigee/provider-discord/internal/features"
 	"github.com/rossigee/provider-discord/internal/metrics"
@@ -170,15 +170,15 @@ func main() {
 	log.Info("Successfully set up Discord controllers")
 
 	// Register state metrics for managed resources
-	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &guildv1alpha1.GuildList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Guild")
-	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &channelv1alpha1.ChannelList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Channel")
-	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &rolev1alpha1.RoleList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Role")
-	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &memberv1alpha1.MemberList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Member")
-	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &invitev1alpha1.InviteList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Invite")
-	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &applicationv1alpha1.ApplicationList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Application")
-	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &integrationv1alpha1.IntegrationList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Integration")
-	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &webhookv1alpha1.WebhookList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Webhook")
-	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &userv1alpha1.UserList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for User")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &guildv1beta1.GuildList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Guild")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &channelv1beta1.ChannelList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Channel")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &rolev1beta1.RoleList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Role")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &memberv1beta1.MemberList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Member")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &invitev1beta1.InviteList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Invite")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &applicationv1beta1.ApplicationList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Application")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &integrationv1beta1.IntegrationList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Integration")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &webhookv1beta1.WebhookList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for Webhook")
+	kingpin.FatalIfError(mgr.Add(statemetrics.NewMRStateRecorder(mgr.GetClient(), o.Logger, o.MetricOptions.MRStateMetrics, &userv1beta1.UserList{}, o.MetricOptions.PollStateMetricInterval)), "Cannot register state metrics for User")
 
 	kingpin.FatalIfError(mgr.AddHealthzCheck("healthz", healthz.Ping), "Cannot add health check")
 	kingpin.FatalIfError(mgr.AddReadyzCheck("readyz", healthz.Ping), "Cannot add ready check")

@@ -1,7 +1,8 @@
-apiVersion: role.discord.crossplane.io/v1alpha1
+apiVersion: role.discord.m.crossplane.io/v1beta1
 kind: Role
 metadata:
   name: example-moderator-role
+  namespace: default
   annotations:
     kubernetes.io/description: "Example Discord moderator role"
 spec:
@@ -16,10 +17,11 @@ spec:
     kind: ClusterProviderConfig
     name: default
 ---
-apiVersion: role.discord.crossplane.io/v1alpha1
+apiVersion: role.discord.m.crossplane.io/v1beta1
 kind: Role
 metadata:
   name: example-member-role
+  namespace: default
   annotations:
     kubernetes.io/description: "Example Discord member role"
 spec:

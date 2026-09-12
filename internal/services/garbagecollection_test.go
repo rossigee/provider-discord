@@ -24,8 +24,8 @@ import (
 	"sync"
 	"testing"
 
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
+	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -35,7 +35,7 @@ import (
 func newGCTestScheme(t *testing.T) *runtime.Scheme {
 	t.Helper()
 	s := runtime.NewScheme()
-	if err := channelv1alpha1.SchemeBuilder.AddToScheme(s); err != nil {
+	if err := channelv1beta1.SchemeBuilder.AddToScheme(s); err != nil {
 		t.Fatalf("failed to add channel scheme: %v", err)
 	}
 	return s
@@ -50,16 +50,16 @@ func discordChannelFixture(id, name string, chType, position int) Channel {
 }
 
 // makeCrossplaneChannel builds a Crossplane Channel CR with the given external-name and guildID.
-func makeCrossplaneChannel(name, externalName, guildID string) *channelv1alpha1.Channel {
-	return &channelv1alpha1.Channel{
+func makeCrossplaneChannel(name, externalName, guildID string) *channelv1beta1.Channel {
+	return &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
 			Annotations: map[string]string{
 				"crossplane.io/external-name": externalName,
 			},
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    name,
 				GuildID: guildID,
 				Type:    0,
@@ -318,7 +318,7 @@ func TestRunGarbageCollection_DeleteUnmanaged_DisabledByDefault(t *testing.T) {
 	}
 
 	// Spec with deleteUnmanagedChannels NOT set (nil = disabled)
-	spec := &discordv1alpha1.GarbageCollectionSpec{
+	spec := &discordv1beta1.GarbageCollectionSpec{
 		Enabled: true,
 	}
 
@@ -369,7 +369,7 @@ func TestRunGarbageCollection_DeleteUnmanaged_Enabled(t *testing.T) {
 		k8sClient:  k8s,
 	}
 
-	spec := &discordv1alpha1.GarbageCollectionSpec{
+	spec := &discordv1beta1.GarbageCollectionSpec{
 		Enabled:                 true,
 		DeleteUnmanagedChannels: boolPtr(true),
 	}

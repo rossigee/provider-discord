@@ -30,7 +30,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	invitev1alpha1 "github.com/rossigee/provider-discord/apis/invite/v1alpha1"
+	invitev1beta1 "github.com/rossigee/provider-discord/apis/invite/v1beta1"
 	"github.com/rossigee/provider-discord/internal/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -69,10 +69,10 @@ func isValidDiscordInviteCode(code string) bool {
 
 // Setup adds a controller that reconciles Invite managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(invitev1alpha1.InviteGroupKind.String())
+	name := managed.ControllerName(invitev1beta1.InviteGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(invitev1alpha1.InviteGroupVersionKind),
+		resource.ManagedKind(invitev1beta1.InviteGroupVersionKind),
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			newServiceFn: clients.NewDiscordClient,
@@ -86,7 +86,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
-		For(&invitev1alpha1.Invite{}).
+		For(&invitev1beta1.Invite{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -103,7 +103,7 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*invitev1alpha1.Invite)
+	cr, ok := mg.(*invitev1beta1.Invite)
 	if !ok {
 		return nil, errors.New(errNotInvite)
 	}
@@ -130,7 +130,7 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*invitev1alpha1.Invite)
+	cr, ok := mg.(*invitev1beta1.Invite)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotInvite)
 	}
@@ -176,7 +176,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 
 	// Update status with observed values
-	cr.Status.AtProvider = invitev1alpha1.InviteObservation{
+	cr.Status.AtProvider = invitev1beta1.InviteObservation{
 		Code:                     invite.Code,
 		GuildID:                  getStringFromGuild(invite.Guild),
 		ChannelID:                getStringFromChannel(invite.Channel),
@@ -210,7 +210,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*invitev1alpha1.Invite)
+	cr, ok := mg.(*invitev1beta1.Invite)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotInvite)
 	}
@@ -263,7 +263,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*invitev1alpha1.Invite)
+	cr, ok := mg.(*invitev1beta1.Invite)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotInvite)
 	}

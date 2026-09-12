@@ -12,8 +12,8 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	userv1alpha1 "github.com/rossigee/provider-discord/apis/user/v1alpha1"
-	v1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	userv1beta1 "github.com/rossigee/provider-discord/apis/user/v1beta1"
+	v1alpha1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,10 +39,10 @@ func isDiscordUnauthorized(err error) bool {
 
 // Setup adds a controller that reconciles User managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(userv1alpha1.UserGroupKind.String())
+	name := managed.ControllerName(userv1beta1.UserGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(userv1alpha1.UserGroupVersionKind),
+		resource.ManagedKind(userv1beta1.UserGroupVersionKind),
 		managed.WithExternalConnector(&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.ModernTrackerFn(func(ctx context.Context, mg resource.ModernManaged) error { return nil }),
@@ -56,7 +56,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
-		For(&userv1alpha1.User{}).
+		For(&userv1beta1.User{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -73,7 +73,7 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*userv1alpha1.User)
+	_, ok := mg.(*userv1beta1.User)
 	if !ok {
 		return nil, errors.New(errNotUser)
 	}
@@ -131,7 +131,7 @@ func (e *external) Disconnect(_ context.Context) error {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*userv1alpha1.User)
+	cr, ok := mg.(*userv1beta1.User)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotUser)
 	}
@@ -214,7 +214,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	_, ok := mg.(*userv1alpha1.User)
+	_, ok := mg.(*userv1beta1.User)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotUser)
 	}
@@ -225,7 +225,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*userv1alpha1.User)
+	cr, ok := mg.(*userv1beta1.User)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotUser)
 	}
@@ -270,7 +270,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	_, ok := mg.(*userv1alpha1.User)
+	_, ok := mg.(*userv1beta1.User)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotUser)
 	}

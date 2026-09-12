@@ -24,9 +24,9 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/rossigee/provider-discord/apis"
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
+	guildv1beta1 "github.com/rossigee/provider-discord/apis/guild/v1beta1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -47,13 +47,13 @@ func TestGuildLifecycle(t *testing.T) {
 	ctx := context.Background()
 
 	// Test Guild creation
-	guild := &guildv1alpha1.Guild{
+	guild := &guildv1beta1.Guild{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-guild",
 			Namespace: "default",
 		},
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name:                        "Test Guild",
 				VerificationLevel:           func() *int { v := 1; return &v }(),
 				DefaultMessageNotifications: func() *int { v := 0; return &v }(),
@@ -67,7 +67,7 @@ func TestGuildLifecycle(t *testing.T) {
 	}
 
 	// Verify it was created
-	var createdGuild guildv1alpha1.Guild
+	var createdGuild guildv1beta1.Guild
 	if err := fakeClient.Get(ctx, client.ObjectKeyFromObject(guild), &createdGuild); err != nil {
 		t.Fatalf("Failed to get created guild: %v", err)
 	}
@@ -80,7 +80,7 @@ func TestGuildLifecycle(t *testing.T) {
 
 	// Test status update (simulating controller behavior)
 	// For integration tests, we'll just update the object directly
-	createdGuild.Status.AtProvider = guildv1alpha1.GuildObservation{
+	createdGuild.Status.AtProvider = guildv1beta1.GuildObservation{
 		ID:      "123456789",
 		Name:    "Test Guild",
 		OwnerID: "987654321",
@@ -99,7 +99,7 @@ func TestGuildLifecycle(t *testing.T) {
 	}
 
 	// Verify final state
-	var finalGuild guildv1alpha1.Guild
+	var finalGuild guildv1beta1.Guild
 	if err := fakeClient.Get(ctx, client.ObjectKeyFromObject(guild), &finalGuild); err != nil {
 		t.Fatalf("Failed to get final guild state: %v", err)
 	}
@@ -132,13 +132,13 @@ func TestChannelLifecycle(t *testing.T) {
 	ctx := context.Background()
 
 	// Test Channel creation
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "test-channel",
 			Namespace: "default",
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: "123456789",
@@ -152,7 +152,7 @@ func TestChannelLifecycle(t *testing.T) {
 	}
 
 	// Verify it was created
-	var createdChannel channelv1alpha1.Channel
+	var createdChannel channelv1beta1.Channel
 	if err := fakeClient.Get(ctx, client.ObjectKeyFromObject(channel), &createdChannel); err != nil {
 		t.Fatalf("Failed to get created channel: %v", err)
 	}
@@ -165,7 +165,7 @@ func TestChannelLifecycle(t *testing.T) {
 
 	// Test status update (simulating controller behavior)
 	// For integration tests, we'll just update the object directly
-	createdChannel.Status.AtProvider = channelv1alpha1.ChannelObservation{
+	createdChannel.Status.AtProvider = channelv1beta1.ChannelObservation{
 		ID:      "987654321",
 		Name:    "test-channel",
 		Type:    0,
@@ -185,7 +185,7 @@ func TestChannelLifecycle(t *testing.T) {
 	}
 
 	// Verify final state
-	var finalChannel channelv1alpha1.Channel
+	var finalChannel channelv1beta1.Channel
 	if err := fakeClient.Get(ctx, client.ObjectKeyFromObject(channel), &finalChannel); err != nil {
 		t.Fatalf("Failed to get final channel state: %v", err)
 	}
@@ -218,12 +218,12 @@ func TestProviderConfigResourceLifecycle(t *testing.T) {
 	ctx := context.Background()
 
 	// Test ProviderConfig creation
-	providerConfig := &v1alpha1.ProviderConfig{
+	providerConfig := &v1beta1.ProviderConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-provider-config",
 		},
-		Spec: v1alpha1.ProviderConfigSpec{
-			Credentials: v1alpha1.ProviderCredentials{
+		Spec: v1beta1.ProviderConfigSpec{
+			Credentials: v1beta1.ProviderCredentials{
 				Source: xpv1.CredentialsSourceSecret,
 				CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
 					SecretRef: &xpv1.SecretKeySelector{
@@ -244,7 +244,7 @@ func TestProviderConfigResourceLifecycle(t *testing.T) {
 	}
 
 	// Verify it was created
-	var createdProviderConfig v1alpha1.ProviderConfig
+	var createdProviderConfig v1beta1.ProviderConfig
 	if err := fakeClient.Get(ctx, client.ObjectKeyFromObject(providerConfig), &createdProviderConfig); err != nil {
 		t.Fatalf("Failed to get created provider config: %v", err)
 	}

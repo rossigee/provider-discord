@@ -25,9 +25,9 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
+	rolev1beta1 "github.com/rossigee/provider-discord/apis/role/v1beta1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -124,7 +124,7 @@ func TestEndToEndScenario(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create channel %s: %v", channel.Name, err)
 			}
-			defer func(ch *channelv1alpha1.Channel) {
+			defer func(ch *channelv1beta1.Channel) {
 				if err := k8sClient.Delete(ctx, ch); err != nil {
 					t.Logf("Warning: Failed to delete channel: %v", err)
 				}
@@ -146,7 +146,7 @@ func TestEndToEndScenario(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to create role %s: %v", role.Name, err)
 			}
-			defer func(r *rolev1alpha1.Role) {
+			defer func(r *rolev1beta1.Role) {
 				if err := k8sClient.Delete(ctx, r); err != nil {
 					t.Logf("Warning: Failed to delete role: %v", err)
 				}
@@ -192,13 +192,13 @@ func createDiscordSecret(namespace, suffix, token string) *corev1.Secret {
 	}
 }
 
-func createProviderConfig(suffix, secretName, secretNamespace string) *v1alpha1.ProviderConfig {
-	return &v1alpha1.ProviderConfig{
+func createProviderConfig(suffix, secretName, secretNamespace string) *v1beta1.ProviderConfig {
+	return &v1beta1.ProviderConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: fmt.Sprintf("provider-config-%s", suffix),
 		},
-		Spec: v1alpha1.ProviderConfigSpec{
-			Credentials: v1alpha1.ProviderCredentials{
+		Spec: v1beta1.ProviderConfigSpec{
+			Credentials: v1beta1.ProviderCredentials{
 				Source: xpv1.CredentialsSourceSecret,
 				CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
 					SecretRef: &xpv1.SecretKeySelector{
@@ -215,15 +215,15 @@ func createProviderConfig(suffix, secretName, secretNamespace string) *v1alpha1.
 	}
 }
 
-func createTestChannels(namespace, suffix, guildID, providerConfigName string) []*channelv1alpha1.Channel {
-	return []*channelv1alpha1.Channel{
+func createTestChannels(namespace, suffix, guildID, providerConfigName string) []*channelv1beta1.Channel {
+	return []*channelv1beta1.Channel{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("test-text-channel-%s", suffix),
 				Namespace: namespace,
 			},
-			Spec: channelv1alpha1.ChannelSpec{
-				ForProvider: channelv1alpha1.ChannelParameters{
+			Spec: channelv1beta1.ChannelSpec{
+				ForProvider: channelv1beta1.ChannelParameters{
 					Name:    fmt.Sprintf("test-text-%s", suffix),
 					Type:    0, // Text channel
 					GuildID: guildID,
@@ -236,8 +236,8 @@ func createTestChannels(namespace, suffix, guildID, providerConfigName string) [
 				Name:      fmt.Sprintf("test-voice-channel-%s", suffix),
 				Namespace: namespace,
 			},
-			Spec: channelv1alpha1.ChannelSpec{
-				ForProvider: channelv1alpha1.ChannelParameters{
+			Spec: channelv1beta1.ChannelSpec{
+				ForProvider: channelv1beta1.ChannelParameters{
 					Name:      fmt.Sprintf("test-voice-%s", suffix),
 					Type:      2, // Voice channel
 					GuildID:   guildID,
@@ -249,15 +249,15 @@ func createTestChannels(namespace, suffix, guildID, providerConfigName string) [
 	}
 }
 
-func createTestRoles(namespace, suffix, guildID, providerConfigName string) []*rolev1alpha1.Role {
-	return []*rolev1alpha1.Role{
+func createTestRoles(namespace, suffix, guildID, providerConfigName string) []*rolev1beta1.Role {
+	return []*rolev1beta1.Role{
 		{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      fmt.Sprintf("test-admin-role-%s", suffix),
 				Namespace: namespace,
 			},
-			Spec: rolev1alpha1.RoleSpec{
-				ForProvider: rolev1alpha1.RoleParameters{
+			Spec: rolev1beta1.RoleSpec{
+				ForProvider: rolev1beta1.RoleParameters{
 					Name:        fmt.Sprintf("Test Admin %s", suffix),
 					GuildID:     guildID,
 					Color:       intPtrE2E(0xFF0000), // Red
@@ -272,8 +272,8 @@ func createTestRoles(namespace, suffix, guildID, providerConfigName string) []*r
 				Name:      fmt.Sprintf("test-member-role-%s", suffix),
 				Namespace: namespace,
 			},
-			Spec: rolev1alpha1.RoleSpec{
-				ForProvider: rolev1alpha1.RoleParameters{
+			Spec: rolev1beta1.RoleSpec{
+				ForProvider: rolev1beta1.RoleParameters{
 					Name:        fmt.Sprintf("Test Member %s", suffix),
 					GuildID:     guildID,
 					Color:       intPtrE2E(0x00FF00), // Green
@@ -288,7 +288,7 @@ func createTestRoles(namespace, suffix, guildID, providerConfigName string) []*r
 
 func waitForProviderConfigReady(ctx context.Context, k8sClient client.Client, name string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(ctx, 2*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-		var pc v1alpha1.ProviderConfig
+		var pc v1beta1.ProviderConfig
 		err := k8sClient.Get(ctx, types.NamespacedName{Name: name}, &pc)
 		if err != nil {
 			return false, err
@@ -307,7 +307,7 @@ func waitForProviderConfigReady(ctx context.Context, k8sClient client.Client, na
 
 func waitForChannelReady(ctx context.Context, k8sClient client.Client, name, namespace string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(ctx, 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-		var channel channelv1alpha1.Channel
+		var channel channelv1beta1.Channel
 		err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, &channel)
 		if err != nil {
 			return false, err
@@ -331,7 +331,7 @@ func waitForChannelReady(ctx context.Context, k8sClient client.Client, name, nam
 
 func waitForRoleReady(ctx context.Context, k8sClient client.Client, name, namespace string, timeout time.Duration) error {
 	return wait.PollUntilContextTimeout(ctx, 5*time.Second, timeout, true, func(ctx context.Context) (bool, error) {
-		var role rolev1alpha1.Role
+		var role rolev1beta1.Role
 		err := k8sClient.Get(ctx, types.NamespacedName{Name: name, Namespace: namespace}, &role)
 		if err != nil {
 			return false, err
@@ -353,9 +353,9 @@ func waitForRoleReady(ctx context.Context, k8sClient client.Client, name, namesp
 	})
 }
 
-func testChannelUpdate(ctx context.Context, t *testing.T, k8sClient client.Client, channel *channelv1alpha1.Channel) {
+func testChannelUpdate(ctx context.Context, t *testing.T, k8sClient client.Client, channel *channelv1beta1.Channel) {
 	// Update channel topic
-	var currentChannel channelv1alpha1.Channel
+	var currentChannel channelv1beta1.Channel
 	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(channel), &currentChannel)
 	if err != nil {
 		t.Fatalf("Failed to get current channel: %v", err)
@@ -371,7 +371,7 @@ func testChannelUpdate(ctx context.Context, t *testing.T, k8sClient client.Clien
 
 	// Wait for update to be applied
 	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 30*time.Second, true, func(ctx context.Context) (bool, error) {
-		var updatedChannel channelv1alpha1.Channel
+		var updatedChannel channelv1beta1.Channel
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(channel), &updatedChannel)
 		if err != nil {
 			return false, err
@@ -387,9 +387,9 @@ func testChannelUpdate(ctx context.Context, t *testing.T, k8sClient client.Clien
 	t.Logf("Successfully updated channel topic to: %s", newTopic)
 }
 
-func testRoleUpdate(ctx context.Context, t *testing.T, k8sClient client.Client, role *rolev1alpha1.Role) {
+func testRoleUpdate(ctx context.Context, t *testing.T, k8sClient client.Client, role *rolev1beta1.Role) {
 	// Update role color
-	var currentRole rolev1alpha1.Role
+	var currentRole rolev1beta1.Role
 	err := k8sClient.Get(ctx, client.ObjectKeyFromObject(role), &currentRole)
 	if err != nil {
 		t.Fatalf("Failed to get current role: %v", err)
@@ -405,7 +405,7 @@ func testRoleUpdate(ctx context.Context, t *testing.T, k8sClient client.Client, 
 
 	// Wait for update to be applied
 	err = wait.PollUntilContextTimeout(ctx, 5*time.Second, 30*time.Second, true, func(ctx context.Context) (bool, error) {
-		var updatedRole rolev1alpha1.Role
+		var updatedRole rolev1beta1.Role
 		err := k8sClient.Get(ctx, client.ObjectKeyFromObject(role), &updatedRole)
 		if err != nil {
 			return false, err
@@ -423,7 +423,7 @@ func testRoleUpdate(ctx context.Context, t *testing.T, k8sClient client.Client, 
 
 func verifyAllResourcesReady(ctx context.Context, t *testing.T, k8sClient client.Client, namespace, suffix string) {
 	// List all channels
-	var channels channelv1alpha1.ChannelList
+	var channels channelv1beta1.ChannelList
 	err := k8sClient.List(ctx, &channels, client.InNamespace(namespace))
 	if err != nil {
 		t.Fatalf("Failed to list channels: %v", err)
@@ -448,7 +448,7 @@ func verifyAllResourcesReady(ctx context.Context, t *testing.T, k8sClient client
 	}
 
 	// List all roles
-	var roles rolev1alpha1.RoleList
+	var roles rolev1beta1.RoleList
 	err = k8sClient.List(ctx, &roles, client.InNamespace(namespace))
 	if err != nil {
 		t.Fatalf("Failed to list roles: %v", err)

@@ -255,7 +255,7 @@ func makeRequest(method, url, token string) *http.Response {
 }
 
 func generateGuildCR(guild Guild) string {
-	return fmt.Sprintf(`apiVersion: guild.discord.crossplane.io/v1alpha1
+	return fmt.Sprintf(`apiVersion: guild.discord.m.crossplane.io/v1beta1
 kind: Guild
 metadata:
   name: %s
@@ -309,7 +309,7 @@ func generateChannelManifests(channels []Channel, guildName, outputDir string) {
 func generateChannelCR(channel Channel, guildName string) string {
 	channelTypeName := getChannelTypeName(channel.Type)
 
-	cr := fmt.Sprintf(`apiVersion: channel.discord.crossplane.io/v1alpha1
+	cr := fmt.Sprintf(`apiVersion: channel.discord.m.crossplane.io/v1beta1
 kind: Channel
 metadata:
   name: %s-%s
@@ -391,7 +391,7 @@ func getChannelTypeName(channelType int) string {
 }
 
 func generateRoleCR(role Role, guildName string, guildID string) string {
-	return fmt.Sprintf(`apiVersion: role.discord.crossplane.io/v1alpha1
+	return fmt.Sprintf(`apiVersion: role.discord.m.crossplane.io/v1beta1
 kind: Role
 metadata:
   name: %s-%s
@@ -440,7 +440,7 @@ func sanitizeName(name string) string {
 func generateWebhookCR(webhook Webhook, guildName string, discoveryMode bool) string {
 	comment := ""
 
-	return fmt.Sprintf(`%sapiVersion: webhook.discord.crossplane.io/v1alpha1
+	return fmt.Sprintf(`%sapiVersion: webhook.discord.m.crossplane.io/v1beta1
 kind: Webhook
 metadata:
   name: %s-%s
@@ -469,7 +469,7 @@ func generateInviteCR(invite Invite, guildName string, discoveryMode bool) strin
 		channelID = invite.Channel.ID
 	}
 
-	return fmt.Sprintf(`%sapiVersion: invite.discord.crossplane.io/v1alpha1
+	return fmt.Sprintf(`%sapiVersion: invite.discord.m.crossplane.io/v1beta1
 kind: Invite
 metadata:
   name: %s-%s

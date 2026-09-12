@@ -8,7 +8,7 @@ Complete checklist for verifying the deduplication feature implementation.
 - [x] Extended ProviderConfig with DeduplicationSpec
   - [x] Added `enabled`, `mode`, `deleteOrphanedResources`, `targetGuilds` fields
   - [x] Defined DeduplicationMode enum
-  - Location: `apis/v1alpha1/types.go`
+  - Location: `apis/v1beta1/types.go`
 
 - [x] Created Deduplication CRD
   - [x] Defined DeduplicationSpec (providerConfigRef, mode, targetGuilds)
@@ -16,7 +16,7 @@ Complete checklist for verifying the deduplication feature implementation.
   - [x] Implemented DeduplicationSummary metrics
   - [x] Implemented GuildDeduplicationResult per-guild tracking
   - [x] Implemented DuplicateGroupInfo details
-  - Location: `apis/deduplication/v1alpha1/`
+  - Location: `apis/deduplication/v1beta1/`
 
 ### Service Layer
 - [x] Created DeduplicationService
@@ -156,7 +156,7 @@ Complete checklist for verifying the deduplication feature implementation.
   ```
 
 - [ ] Verify generated files exist:
-  - [ ] `apis/deduplication/v1alpha1/zz_generated.deepcopy.go`
+  - [ ] `apis/deduplication/v1beta1/zz_generated.deepcopy.go`
   - [ ] `config/crd/deduplication.crd.yaml`
 
 ### Testing
@@ -380,10 +380,10 @@ go tool cover -html=coverage.out  # View in browser
 
 | File | Status | Lines | Purpose |
 |------|--------|-------|---------|
-| `apis/v1alpha1/types.go` | Modified | +40 | ProviderConfig extension |
-| `apis/deduplication/v1alpha1/doc.go` | New | 20 | API package docs |
-| `apis/deduplication/v1alpha1/register.go` | New | 50 | Schema registration |
-| `apis/deduplication/v1alpha1/types.go` | New | 180 | CRD definitions |
+| `apis/v1beta1/types.go` | Modified | +40 | ProviderConfig extension |
+| `apis/deduplication/v1beta1/doc.go` | New | 20 | API package docs |
+| `apis/deduplication/v1beta1/register.go` | New | 50 | Schema registration |
+| `apis/deduplication/v1beta1/types.go` | New | 180 | CRD definitions |
 | `internal/services/deduplication.go` | New | 350 | Dedup service |
 | `internal/services/deduplication_test.go` | New | 450 | Service tests |
 | `internal/controller/deduplication/deduplication.go` | New | 250 | Controller |

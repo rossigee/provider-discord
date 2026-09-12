@@ -8,7 +8,7 @@
 ## Phase 2: Stable Resources (High Priority)
 
 ### Channel Controller
-- [ ] Add `LastSyncTime *metav1.Time` to `ChannelObservation` in `apis/channel/v1alpha1/types.go`
+- [ ] Add `LastSyncTime *metav1.Time` to `ChannelObservation` in `apis/channel/v1beta1/types.go`
 - [ ] Import `controller` package in `internal/controller/channel/channel.go`
 - [ ] Update `Observe()` method:
   - Add `ShouldSkipObserve()` check at top
@@ -18,12 +18,12 @@
 - [ ] Manual test: Deploy 50 channels, verify API calls drop ~80%
 
 ### Guild Controller
-- [ ] Add `LastSyncTime *metav1.Time` to `GuildObservation` in `apis/guild/v1alpha1/types.go`
+- [ ] Add `LastSyncTime *metav1.Time` to `GuildObservation` in `apis/guild/v1beta1/types.go`
 - [ ] Update `Observe()` in `internal/controller/guild/guild.go`
 - [ ] Run tests: `go test ./internal/controller/guild/...`
 
 ### Role Controller
-- [ ] Add `LastSyncTime *metav1.Time` to `RoleObservation` in `apis/role/v1alpha1/types.go`
+- [ ] Add `LastSyncTime *metav1.Time` to `RoleObservation` in `apis/role/v1beta1/types.go`
 - [ ] Update `Observe()` in `internal/controller/role/role.go`
 - [ ] Run tests: `go test ./internal/controller/role/...`
 

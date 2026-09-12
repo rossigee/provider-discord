@@ -1,7 +1,8 @@
-apiVersion: channel.discord.crossplane.io/v1alpha1
+apiVersion: channel.discord.m.crossplane.io/v1beta1
 kind: Channel
 metadata:
   name: example-text-channel
+  namespace: default
   annotations:
     kubernetes.io/description: "Example text channel managed by Crossplane"
 spec:
@@ -17,10 +18,11 @@ spec:
     kind: ClusterProviderConfig
     name: default
 ---
-apiVersion: channel.discord.crossplane.io/v1alpha1
+apiVersion: channel.discord.m.crossplane.io/v1beta1
 kind: Channel
 metadata:
   name: example-voice-channel
+  namespace: default
   annotations:
     kubernetes.io/description: "Example voice channel managed by Crossplane"
 spec:
@@ -35,10 +37,11 @@ spec:
     kind: ClusterProviderConfig
     name: default
 ---
-apiVersion: channel.discord.crossplane.io/v1alpha1
+apiVersion: channel.discord.m.crossplane.io/v1beta1
 kind: Channel
 metadata:
   name: example-category
+  namespace: default
   annotations:
     kubernetes.io/description: "Example category channel managed by Crossplane"
 spec:

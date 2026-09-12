@@ -29,7 +29,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	guildv1beta1 "github.com/rossigee/provider-discord/apis/guild/v1beta1"
 	"github.com/rossigee/provider-discord/internal/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -65,10 +65,10 @@ func isDiscordUnauthorized(err error) bool {
 
 // Setup adds a controller that reconciles Guild managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(guildv1alpha1.GuildGroupKind.String())
+	name := managed.ControllerName(guildv1beta1.GuildGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(guildv1alpha1.GuildGroupVersionKind),
+		resource.ManagedKind(guildv1beta1.GuildGroupVersionKind),
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			usage:        resource.ModernTrackerFn(func(ctx context.Context, mg resource.ModernManaged) error { return nil }),
@@ -83,7 +83,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
-		For(&guildv1alpha1.Guild{}).
+		For(&guildv1beta1.Guild{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -101,7 +101,7 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*guildv1alpha1.Guild)
+	cr, ok := mg.(*guildv1beta1.Guild)
 	if !ok {
 		return nil, errors.New(errNotGuild)
 	}
@@ -128,7 +128,7 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*guildv1alpha1.Guild)
+	cr, ok := mg.(*guildv1beta1.Guild)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotGuild)
 	}
@@ -176,7 +176,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 		// Update status with observed values
 		now := &metav1.Time{Time: time.Now()}
-		cr.Status.AtProvider = guildv1alpha1.GuildObservation{
+		cr.Status.AtProvider = guildv1beta1.GuildObservation{
 			ID:                          guild.ID,
 			Name:                        guild.Name,
 			OwnerID:                     guild.OwnerID,
@@ -224,7 +224,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}, nil
 }
 
-func (c *external) isUpToDate(cr *guildv1alpha1.Guild, guild *clients.Guild) bool {
+func (c *external) isUpToDate(cr *guildv1beta1.Guild, guild *clients.Guild) bool {
 	// Check if name needs to be updated
 	if cr.Spec.ForProvider.Name != guild.Name {
 		return false
@@ -276,7 +276,7 @@ func (c *external) isUpToDate(cr *guildv1alpha1.Guild, guild *clients.Guild) boo
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*guildv1alpha1.Guild)
+	cr, ok := mg.(*guildv1beta1.Guild)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotGuild)
 	}
@@ -344,7 +344,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*guildv1alpha1.Guild)
+	cr, ok := mg.(*guildv1beta1.Guild)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotGuild)
 	}
@@ -410,7 +410,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*guildv1alpha1.Guild)
+	cr, ok := mg.(*guildv1beta1.Guild)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotGuild)
 	}

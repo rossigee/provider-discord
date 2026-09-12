@@ -107,7 +107,7 @@ We provide security updates for the following versions:
    metadata:
      name: provider-discord
    rules:
-     - apiGroups: ["discord.crossplane.io"]
+     - apiGroups: ["discord.m.crossplane.io"]
        resources: ["*"]
        verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
    ```

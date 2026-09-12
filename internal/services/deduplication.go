@@ -25,10 +25,10 @@ import (
 	"strconv"
 	"time"
 
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	deduplicationv1alpha1 "github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
-	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	webhookv1alpha1 "github.com/rossigee/provider-discord/apis/webhook/v1alpha1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
+	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
+	rolev1beta1 "github.com/rossigee/provider-discord/apis/role/v1beta1"
+	webhookv1beta1 "github.com/rossigee/provider-discord/apis/webhook/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -160,7 +160,7 @@ func olderSnowflake(a, b string) bool {
 type AnalyzeAndDeduplicateResult struct {
 	Mode     string
 	Guilds   map[string]*GuildResult
-	Summary  *deduplicationv1alpha1.DeduplicationSummary
+	Summary  *deduplicationv1beta1.DeduplicationSummary
 	HasError bool
 	Error    string
 }
@@ -192,7 +192,7 @@ func (s *DeduplicationService) AnalyzeAndDeduplicateWithCleanup(ctx context.Cont
 	result := &AnalyzeAndDeduplicateResult{
 		Mode:   mode,
 		Guilds: make(map[string]*GuildResult),
-		Summary: &deduplicationv1alpha1.DeduplicationSummary{
+		Summary: &deduplicationv1beta1.DeduplicationSummary{
 			TotalGuildsAnalyzed:         0,
 			TotalChannelsAnalyzed:       0,
 			DuplicateGroupsFound:        0,
@@ -891,7 +891,7 @@ func (s *DeduplicationService) deleteOrphanedResources(ctx context.Context, chan
 
 	// List all Crossplane Channel resources (cluster-scoped) and match by observed Discord channel ID.
 	// We filter in-memory because Kubernetes field selectors are not supported on custom CRD status fields.
-	channelList := &channelv1alpha1.ChannelList{}
+	channelList := &channelv1beta1.ChannelList{}
 	if err := s.kubeClient.List(ctx, channelList); err != nil {
 		// Non-fatal: log suppressed here since we have no logger; caller tracks orphan count.
 		return 0
@@ -919,7 +919,7 @@ func (s *DeduplicationService) deleteOrphanedWebhookResources(ctx context.Contex
 
 	deletedCount := 0
 
-	webhookList := &webhookv1alpha1.WebhookList{}
+	webhookList := &webhookv1beta1.WebhookList{}
 	if err := s.kubeClient.List(ctx, webhookList); err != nil {
 		return 0
 	}
@@ -946,7 +946,7 @@ func (s *DeduplicationService) deleteOrphanedRoleResources(ctx context.Context, 
 
 	deletedCount := 0
 
-	roleList := &rolev1alpha1.RoleList{}
+	roleList := &rolev1beta1.RoleList{}
 	if err := s.kubeClient.List(ctx, roleList); err != nil {
 		return 0
 	}

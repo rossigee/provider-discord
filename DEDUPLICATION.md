@@ -118,7 +118,7 @@ kubectl annotate providerconfig default \
 
 ```yaml
 
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default

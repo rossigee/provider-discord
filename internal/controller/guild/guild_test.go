@@ -23,8 +23,8 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
+	guildv1beta1 "github.com/rossigee/provider-discord/apis/guild/v1beta1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -84,7 +84,7 @@ func TestObserve(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		guild            *guildv1alpha1.Guild
+		guild            *guildv1beta1.Guild
 		mockSetup        func(*MockGuildClient)
 		expectedExists   bool
 		expectedUpToDate bool
@@ -92,14 +92,14 @@ func TestObserve(t *testing.T) {
 	}{
 		{
 			name: "guild exists and up to date",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
 					},
 				},
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name:                        "Test Guild",
 						Region:                      strPtr("us-east"),
 						VerificationLevel:           intPtr(1),
@@ -130,14 +130,14 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "guild exists but needs update",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
 					},
 				},
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name:                        "Updated Guild",
 						Region:                      strPtr("us-west"),
 						VerificationLevel:           intPtr(2),
@@ -162,14 +162,14 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "guild does not exist",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
 					},
 				},
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name: "Test Guild",
 					},
 				},
@@ -185,9 +185,9 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "no external name set",
-			guild: &guildv1alpha1.Guild{
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+			guild: &guildv1beta1.Guild{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name: "Test Guild",
 					},
 				},
@@ -239,9 +239,9 @@ func TestCreate(t *testing.T) {
 		},
 	}
 
-	guild := &guildv1alpha1.Guild{
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+	guild := &guildv1beta1.Guild{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name:                        "Test Guild",
 				Region:                      strPtr("us-east"),
 				VerificationLevel:           intPtr(1),
@@ -266,26 +266,26 @@ func TestUpdate(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		guild        *guildv1alpha1.Guild
+		guild        *guildv1beta1.Guild
 		mockSetup    func(*MockGuildClient)
 		expectError  bool
 		expectUpdate bool
 	}{
 		{
 			name: "update name",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
 					},
 				},
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name: "Updated Guild",
 					},
 				},
-				Status: guildv1alpha1.GuildStatus{
-					AtProvider: guildv1alpha1.GuildObservation{
+				Status: guildv1beta1.GuildStatus{
+					AtProvider: guildv1beta1.GuildObservation{
 						Name: "Old Guild", // Different from spec, so update needed
 					},
 				},
@@ -305,20 +305,20 @@ func TestUpdate(t *testing.T) {
 		},
 		{
 			name: "update region",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
 					},
 				},
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name:   "Test Guild",
 						Region: strPtr("us-west"),
 					},
 				},
-				Status: guildv1alpha1.GuildStatus{
-					AtProvider: guildv1alpha1.GuildObservation{
+				Status: guildv1beta1.GuildStatus{
+					AtProvider: guildv1beta1.GuildObservation{
 						Name:   "Test Guild",
 						Region: "us-east", // Different from spec
 					},
@@ -340,14 +340,14 @@ func TestUpdate(t *testing.T) {
 		},
 		{
 			name: "update multiple fields",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
 					},
 				},
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name:                        "Updated Guild",
 						VerificationLevel:           intPtr(2),
 						DefaultMessageNotifications: intPtr(1),
@@ -356,8 +356,8 @@ func TestUpdate(t *testing.T) {
 						SystemChannelFlags:          intPtr(1),
 					},
 				},
-				Status: guildv1alpha1.GuildStatus{
-					AtProvider: guildv1alpha1.GuildObservation{
+				Status: guildv1beta1.GuildStatus{
+					AtProvider: guildv1beta1.GuildObservation{
 						Name:                        "Old Guild",
 						VerificationLevel:           1,
 						DefaultMessageNotifications: 0,
@@ -392,19 +392,19 @@ func TestUpdate(t *testing.T) {
 		},
 		{
 			name: "no update needed",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
 					},
 				},
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name: "Test Guild",
 					},
 				},
-				Status: guildv1alpha1.GuildStatus{
-					AtProvider: guildv1alpha1.GuildObservation{
+				Status: guildv1beta1.GuildStatus{
+					AtProvider: guildv1beta1.GuildObservation{
 						Name: "Test Guild", // Same as spec, no update needed
 					},
 				},
@@ -417,19 +417,19 @@ func TestUpdate(t *testing.T) {
 		},
 		{
 			name: "update fails",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
 					},
 				},
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name: "Updated Guild",
 					},
 				},
-				Status: guildv1alpha1.GuildStatus{
-					AtProvider: guildv1alpha1.GuildObservation{
+				Status: guildv1beta1.GuildStatus{
+					AtProvider: guildv1beta1.GuildObservation{
 						Name: "Old Guild",
 					},
 				},
@@ -467,13 +467,13 @@ func TestDelete(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		guild       *guildv1alpha1.Guild
+		guild       *guildv1beta1.Guild
 		mockSetup   func(*MockGuildClient)
 		expectError bool
 	}{
 		{
 			name: "successful delete",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
@@ -489,7 +489,7 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name: "delete non-existent guild",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: guildID,
@@ -505,7 +505,7 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name: "no external name",
-			guild: &guildv1alpha1.Guild{
+			guild: &guildv1beta1.Guild{
 				ObjectMeta: metav1.ObjectMeta{},
 			},
 			mockSetup: func(m *MockGuildClient) {
@@ -569,7 +569,7 @@ func TestTypeAssertions(t *testing.T) {
 			e := &external{service: mockClient}
 
 			// Test with a non-Guild resource (should fail type assertion)
-			invalidResource := &channelv1alpha1.Channel{}
+			invalidResource := &channelv1beta1.Channel{}
 
 			ctx := context.Background()
 			switch tc.method {
@@ -597,15 +597,15 @@ func TestTypeAssertions(t *testing.T) {
 func TestIsUpToDate(t *testing.T) {
 	tests := []struct {
 		name     string
-		cr       *guildv1alpha1.Guild
+		cr       *guildv1beta1.Guild
 		guild    *discordclient.Guild
 		expected bool
 	}{
 		{
 			name: "up to date",
-			cr: &guildv1alpha1.Guild{
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+			cr: &guildv1beta1.Guild{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name:                        "Test Guild",
 						Region:                      strPtr("us-east"),
 						VerificationLevel:           intPtr(1),
@@ -629,9 +629,9 @@ func TestIsUpToDate(t *testing.T) {
 		},
 		{
 			name: "name needs update",
-			cr: &guildv1alpha1.Guild{
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+			cr: &guildv1beta1.Guild{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name: "New Name",
 					},
 				},
@@ -643,9 +643,9 @@ func TestIsUpToDate(t *testing.T) {
 		},
 		{
 			name: "region needs update",
-			cr: &guildv1alpha1.Guild{
-				Spec: guildv1alpha1.GuildSpec{
-					ForProvider: guildv1alpha1.GuildParameters{
+			cr: &guildv1beta1.Guild{
+				Spec: guildv1beta1.GuildSpec{
+					ForProvider: guildv1beta1.GuildParameters{
 						Name:   "Test Guild",
 						Region: strPtr("us-west"),
 					},
@@ -673,14 +673,14 @@ func TestObservePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789012345678"
 
-	guild := &guildv1alpha1.Guild{
+	guild := &guildv1beta1.Guild{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: guildID,
 			},
 		},
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name: "test-guild",
 			},
 		},
@@ -707,14 +707,14 @@ func TestObserveUnauthorized(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789012345678"
 
-	guild := &guildv1alpha1.Guild{
+	guild := &guildv1beta1.Guild{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: guildID,
 			},
 		},
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name: "test-guild",
 			},
 		},
@@ -740,9 +740,9 @@ func TestObserveUnauthorized(t *testing.T) {
 func TestCreatePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 
-	guild := &guildv1alpha1.Guild{
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+	guild := &guildv1beta1.Guild{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name: "test-guild",
 			},
 		},
@@ -767,19 +767,19 @@ func TestUpdatePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789012345678"
 
-	guild := &guildv1alpha1.Guild{
+	guild := &guildv1beta1.Guild{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: guildID,
 			},
 		},
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name: "updated-guild",
 			},
 		},
-		Status: guildv1alpha1.GuildStatus{
-			AtProvider: guildv1alpha1.GuildObservation{
+		Status: guildv1beta1.GuildStatus{
+			AtProvider: guildv1beta1.GuildObservation{
 				Name: "test-guild",
 			},
 		},
@@ -804,14 +804,14 @@ func TestDeletePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789012345678"
 
-	guild := &guildv1alpha1.Guild{
+	guild := &guildv1beta1.Guild{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: guildID,
 			},
 		},
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name: "test-guild",
 			},
 		},
@@ -837,19 +837,19 @@ func TestObserveCacheSkipsAPI(t *testing.T) {
 	guildID := "123456789012345678"
 
 	now := metav1.Now()
-	guild := &guildv1alpha1.Guild{
+	guild := &guildv1beta1.Guild{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: guildID,
 			},
 		},
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name: "test-guild",
 			},
 		},
-		Status: guildv1alpha1.GuildStatus{
-			AtProvider: guildv1alpha1.GuildObservation{
+		Status: guildv1beta1.GuildStatus{
+			AtProvider: guildv1beta1.GuildObservation{
 				ID:   guildID,
 				Name: "test-guild",
 				// Set LastSyncTime to now (within 5min cache TTL)
@@ -879,20 +879,20 @@ func TestObserveUpdatesSyncTime(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789012345678"
 
-	guild := &guildv1alpha1.Guild{
+	guild := &guildv1beta1.Guild{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: guildID,
 			},
 		},
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name: "test-guild",
 			},
 		},
 		// No LastSyncTime set (first observe)
-		Status: guildv1alpha1.GuildStatus{
-			AtProvider: guildv1alpha1.GuildObservation{},
+		Status: guildv1beta1.GuildStatus{
+			AtProvider: guildv1beta1.GuildObservation{},
 		},
 	}
 
@@ -921,19 +921,19 @@ func TestObserveCacheExpiry(t *testing.T) {
 
 	// Create a timestamp 5 minutes + 1 second in the past
 	oldTime := metav1.NewTime(time.Now().Add(-5*time.Minute - 1*time.Second))
-	guild := &guildv1alpha1.Guild{
+	guild := &guildv1beta1.Guild{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: guildID,
 			},
 		},
-		Spec: guildv1alpha1.GuildSpec{
-			ForProvider: guildv1alpha1.GuildParameters{
+		Spec: guildv1beta1.GuildSpec{
+			ForProvider: guildv1beta1.GuildParameters{
 				Name: "test-guild",
 			},
 		},
-		Status: guildv1alpha1.GuildStatus{
-			AtProvider: guildv1alpha1.GuildObservation{
+		Status: guildv1beta1.GuildStatus{
+			AtProvider: guildv1beta1.GuildObservation{
 				ID:   guildID,
 				Name: "test-guild",
 				// Set LastSyncTime to 5min + 1sec ago (cache expired)

@@ -18,46 +18,38 @@ limitations under the License.
 package apis
 
 import (
-	applicationv1alpha1 "github.com/rossigee/provider-discord/apis/application/v1alpha1"
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	deduplicationv1alpha1 "github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
+	applicationv1beta1 "github.com/rossigee/provider-discord/apis/application/v1beta1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
 	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
-	integrationv1alpha1 "github.com/rossigee/provider-discord/apis/integration/v1alpha1"
-	invitev1alpha1 "github.com/rossigee/provider-discord/apis/invite/v1alpha1"
-	memberv1alpha1 "github.com/rossigee/provider-discord/apis/member/v1alpha1"
-	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
-	userv1alpha1 "github.com/rossigee/provider-discord/apis/user/v1alpha1"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
-	webhookv1alpha1 "github.com/rossigee/provider-discord/apis/webhook/v1alpha1"
+	guildv1beta1 "github.com/rossigee/provider-discord/apis/guild/v1beta1"
+	integrationv1beta1 "github.com/rossigee/provider-discord/apis/integration/v1beta1"
+	invitev1beta1 "github.com/rossigee/provider-discord/apis/invite/v1beta1"
+	memberv1beta1 "github.com/rossigee/provider-discord/apis/member/v1beta1"
+	rolev1beta1 "github.com/rossigee/provider-discord/apis/role/v1beta1"
+	userv1beta1 "github.com/rossigee/provider-discord/apis/user/v1beta1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
+	webhookv1beta1 "github.com/rossigee/provider-discord/apis/webhook/v1beta1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
 
 func init() {
-	// Register the types with the Scheme so the components can map objects to GroupVersionKinds and back
 	AddToSchemes = append(AddToSchemes,
-		// Provider configuration
-		v1alpha1.AddToScheme,
-		// Operational resources
-		deduplicationv1alpha1.AddToScheme,
+		v1beta1.AddToScheme,
+		guildv1beta1.AddToScheme,
+		channelv1beta1.AddToScheme,
+		rolev1beta1.AddToScheme,
+		webhookv1beta1.AddToScheme,
+		invitev1beta1.AddToScheme,
+		memberv1beta1.AddToScheme,
+		userv1beta1.AddToScheme,
+		applicationv1beta1.AddToScheme,
+		integrationv1beta1.AddToScheme,
 		deduplicationv1beta1.AddToScheme,
-		// v1alpha1 APIs (namespaced)
-		guildv1alpha1.AddToScheme,
-		channelv1alpha1.AddToScheme,
-		rolev1alpha1.AddToScheme,
-		webhookv1alpha1.AddToScheme,
-		invitev1alpha1.AddToScheme,
-		memberv1alpha1.AddToScheme,
-		userv1alpha1.AddToScheme,
-		applicationv1alpha1.AddToScheme,
-		integrationv1alpha1.AddToScheme,
 	)
 }
 
-// AddToSchemes may be used to add all resources defined in the project to a Scheme
 var AddToSchemes runtime.SchemeBuilder
 
-// AddToScheme adds all Resources to the Scheme
 func AddToScheme(s *runtime.Scheme) error {
 	return AddToSchemes.AddToScheme(s)
 }

@@ -22,8 +22,8 @@ import (
 	"net/http"
 	"time"
 
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
+	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -56,7 +56,7 @@ func NewGarbageCollectionService(botToken string, baseURL string, k8sClient clie
 }
 
 // RunGarbageCollection performs autonomous cleanup based on the GC spec.
-func (s *GarbageCollectionService) RunGarbageCollection(ctx context.Context, spec *discordv1alpha1.GarbageCollectionSpec) (*GarbageCollectionResult, error) {
+func (s *GarbageCollectionService) RunGarbageCollection(ctx context.Context, spec *discordv1beta1.GarbageCollectionSpec) (*GarbageCollectionResult, error) {
 	if spec == nil {
 		return &GarbageCollectionResult{}, nil
 	}
@@ -174,7 +174,7 @@ func (s *GarbageCollectionService) deleteOrphanedChannelResource(ctx context.Con
 	if s.k8sClient == nil {
 		return false
 	}
-	list := &channelv1alpha1.ChannelList{}
+	list := &channelv1beta1.ChannelList{}
 	if err := s.k8sClient.List(ctx, list); err != nil {
 		return false
 	}
@@ -198,7 +198,7 @@ func (s *GarbageCollectionService) deleteUnmanagedChannels(ctx context.Context, 
 	}
 
 	// List all Crossplane Channel CRs
-	list := &channelv1alpha1.ChannelList{}
+	list := &channelv1beta1.ChannelList{}
 	if err := s.k8sClient.List(ctx, list); err != nil {
 		return 0, fmt.Errorf("failed to list Channel resources: %w", err)
 	}

@@ -32,7 +32,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
 	"github.com/rossigee/provider-discord/internal/clients"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -130,11 +130,11 @@ func (c *external) findChannelByName(ctx context.Context, guildID, name string) 
 
 // adoptChannel populates cr's external-name and observed status from an
 // existing Discord channel found by name, rather than creating a new one.
-func adoptChannel(cr *channelv1alpha1.Channel, channel *clients.Channel) managed.ExternalObservation {
+func adoptChannel(cr *channelv1beta1.Channel, channel *clients.Channel) managed.ExternalObservation {
 	meta.SetExternalName(cr, channel.ID)
 
 	now := &metav1.Time{Time: time.Now()}
-	cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
+	cr.Status.AtProvider = channelv1beta1.ChannelObservation{
 		ID:        channel.ID,
 		Name:      channel.Name,
 		Type:      channel.Type,
@@ -163,7 +163,7 @@ func adoptChannel(cr *channelv1alpha1.Channel, channel *clients.Channel) managed
 // "not found". That's fine — the actual duplicate-creation guard lives in
 // Create, which re-checks atomically under channelNameLocks before creating
 // anything. See the comment there.
-func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1alpha1.Channel) (managed.ExternalObservation, error) {
+func (c *external) checkChannelExistsByName(ctx context.Context, cr *channelv1beta1.Channel) (managed.ExternalObservation, error) {
 	log := ctrl.LoggerFrom(ctx)
 	log.V(4).Info("Checking for existing channel by name", "name", cr.Spec.ForProvider.Name, "guildID", cr.Spec.ForProvider.GuildID)
 
@@ -204,10 +204,10 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 
 // SetupWithClient adds a controller that reconciles Channel managed resources with a custom client factory.
 func SetupWithClient(mgr ctrl.Manager, o controller.Options, newServiceFn func(token string) *clients.DiscordClient) error {
-	name := managed.ControllerName(channelv1alpha1.ChannelGroupKind.String())
+	name := managed.ControllerName(channelv1beta1.ChannelGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(channelv1alpha1.ChannelGroupVersionKind),
+		resource.ManagedKind(channelv1beta1.ChannelGroupVersionKind),
 		managed.WithExternalConnector(&connector{
 			kube:         mgr.GetClient(),
 			newServiceFn: newServiceFn,
@@ -221,7 +221,7 @@ func SetupWithClient(mgr ctrl.Manager, o controller.Options, newServiceFn func(t
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
-		For(&channelv1alpha1.Channel{}).
+		For(&channelv1beta1.Channel{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -238,7 +238,7 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*channelv1alpha1.Channel)
+	cr, ok := mg.(*channelv1beta1.Channel)
 	if !ok {
 		return nil, errors.New(errNotChannel)
 	}
@@ -265,7 +265,7 @@ type external struct {
 }
 
 func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*channelv1alpha1.Channel)
+	cr, ok := mg.(*channelv1beta1.Channel)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotChannel)
 	}
@@ -330,7 +330,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	// Update status with observed values
 	now := &metav1.Time{Time: time.Now()}
-	cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
+	cr.Status.AtProvider = channelv1beta1.ChannelObservation{
 		ID:           channel.ID,
 		Name:         channel.Name,
 		Type:         channel.Type,
@@ -342,13 +342,13 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	}
 	// Populate permission overwrites in status
 	if len(channel.PermissionOverwrites) > 0 {
-		cr.Status.AtProvider.PermissionOverwrites = make([]channelv1alpha1.PermissionOverwrite, len(channel.PermissionOverwrites))
+		cr.Status.AtProvider.PermissionOverwrites = make([]channelv1beta1.PermissionOverwrite, len(channel.PermissionOverwrites))
 		for i, pw := range channel.PermissionOverwrites {
 			typeStr := "member"
 			if pw.Type == 0 {
 				typeStr = "role"
 			}
-			cr.Status.AtProvider.PermissionOverwrites[i] = channelv1alpha1.PermissionOverwrite{
+			cr.Status.AtProvider.PermissionOverwrites[i] = channelv1beta1.PermissionOverwrite{
 				ID:   pw.ID,
 				Type: typeStr,
 			}
@@ -441,7 +441,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	cr, ok := mg.(*channelv1alpha1.Channel)
+	cr, ok := mg.(*channelv1beta1.Channel)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotChannel)
 	}
@@ -524,7 +524,7 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*channelv1alpha1.Channel)
+	cr, ok := mg.(*channelv1beta1.Channel)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotChannel)
 	}
@@ -595,7 +595,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	// Update status with the modified values so next reconcile sees up-to-date
 	now := &metav1.Time{Time: time.Now()}
-	cr.Status.AtProvider = channelv1alpha1.ChannelObservation{
+	cr.Status.AtProvider = channelv1beta1.ChannelObservation{
 		ID:        meta.GetExternalName(cr),
 		Name:      channel.Name,
 		Type:      channel.Type,
@@ -605,13 +605,13 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		UpdatedAt: now,
 	}
 	if len(channel.PermissionOverwrites) > 0 {
-		cr.Status.AtProvider.PermissionOverwrites = make([]channelv1alpha1.PermissionOverwrite, len(channel.PermissionOverwrites))
+		cr.Status.AtProvider.PermissionOverwrites = make([]channelv1beta1.PermissionOverwrite, len(channel.PermissionOverwrites))
 		for i, pw := range channel.PermissionOverwrites {
 			typeStr := "member"
 			if pw.Type == 0 {
 				typeStr = "role"
 			}
-			cr.Status.AtProvider.PermissionOverwrites[i] = channelv1alpha1.PermissionOverwrite{
+			cr.Status.AtProvider.PermissionOverwrites[i] = channelv1beta1.PermissionOverwrite{
 				ID:   pw.ID,
 				Type: typeStr,
 			}
@@ -634,7 +634,7 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*channelv1alpha1.Channel)
+	cr, ok := mg.(*channelv1beta1.Channel)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotChannel)
 	}

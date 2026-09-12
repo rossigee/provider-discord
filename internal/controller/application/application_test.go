@@ -22,8 +22,8 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
-	applicationv1alpha1 "github.com/rossigee/provider-discord/apis/application/v1alpha1"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	applicationv1beta1 "github.com/rossigee/provider-discord/apis/application/v1beta1"
+	guildv1beta1 "github.com/rossigee/provider-discord/apis/guild/v1beta1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -66,7 +66,7 @@ func TestObserve(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		app              *applicationv1alpha1.Application
+		app              *applicationv1beta1.Application
 		mockSetup        func(*MockApplicationClient)
 		expectedExists   bool
 		expectedUpToDate bool
@@ -74,14 +74,14 @@ func TestObserve(t *testing.T) {
 	}{
 		{
 			name: "observe_current_application_up_to_date",
-			app: &applicationv1alpha1.Application{
+			app: &applicationv1beta1.Application{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: appID,
 					},
 				},
-				Spec: applicationv1alpha1.ApplicationSpec{
-					ForProvider: applicationv1alpha1.ApplicationParameters{
+				Spec: applicationv1beta1.ApplicationSpec{
+					ForProvider: applicationv1beta1.ApplicationParameters{
 						ApplicationID: "@me",
 						Name:          strPtr("My App"),
 						Description:   strPtr("Test app"),
@@ -103,9 +103,9 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "observe_current_application_needs_update",
-			app: &applicationv1alpha1.Application{
-				Spec: applicationv1alpha1.ApplicationSpec{
-					ForProvider: applicationv1alpha1.ApplicationParameters{
+			app: &applicationv1beta1.Application{
+				Spec: applicationv1beta1.ApplicationSpec{
+					ForProvider: applicationv1beta1.ApplicationParameters{
 						ApplicationID: "@me",
 						Name:          strPtr("My App"),
 						Description:   strPtr("Updated description"),
@@ -127,9 +127,9 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "observe_application_by_id",
-			app: &applicationv1alpha1.Application{
-				Spec: applicationv1alpha1.ApplicationSpec{
-					ForProvider: applicationv1alpha1.ApplicationParameters{
+			app: &applicationv1beta1.Application{
+				Spec: applicationv1beta1.ApplicationSpec{
+					ForProvider: applicationv1beta1.ApplicationParameters{
 						ApplicationID: appID,
 					},
 				},
@@ -148,9 +148,9 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "observe_application_not_found",
-			app: &applicationv1alpha1.Application{
-				Spec: applicationv1alpha1.ApplicationSpec{
-					ForProvider: applicationv1alpha1.ApplicationParameters{
+			app: &applicationv1beta1.Application{
+				Spec: applicationv1beta1.ApplicationSpec{
+					ForProvider: applicationv1beta1.ApplicationParameters{
 						ApplicationID: appID,
 					},
 				},
@@ -189,9 +189,9 @@ func TestObserve(t *testing.T) {
 func TestCreate(t *testing.T) {
 	ctx := context.Background()
 
-	app := &applicationv1alpha1.Application{
-		Spec: applicationv1alpha1.ApplicationSpec{
-			ForProvider: applicationv1alpha1.ApplicationParameters{
+	app := &applicationv1beta1.Application{
+		Spec: applicationv1beta1.ApplicationSpec{
+			ForProvider: applicationv1beta1.ApplicationParameters{
 				ApplicationID: "@me",
 			},
 		},
@@ -211,15 +211,15 @@ func TestUpdate(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		app         *applicationv1alpha1.Application
+		app         *applicationv1beta1.Application
 		mockSetup   func(*MockApplicationClient)
 		expectError bool
 	}{
 		{
 			name: "update_current_application_success",
-			app: &applicationv1alpha1.Application{
-				Spec: applicationv1alpha1.ApplicationSpec{
-					ForProvider: applicationv1alpha1.ApplicationParameters{
+			app: &applicationv1beta1.Application{
+				Spec: applicationv1beta1.ApplicationSpec{
+					ForProvider: applicationv1beta1.ApplicationParameters{
 						ApplicationID: "@me",
 						Name:          strPtr("Updated Name"),
 						Description:   strPtr("Updated Description"),
@@ -239,9 +239,9 @@ func TestUpdate(t *testing.T) {
 		},
 		{
 			name: "update_specific_application_fails",
-			app: &applicationv1alpha1.Application{
-				Spec: applicationv1alpha1.ApplicationSpec{
-					ForProvider: applicationv1alpha1.ApplicationParameters{
+			app: &applicationv1beta1.Application{
+				Spec: applicationv1beta1.ApplicationSpec{
+					ForProvider: applicationv1beta1.ApplicationParameters{
 						ApplicationID: appID,
 						Name:          strPtr("Name"),
 					},
@@ -273,9 +273,9 @@ func TestUpdate(t *testing.T) {
 func TestDelete(t *testing.T) {
 	ctx := context.Background()
 
-	app := &applicationv1alpha1.Application{
-		Spec: applicationv1alpha1.ApplicationSpec{
-			ForProvider: applicationv1alpha1.ApplicationParameters{
+	app := &applicationv1beta1.Application{
+		Spec: applicationv1beta1.ApplicationSpec{
+			ForProvider: applicationv1beta1.ApplicationParameters{
 				ApplicationID: "@me",
 			},
 		},
@@ -297,9 +297,9 @@ func TestDisconnect(t *testing.T) {
 func TestObservePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 
-	app := &applicationv1alpha1.Application{
-		Spec: applicationv1alpha1.ApplicationSpec{
-			ForProvider: applicationv1alpha1.ApplicationParameters{
+	app := &applicationv1beta1.Application{
+		Spec: applicationv1beta1.ApplicationSpec{
+			ForProvider: applicationv1beta1.ApplicationParameters{
 				ApplicationID: "@me",
 			},
 		},
@@ -323,9 +323,9 @@ func TestObservePermissionDenied(t *testing.T) {
 func TestObserveUnauthorized(t *testing.T) {
 	ctx := context.Background()
 
-	app := &applicationv1alpha1.Application{
-		Spec: applicationv1alpha1.ApplicationSpec{
-			ForProvider: applicationv1alpha1.ApplicationParameters{
+	app := &applicationv1beta1.Application{
+		Spec: applicationv1beta1.ApplicationSpec{
+			ForProvider: applicationv1beta1.ApplicationParameters{
 				ApplicationID: "@me",
 			},
 		},
@@ -347,9 +347,9 @@ func TestObserveUnauthorized(t *testing.T) {
 func TestUpdatePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 
-	app := &applicationv1alpha1.Application{
-		Spec: applicationv1alpha1.ApplicationSpec{
-			ForProvider: applicationv1alpha1.ApplicationParameters{
+	app := &applicationv1beta1.Application{
+		Spec: applicationv1beta1.ApplicationSpec{
+			ForProvider: applicationv1beta1.ApplicationParameters{
 				ApplicationID: "@me",
 				Name:          strPtr("New Name"),
 			},
@@ -373,7 +373,7 @@ func TestTypeAssertions(t *testing.T) {
 	ctx := context.Background()
 
 	// Test with wrong type
-	wrongType := &guildv1alpha1.Guild{}
+	wrongType := &guildv1beta1.Guild{}
 
 	e := &external{discord: &MockApplicationClient{}}
 

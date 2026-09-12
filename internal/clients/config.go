@@ -23,7 +23,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -100,7 +100,7 @@ func GetConfig(ctx context.Context, c client.Client, mg resource.Managed) (*stri
 		return nil, errors.New(errGetProviderConfig)
 	}
 
-	pc := &v1alpha1.ProviderConfig{}
+	pc := &v1beta1.ProviderConfig{}
 	if err := c.Get(ctx, types.NamespacedName{Name: pcRef.Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetProviderConfig)
 	}

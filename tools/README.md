@@ -88,7 +88,7 @@ discord-resources/
 
 ### Category Channel
 ```yaml
-apiVersion: channel.discord.crossplane.io/v1alpha1
+apiVersion: channel.discord.m.crossplane.io/v1beta1
 kind: Channel
 metadata:
   name: my-server-development
@@ -107,7 +107,7 @@ spec:
 
 ### Text Channel Under Category
 ```yaml
-apiVersion: channel.discord.crossplane.io/v1alpha1
+apiVersion: channel.discord.m.crossplane.io/v1beta1
 kind: Channel
 metadata:
   name: my-server-general
@@ -129,7 +129,7 @@ spec:
 
 ### Webhook Resource
 ```yaml
-apiVersion: webhook.discord.crossplane.io/v1alpha1
+apiVersion: webhook.discord.m.crossplane.io/v1beta1
 kind: Webhook
 metadata:
   name: my-server-ci-bot
@@ -140,13 +140,12 @@ spec:
   forProvider:
     name: "CI Bot"
     channelId: "876543210987654321"
-  writeConnectionSecretsToRef:
+  writeConnectionSecretToRef:
     name: ci-bot-webhook-secret
-    namespace: default
   providerConfigRef:
     name: discord-provider-config
 ---
-apiVersion: invite.discord.crossplane.io/v1alpha1
+apiVersion: invite.discord.m.crossplane.io/v1beta1
 kind: Invite
 metadata:
   name: my-server-general-invite
@@ -158,9 +157,8 @@ spec:
     maxAge: 86400      # 24 hours
     maxUses: 100       # 100 uses
     temporary: false   # Permanent membership
-  writeConnectionSecretsToRef:
+  writeConnectionSecretToRef:
     name: general-invite-secret
-    namespace: default
   providerConfigRef:
     name: discord-provider-config
 ```

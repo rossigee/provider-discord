@@ -1,7 +1,8 @@
-apiVersion: guild.discord.crossplane.io/v1alpha1
+apiVersion: guild.discord.m.crossplane.io/v1beta1
 kind: Guild
 metadata:
   name: example-guild
+  namespace: default
   annotations:
     kubernetes.io/description: "Example Discord guild managed by Crossplane"
 spec:

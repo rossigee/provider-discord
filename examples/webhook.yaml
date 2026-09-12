@@ -1,7 +1,8 @@
-apiVersion: webhook.discord.crossplane.io/v1alpha1
+apiVersion: webhook.discord.m.crossplane.io/v1beta1
 kind: Webhook
 metadata:
   name: example-webhook
+  namespace: default
   annotations:
     kubernetes.io/description: "Example webhook managed by Crossplane"
 spec:
@@ -19,10 +20,11 @@ spec:
   writeConnectionSecretToRef:
     name: webhook-connection
 ---
-apiVersion: webhook.discord.crossplane.io/v1alpha1
+apiVersion: webhook.discord.m.crossplane.io/v1beta1
 kind: Webhook
 metadata:
   name: ci-webhook
+  namespace: default
   annotations:
     kubernetes.io/description: "CI/CD webhook for automated notifications"
 spec:

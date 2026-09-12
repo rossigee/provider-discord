@@ -31,7 +31,7 @@
 # 5. Verify in Discord that channels were deleted as expected
 #
 
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default

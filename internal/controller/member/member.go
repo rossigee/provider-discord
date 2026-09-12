@@ -12,7 +12,7 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	memberv1alpha1 "github.com/rossigee/provider-discord/apis/member/v1alpha1"
+	memberv1beta1 "github.com/rossigee/provider-discord/apis/member/v1beta1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -34,10 +34,10 @@ func isDiscordUnauthorized(err error) bool {
 
 // Setup adds a controller that reconciles Member managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(memberv1alpha1.MemberGroupKind.String())
+	name := managed.ControllerName(memberv1beta1.MemberGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(memberv1alpha1.MemberGroupVersionKind),
+		resource.ManagedKind(memberv1beta1.MemberGroupVersionKind),
 		managed.WithExternalConnector(&connector{
 			kube: mgr.GetClient(),
 		}),
@@ -50,7 +50,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
-		For(&memberv1alpha1.Member{}).
+		For(&memberv1beta1.Member{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -65,7 +65,7 @@ type connector struct {
 // 2. Getting the credentials specified by the ProviderConfig.
 // 3. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*memberv1alpha1.Member)
+	cr, ok := mg.(*memberv1beta1.Member)
 	if !ok {
 		return nil, errors.New(errNotMember)
 	}
@@ -95,7 +95,7 @@ func (e *external) Disconnect(_ context.Context) error {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*memberv1alpha1.Member)
+	cr, ok := mg.(*memberv1beta1.Member)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotMember)
 	}
@@ -140,7 +140,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 
 	// Update status - populate user information
 	if member.User != nil {
-		cr.Status.AtProvider.User = &memberv1alpha1.DiscordUser{
+		cr.Status.AtProvider.User = &memberv1beta1.DiscordUser{
 			ID:            member.User.ID,
 			Username:      member.User.Username,
 			Discriminator: member.User.Discriminator,
@@ -206,7 +206,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	_, ok := mg.(*memberv1alpha1.Member)
+	_, ok := mg.(*memberv1beta1.Member)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotMember)
 	}
@@ -218,7 +218,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	cr, ok := mg.(*memberv1alpha1.Member)
+	cr, ok := mg.(*memberv1beta1.Member)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotMember)
 	}
@@ -275,7 +275,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*memberv1alpha1.Member)
+	cr, ok := mg.(*memberv1beta1.Member)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotMember)
 	}

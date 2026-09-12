@@ -58,7 +58,7 @@ metadata:
 
       3. **Configure Provider**:
          ```yaml
-         apiVersion: discord.crossplane.io/v1alpha1
+         apiVersion: discord.m.crossplane.io/v1beta1
          kind: ProviderConfig
          metadata:
            name: default
@@ -73,7 +73,7 @@ metadata:
 
       4. **Create Discord Resources**:
          ```yaml
-         apiVersion: guild.discord.crossplane.io/v1alpha1
+         apiVersion: guild.discord.m.crossplane.io/v1beta1
          kind: Guild
          metadata:
            name: my-discord-server
@@ -111,7 +111,7 @@ metadata:
 spec:
   permissionRequests:
       - apiGroups:
-          - discord.crossplane.io
+          - discord.m.crossplane.io
         resources:
           - providerconfigs
           - providerconfigs/status
@@ -119,70 +119,70 @@ spec:
         verbs:
           - "*"
       - apiGroups:
-          - guild.discord.crossplane.io
+          - guild.discord.m.crossplane.io
         resources:
           - guilds
           - guilds/status
         verbs:
           - "*"
       - apiGroups:
-          - channel.discord.crossplane.io
+          - channel.discord.m.crossplane.io
         resources:
           - channels
           - channels/status
         verbs:
           - "*"
       - apiGroups:
-          - role.discord.crossplane.io
+          - role.discord.m.crossplane.io
         resources:
           - roles
           - roles/status
         verbs:
           - "*"
       - apiGroups:
-          - webhook.discord.crossplane.io
+          - webhook.discord.m.crossplane.io
         resources:
           - webhooks
           - webhooks/status
         verbs:
           - "*"
       - apiGroups:
-          - user.discord.crossplane.io
+          - user.discord.m.crossplane.io
         resources:
           - users
           - users/status
         verbs:
           - "*"
       - apiGroups:
-          - member.discord.crossplane.io
+          - member.discord.m.crossplane.io
         resources:
           - members
           - members/status
         verbs:
           - "*"
       - apiGroups:
-          - application.discord.crossplane.io
+          - application.discord.m.crossplane.io
         resources:
           - applications
           - applications/status
         verbs:
           - "*"
       - apiGroups:
-          - invite.discord.crossplane.io
+          - invite.discord.m.crossplane.io
         resources:
           - invites
           - invites/status
         verbs:
           - "*"
       - apiGroups:
-          - integration.discord.crossplane.io
+          - integration.discord.m.crossplane.io
         resources:
           - integrations
           - integrations/status
         verbs:
           - "*"
       - apiGroups:
-          - deduplication.discord.crossplane.io
+          - deduplication.discord.m.crossplane.io
         resources:
           - deduplications
           - deduplications/status

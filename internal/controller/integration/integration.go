@@ -12,8 +12,8 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
-	integrationv1alpha1 "github.com/rossigee/provider-discord/apis/integration/v1alpha1"
-	v1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	integrationv1beta1 "github.com/rossigee/provider-discord/apis/integration/v1beta1"
+	v1alpha1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -39,10 +39,10 @@ func isDiscordUnauthorized(err error) bool {
 
 // Setup adds a controller that reconciles Integration managed resources.
 func Setup(mgr ctrl.Manager, o controller.Options) error {
-	name := managed.ControllerName(integrationv1alpha1.IntegrationGroupKind.String())
+	name := managed.ControllerName(integrationv1beta1.IntegrationGroupKind.String())
 
 	r := managed.NewReconciler(mgr,
-		resource.ManagedKind(integrationv1alpha1.IntegrationGroupVersionKind),
+		resource.ManagedKind(integrationv1beta1.IntegrationGroupVersionKind),
 		managed.WithExternalConnector(&connector{
 			kube:  mgr.GetClient(),
 			usage: resource.ModernTrackerFn(func(ctx context.Context, mg resource.ModernManaged) error { return nil }),
@@ -56,7 +56,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		Named(name).
 		WithOptions(o.ForControllerRuntime()).
 		WithEventFilter(resource.DesiredStateChanged()).
-		For(&integrationv1alpha1.Integration{}).
+		For(&integrationv1beta1.Integration{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
 }
 
@@ -73,7 +73,7 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	_, ok := mg.(*integrationv1alpha1.Integration)
+	_, ok := mg.(*integrationv1beta1.Integration)
 	if !ok {
 		return nil, errors.New(errNotIntegration)
 	}
@@ -131,7 +131,7 @@ func (e *external) Disconnect(_ context.Context) error {
 }
 
 func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.ExternalObservation, error) {
-	cr, ok := mg.(*integrationv1alpha1.Integration)
+	cr, ok := mg.(*integrationv1beta1.Integration)
 	if !ok {
 		return managed.ExternalObservation{}, errors.New(errNotIntegration)
 	}
@@ -216,7 +216,7 @@ func (e *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 }
 
 func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.ExternalCreation, error) {
-	_, ok := mg.(*integrationv1alpha1.Integration)
+	_, ok := mg.(*integrationv1beta1.Integration)
 	if !ok {
 		return managed.ExternalCreation{}, errors.New(errNotIntegration)
 	}
@@ -228,7 +228,7 @@ func (e *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.ExternalUpdate, error) {
-	_, ok := mg.(*integrationv1alpha1.Integration)
+	_, ok := mg.(*integrationv1beta1.Integration)
 	if !ok {
 		return managed.ExternalUpdate{}, errors.New(errNotIntegration)
 	}
@@ -239,7 +239,7 @@ func (e *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 }
 
 func (e *external) Delete(ctx context.Context, mg resource.Managed) (managed.ExternalDelete, error) {
-	cr, ok := mg.(*integrationv1alpha1.Integration)
+	cr, ok := mg.(*integrationv1beta1.Integration)
 	if !ok {
 		return managed.ExternalDelete{}, errors.New(errNotIntegration)
 	}

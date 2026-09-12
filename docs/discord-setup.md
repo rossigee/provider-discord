@@ -133,7 +133,7 @@ kubectl create secret generic discord-creds \
 
 ```yaml
 
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default
@@ -249,7 +249,7 @@ For advanced monitoring and automation:
 ```yaml
 
 # Webhook resource example
-apiVersion: webhook.discord.crossplane.io/v1alpha1
+apiVersion: webhook.discord.m.crossplane.io/v1beta1
 kind: Webhook
 metadata:
   name: monitoring-webhook

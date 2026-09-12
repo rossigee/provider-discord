@@ -162,7 +162,7 @@ kubectl apply -f config/provider/
 
 # Step 3: Create ProviderConfig with test credentials
 cat <<EOF | kubectl apply -f -
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: test
@@ -488,8 +488,8 @@ helm uninstall crossplane-provider-discord -n crossplane-system
 
 # Delete CRDs
 kubectl delete crd \
-  providerconfigs.discord.crossplane.io \
-  deduplicatons.deduplication.discord.crossplane.io
+  providerconfigs.discord.m.crossplane.io \
+  deduplicatons.deduplication.discord.m.crossplane.io
 
 # Restart cluster
 kind delete cluster --name test-cluster

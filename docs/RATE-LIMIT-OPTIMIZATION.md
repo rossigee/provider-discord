@@ -36,15 +36,15 @@ type SomeObservation struct {
 ```
 
 **Files to update:**
-- `apis/channel/v1alpha1/types.go` → ChannelObservation
-- `apis/guild/v1alpha1/types.go` → GuildObservation
-- `apis/role/v1alpha1/types.go` → RoleObservation
-- `apis/webhook/v1alpha1/types.go` → WebhookObservation
-- `apis/invite/v1alpha1/types.go` → InviteObservation
-- `apis/member/v1alpha1/types.go` → MemberObservation
-- `apis/user/v1alpha1/types.go` → DiscordUserObservation
-- `apis/application/v1alpha1/types.go` → ApplicationObservation
-- `apis/integration/v1alpha1/types.go` → IntegrationObservation
+- `apis/channel/v1beta1/types.go` → ChannelObservation
+- `apis/guild/v1beta1/types.go` → GuildObservation
+- `apis/role/v1beta1/types.go` → RoleObservation
+- `apis/webhook/v1beta1/types.go` → WebhookObservation
+- `apis/invite/v1beta1/types.go` → InviteObservation
+- `apis/member/v1beta1/types.go` → MemberObservation
+- `apis/user/v1beta1/types.go` → DiscordUserObservation
+- `apis/application/v1beta1/types.go` → ApplicationObservation
+- `apis/integration/v1beta1/types.go` → IntegrationObservation
 
 ### 3. Controller Changes
 
@@ -137,7 +137,7 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 Future enhancement: Make `CacheTTL` configurable via ProviderConfig:
 
 ```yaml
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: discord-provider-config

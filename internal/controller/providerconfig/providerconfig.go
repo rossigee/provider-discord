@@ -28,7 +28,7 @@ import (
 
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
-	"github.com/rossigee/provider-discord/apis/v1alpha1"
+	"github.com/rossigee/provider-discord/apis/v1beta1"
 )
 
 const controllerName = "providerconfig.discord.crossplane.io"
@@ -37,7 +37,7 @@ func Setup(mgr ctrl.Manager) error {
 	r := &reconciler{kube: mgr.GetClient(), logger: mgr.GetLogger()}
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(controllerName).
-		For(&v1alpha1.ProviderConfig{}).
+		For(&v1beta1.ProviderConfig{}).
 		Complete(r)
 }
 
@@ -50,7 +50,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	log := r.logger.WithValues("providerconfig", req.Name)
 	log.Info("reconciling ProviderConfig")
 
-	pc := &v1alpha1.ProviderConfig{}
+	pc := &v1beta1.ProviderConfig{}
 	if err := r.kube.Get(ctx, req.NamespacedName, pc); err != nil {
 		log.Error(err, "failed to get ProviderConfig")
 		return reconcile.Result{}, client.IgnoreNotFound(err)
@@ -59,7 +59,7 @@ func (r *reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 	log.Info("ProviderConfig available")
 	pc.Status.SetConditions(xpv1.Available())
 
-	fresh := &v1alpha1.ProviderConfig{}
+	fresh := &v1beta1.ProviderConfig{}
 	if err := r.kube.Get(ctx, client.ObjectKey{Name: pc.GetName()}, fresh); err != nil {
 		// ProviderConfig may not exist yet during initial startup; only log if it's not a NotFound error
 		if !errors.IsNotFound(err) {

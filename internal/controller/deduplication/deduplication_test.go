@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
-	deduplicationv1alpha1 "github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
-	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
+	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	"github.com/rossigee/provider-discord/internal/services"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -80,7 +80,7 @@ func TestDeduplicationAnnotationPredicate(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testPC := &discordv1alpha1.ProviderConfig{
+			testPC := &discordv1beta1.ProviderConfig{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:        "test",
 					Annotations: tt.annotations,
@@ -226,17 +226,17 @@ func TestDeduplicationNameGeneration(t *testing.T) {
 
 // TestProviderConfigWithDeduplicationSpec tests ProviderConfig with deduplication spec.
 func TestProviderConfigWithDeduplicationSpec(t *testing.T) {
-	pc := &discordv1alpha1.ProviderConfig{
+	pc := &discordv1beta1.ProviderConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
 		},
-		Spec: discordv1alpha1.ProviderConfigSpec{
-			Credentials: discordv1alpha1.ProviderCredentials{
+		Spec: discordv1beta1.ProviderConfigSpec{
+			Credentials: discordv1beta1.ProviderCredentials{
 				Source: "Secret",
 			},
-			Deduplication: &discordv1alpha1.DeduplicationSpec{
+			Deduplication: &discordv1beta1.DeduplicationSpec{
 				Enabled:                 true,
-				Mode:                    discordv1alpha1.DeduplicationModeReport,
+				Mode:                    discordv1beta1.DeduplicationModeReport,
 				DeleteOrphanedResources: true,
 				TargetGuilds:            []string{"123456", "789012"},
 			},
@@ -252,8 +252,8 @@ func TestProviderConfigWithDeduplicationSpec(t *testing.T) {
 		t.Error("expected deduplication to be enabled")
 	}
 
-	if pc.Spec.Deduplication.Mode != discordv1alpha1.DeduplicationModeReport {
-		t.Errorf("expected mode %q, got %q", discordv1alpha1.DeduplicationModeReport, pc.Spec.Deduplication.Mode)
+	if pc.Spec.Deduplication.Mode != discordv1beta1.DeduplicationModeReport {
+		t.Errorf("expected mode %q, got %q", discordv1beta1.DeduplicationModeReport, pc.Spec.Deduplication.Mode)
 	}
 
 	if !pc.Spec.Deduplication.DeleteOrphanedResources {
@@ -307,7 +307,7 @@ func TestDeduplicationModeValidation(t *testing.T) {
 
 // TestAnnotationUpdate tests that annotations can be updated for mode transitions.
 func TestAnnotationUpdate(t *testing.T) {
-	pc := &discordv1alpha1.ProviderConfig{
+	pc := &discordv1beta1.ProviderConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test",
 			Annotations: map[string]string{
@@ -402,10 +402,10 @@ func TestReconcile_PersistsStatus(t *testing.T) {
 	if err := corev1.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to register corev1 scheme: %v", err)
 	}
-	if err := discordv1alpha1.AddToScheme(scheme); err != nil {
+	if err := discordv1beta1.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to register ProviderConfig scheme: %v", err)
 	}
-	if err := deduplicationv1alpha1.AddToScheme(scheme); err != nil {
+	if err := deduplicationv1beta1.AddToScheme(scheme); err != nil {
 		t.Fatalf("failed to register Deduplication scheme: %v", err)
 	}
 
@@ -415,16 +415,16 @@ func TestReconcile_PersistsStatus(t *testing.T) {
 	}
 
 	baseURL := discordServer.URL
-	pc := &discordv1alpha1.ProviderConfig{
+	pc := &discordv1beta1.ProviderConfig{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-pc",
 			Annotations: map[string]string{
 				DeduplicationAnnotation: "report",
 			},
 		},
-		Spec: discordv1alpha1.ProviderConfigSpec{
+		Spec: discordv1beta1.ProviderConfigSpec{
 			BaseURL: &baseURL,
-			Credentials: discordv1alpha1.ProviderCredentials{
+			Credentials: discordv1beta1.ProviderCredentials{
 				Source: xpv1.CredentialsSourceSecret,
 				CommonCredentialSelectors: xpv1.CommonCredentialSelectors{
 					SecretRef: &xpv1.SecretKeySelector{
@@ -438,7 +438,7 @@ func TestReconcile_PersistsStatus(t *testing.T) {
 
 	fakeClient := fake.NewClientBuilder().
 		WithScheme(scheme).
-		WithStatusSubresource(&deduplicationv1alpha1.Deduplication{}).
+		WithStatusSubresource(&deduplicationv1beta1.Deduplication{}).
 		WithObjects(pc, secret).
 		Build()
 
@@ -452,7 +452,7 @@ func TestReconcile_PersistsStatus(t *testing.T) {
 		t.Fatalf("Reconcile returned unexpected error: %v", err)
 	}
 
-	dedup := &deduplicationv1alpha1.Deduplication{}
+	dedup := &deduplicationv1beta1.Deduplication{}
 	if err := fakeClient.Get(context.Background(), types.NamespacedName{Name: "test-pc-report"}, dedup); err != nil {
 		t.Fatalf("failed to fetch Deduplication CRD: %v", err)
 	}

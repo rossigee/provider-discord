@@ -22,8 +22,8 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
-	integrationv1alpha1 "github.com/rossigee/provider-discord/apis/integration/v1alpha1"
+	guildv1beta1 "github.com/rossigee/provider-discord/apis/guild/v1beta1"
+	integrationv1beta1 "github.com/rossigee/provider-discord/apis/integration/v1beta1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -59,21 +59,21 @@ func TestObserve(t *testing.T) {
 
 	tests := []struct {
 		name           string
-		integration    *integrationv1alpha1.Integration
+		integration    *integrationv1beta1.Integration
 		mockSetup      func(*MockIntegrationClient)
 		expectedExists bool
 		expectError    bool
 	}{
 		{
 			name: "observe_integration_found",
-			integration: &integrationv1alpha1.Integration{
+			integration: &integrationv1beta1.Integration{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: integrationID,
 					},
 				},
-				Spec: integrationv1alpha1.IntegrationSpec{
-					ForProvider: integrationv1alpha1.IntegrationParameters{
+				Spec: integrationv1beta1.IntegrationSpec{
+					ForProvider: integrationv1beta1.IntegrationParameters{
 						GuildID:       guildID,
 						IntegrationID: integrationID,
 					},
@@ -95,9 +95,9 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "observe_integration_not_found",
-			integration: &integrationv1alpha1.Integration{
-				Spec: integrationv1alpha1.IntegrationSpec{
-					ForProvider: integrationv1alpha1.IntegrationParameters{
+			integration: &integrationv1beta1.Integration{
+				Spec: integrationv1beta1.IntegrationSpec{
+					ForProvider: integrationv1beta1.IntegrationParameters{
 						GuildID:       guildID,
 						IntegrationID: integrationID,
 					},
@@ -136,9 +136,9 @@ func TestObserve(t *testing.T) {
 func TestCreate(t *testing.T) {
 	ctx := context.Background()
 
-	integration := &integrationv1alpha1.Integration{
-		Spec: integrationv1alpha1.IntegrationSpec{
-			ForProvider: integrationv1alpha1.IntegrationParameters{
+	integration := &integrationv1beta1.Integration{
+		Spec: integrationv1beta1.IntegrationSpec{
+			ForProvider: integrationv1beta1.IntegrationParameters{
 				GuildID: "123456789012345678",
 			},
 		},
@@ -155,9 +155,9 @@ func TestCreate(t *testing.T) {
 func TestUpdate(t *testing.T) {
 	ctx := context.Background()
 
-	integration := &integrationv1alpha1.Integration{
-		Spec: integrationv1alpha1.IntegrationSpec{
-			ForProvider: integrationv1alpha1.IntegrationParameters{
+	integration := &integrationv1beta1.Integration{
+		Spec: integrationv1beta1.IntegrationSpec{
+			ForProvider: integrationv1beta1.IntegrationParameters{
 				GuildID: "123456789012345678",
 			},
 		},
@@ -178,20 +178,20 @@ func TestDelete(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		integration *integrationv1alpha1.Integration
+		integration *integrationv1beta1.Integration
 		mockSetup   func(*MockIntegrationClient)
 		expectError bool
 	}{
 		{
 			name: "delete_success",
-			integration: &integrationv1alpha1.Integration{
+			integration: &integrationv1beta1.Integration{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: integrationID,
 					},
 				},
-				Spec: integrationv1alpha1.IntegrationSpec{
-					ForProvider: integrationv1alpha1.IntegrationParameters{
+				Spec: integrationv1beta1.IntegrationSpec{
+					ForProvider: integrationv1beta1.IntegrationParameters{
 						GuildID:       guildID,
 						IntegrationID: integrationID,
 					},
@@ -234,9 +234,9 @@ func TestDisconnect(t *testing.T) {
 func TestObservePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 
-	integration := &integrationv1alpha1.Integration{
-		Spec: integrationv1alpha1.IntegrationSpec{
-			ForProvider: integrationv1alpha1.IntegrationParameters{
+	integration := &integrationv1beta1.Integration{
+		Spec: integrationv1beta1.IntegrationSpec{
+			ForProvider: integrationv1beta1.IntegrationParameters{
 				GuildID:       "123456789012345678",
 				IntegrationID: "987654321098765432",
 			},
@@ -259,14 +259,14 @@ func TestObservePermissionDenied(t *testing.T) {
 func TestDeletePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 
-	integration := &integrationv1alpha1.Integration{
+	integration := &integrationv1beta1.Integration{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: "987654321098765432",
 			},
 		},
-		Spec: integrationv1alpha1.IntegrationSpec{
-			ForProvider: integrationv1alpha1.IntegrationParameters{
+		Spec: integrationv1beta1.IntegrationSpec{
+			ForProvider: integrationv1beta1.IntegrationParameters{
 				GuildID:       "123456789012345678",
 				IntegrationID: "987654321098765432",
 			},
@@ -290,7 +290,7 @@ func TestTypeAssertions(t *testing.T) {
 	ctx := context.Background()
 
 	// Test with wrong type
-	wrongType := &guildv1alpha1.Guild{}
+	wrongType := &guildv1beta1.Guild{}
 
 	e := &external{discord: &MockIntegrationClient{}}
 

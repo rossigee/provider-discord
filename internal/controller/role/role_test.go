@@ -23,8 +23,8 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
-	rolev1alpha1 "github.com/rossigee/provider-discord/apis/role/v1alpha1"
+	guildv1beta1 "github.com/rossigee/provider-discord/apis/guild/v1beta1"
+	rolev1beta1 "github.com/rossigee/provider-discord/apis/role/v1beta1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -77,7 +77,7 @@ func TestObserve(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		role             *rolev1alpha1.Role
+		role             *rolev1beta1.Role
 		mockSetup        func(*MockDiscordClient)
 		expectedExists   bool
 		expectedUpToDate bool
@@ -85,14 +85,14 @@ func TestObserve(t *testing.T) {
 	}{
 		{
 			name: "role exists and up to date",
-			role: &rolev1alpha1.Role{
+			role: &rolev1beta1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: rolev1alpha1.RoleSpec{
-					ForProvider: rolev1alpha1.RoleParameters{
+				Spec: rolev1beta1.RoleSpec{
+					ForProvider: rolev1beta1.RoleParameters{
 						Name:    "Test Role",
 						GuildID: guildID,
 						Color:   intPtr(16711680),
@@ -119,14 +119,14 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "role exists but needs update",
-			role: &rolev1alpha1.Role{
+			role: &rolev1beta1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: rolev1alpha1.RoleSpec{
-					ForProvider: rolev1alpha1.RoleParameters{
+				Spec: rolev1beta1.RoleSpec{
+					ForProvider: rolev1beta1.RoleParameters{
 						Name:    "Updated Role",
 						GuildID: guildID,
 						Color:   intPtr(255),
@@ -148,14 +148,14 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "role does not exist",
-			role: &rolev1alpha1.Role{
+			role: &rolev1beta1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: rolev1alpha1.RoleSpec{
-					ForProvider: rolev1alpha1.RoleParameters{
+				Spec: rolev1beta1.RoleSpec{
+					ForProvider: rolev1beta1.RoleParameters{
 						Name:    "Test Role",
 						GuildID: guildID,
 					},
@@ -172,9 +172,9 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "no external name set",
-			role: &rolev1alpha1.Role{
-				Spec: rolev1alpha1.RoleSpec{
-					ForProvider: rolev1alpha1.RoleParameters{
+			role: &rolev1beta1.Role{
+				Spec: rolev1beta1.RoleSpec{
+					ForProvider: rolev1beta1.RoleParameters{
 						Name:    "Test Role",
 						GuildID: guildID,
 					},
@@ -215,9 +215,9 @@ func TestCreate(t *testing.T) {
 	guildID := "123456789"
 	roleID := "987654321"
 
-	role := &rolev1alpha1.Role{
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+	role := &rolev1beta1.Role{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:        "Test Role",
 				GuildID:     guildID,
 				Color:       intPtr(16711680),
@@ -263,14 +263,14 @@ func TestUpdate(t *testing.T) {
 	guildID := "123456789"
 	roleID := "987654321"
 
-	role := &rolev1alpha1.Role{
+	role := &rolev1beta1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: roleID,
 			},
 		},
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:     "Updated Role",
 				GuildID:  guildID,
 				Color:    intPtr(255),
@@ -309,20 +309,20 @@ func TestDelete(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		role        *rolev1alpha1.Role
+		role        *rolev1beta1.Role
 		mockSetup   func(*MockDiscordClient)
 		expectError bool
 	}{
 		{
 			name: "successful delete",
-			role: &rolev1alpha1.Role{
+			role: &rolev1beta1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: rolev1alpha1.RoleSpec{
-					ForProvider: rolev1alpha1.RoleParameters{
+				Spec: rolev1beta1.RoleSpec{
+					ForProvider: rolev1beta1.RoleParameters{
 						GuildID: guildID,
 					},
 				},
@@ -338,14 +338,14 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name: "delete non-existent role",
-			role: &rolev1alpha1.Role{
+			role: &rolev1beta1.Role{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: roleID,
 					},
 				},
-				Spec: rolev1alpha1.RoleSpec{
-					ForProvider: rolev1alpha1.RoleParameters{
+				Spec: rolev1beta1.RoleSpec{
+					ForProvider: rolev1beta1.RoleParameters{
 						GuildID: guildID,
 					},
 				},
@@ -359,9 +359,9 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name: "no external name",
-			role: &rolev1alpha1.Role{
-				Spec: rolev1alpha1.RoleSpec{
-					ForProvider: rolev1alpha1.RoleParameters{
+			role: &rolev1beta1.Role{
+				Spec: rolev1beta1.RoleSpec{
+					ForProvider: rolev1beta1.RoleParameters{
 						GuildID: guildID,
 					},
 				},
@@ -416,14 +416,14 @@ func TestObservePermissionDenied(t *testing.T) {
 	guildID := "123456789012345678"
 	roleID := "987654321098765432"
 
-	role := &rolev1alpha1.Role{
+	role := &rolev1beta1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: roleID,
 			},
 		},
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:    "test-role",
 				GuildID: guildID,
 			},
@@ -452,14 +452,14 @@ func TestObserveUnauthorized(t *testing.T) {
 	guildID := "123456789012345678"
 	roleID := "987654321098765432"
 
-	role := &rolev1alpha1.Role{
+	role := &rolev1beta1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: roleID,
 			},
 		},
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:    "test-role",
 				GuildID: guildID,
 			},
@@ -487,9 +487,9 @@ func TestCreatePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789012345678"
 
-	role := &rolev1alpha1.Role{
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+	role := &rolev1beta1.Role{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:    "test-role",
 				GuildID: guildID,
 			},
@@ -516,14 +516,14 @@ func TestUpdatePermissionDenied(t *testing.T) {
 	guildID := "123456789012345678"
 	roleID := "987654321098765432"
 
-	role := &rolev1alpha1.Role{
+	role := &rolev1beta1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: roleID,
 			},
 		},
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:    "updated-role",
 				GuildID: guildID,
 			},
@@ -550,14 +550,14 @@ func TestDeletePermissionDenied(t *testing.T) {
 	guildID := "123456789012345678"
 	roleID := "987654321098765432"
 
-	role := &rolev1alpha1.Role{
+	role := &rolev1beta1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: roleID,
 			},
 		},
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:    "test-role",
 				GuildID: guildID,
 			},
@@ -583,7 +583,7 @@ func TestTypeAssertions(t *testing.T) {
 	ctx := context.Background()
 
 	// Test with wrong type
-	wrongType := &guildv1alpha1.Guild{}
+	wrongType := &guildv1beta1.Guild{}
 
 	e := &external{discord: &MockDiscordClient{}}
 
@@ -611,20 +611,20 @@ func TestObserveCacheSkipsAPI(t *testing.T) {
 	roleID := "987654321098765432"
 
 	now := metav1.Now()
-	role := &rolev1alpha1.Role{
+	role := &rolev1beta1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: roleID,
 			},
 		},
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:    "test-role",
 				GuildID: guildID,
 			},
 		},
-		Status: rolev1alpha1.RoleStatus{
-			AtProvider: rolev1alpha1.RoleObservation{
+		Status: rolev1beta1.RoleStatus{
+			AtProvider: rolev1beta1.RoleObservation{
 				ID:           roleID,
 				Managed:      false,
 				LastSyncTime: &now,
@@ -655,20 +655,20 @@ func TestObserveUpdatesSyncTime(t *testing.T) {
 	guildID := "123456789012345678"
 	roleID := "987654321098765432"
 
-	role := &rolev1alpha1.Role{
+	role := &rolev1beta1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: roleID,
 			},
 		},
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:    "test-role",
 				GuildID: guildID,
 			},
 		},
-		Status: rolev1alpha1.RoleStatus{
-			AtProvider: rolev1alpha1.RoleObservation{},
+		Status: rolev1beta1.RoleStatus{
+			AtProvider: rolev1beta1.RoleObservation{},
 		},
 	}
 
@@ -700,20 +700,20 @@ func TestObserveCacheExpiry(t *testing.T) {
 
 	// Create a timestamp 5 minutes + 1 second in the past
 	oldTime := metav1.NewTime(time.Now().Add(-5*time.Minute - 1*time.Second))
-	role := &rolev1alpha1.Role{
+	role := &rolev1beta1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: roleID,
 			},
 		},
-		Spec: rolev1alpha1.RoleSpec{
-			ForProvider: rolev1alpha1.RoleParameters{
+		Spec: rolev1beta1.RoleSpec{
+			ForProvider: rolev1beta1.RoleParameters{
 				Name:    "test-role",
 				GuildID: guildID,
 			},
 		},
-		Status: rolev1alpha1.RoleStatus{
-			AtProvider: rolev1alpha1.RoleObservation{
+		Status: rolev1beta1.RoleStatus{
+			AtProvider: rolev1beta1.RoleObservation{
 				ID:           roleID,
 				Managed:      false,
 				LastSyncTime: &oldTime,

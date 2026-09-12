@@ -23,8 +23,8 @@ import (
 	"strings"
 	"time"
 
-	deduplicationv1alpha1 "github.com/rossigee/provider-discord/apis/deduplication/v1alpha1"
-	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
+	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	"github.com/rossigee/provider-discord/internal/services"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,7 +62,7 @@ func Setup(mgr ctrl.Manager) error {
 
 	// Predicate to only watch ProviderConfigs with the deduplication annotation
 	annotationPredicate := predicate.NewPredicateFuncs(func(obj client.Object) bool {
-		pc, ok := obj.(*discordv1alpha1.ProviderConfig)
+		pc, ok := obj.(*discordv1beta1.ProviderConfig)
 		if !ok {
 			return false
 		}
@@ -78,7 +78,7 @@ func Setup(mgr ctrl.Manager) error {
 	})
 
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&discordv1alpha1.ProviderConfig{}).
+		For(&discordv1beta1.ProviderConfig{}).
 		WithEventFilter(annotationPredicate).
 		Complete(r)
 }
@@ -97,7 +97,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log := ctrl.LoggerFrom(ctx)
 
 	// Get the ProviderConfig
-	pc := &discordv1alpha1.ProviderConfig{}
+	pc := &discordv1beta1.ProviderConfig{}
 	if err := r.Get(ctx, req.NamespacedName, pc); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -133,9 +133,9 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// Resolve deduplication spec, defaulting if not provided
 	spec := pc.Spec.Deduplication
 	if spec == nil {
-		spec = &discordv1alpha1.DeduplicationSpec{
+		spec = &discordv1beta1.DeduplicationSpec{
 			Enabled:                 true,
-			Mode:                    discordv1alpha1.DeduplicationMode(mode),
+			Mode:                    discordv1beta1.DeduplicationMode(mode),
 			DeleteOrphanedResources: true,
 			TargetGuilds:            []string{},
 		}
@@ -148,7 +148,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// The name is deterministic ({pc-name}-{mode}) so CreateOrUpdate correctly updates
 	// the same object on every reconcile instead of leaking a new one each second.
 	dedupName := fmt.Sprintf("%s-%s", req.Name, mode)
-	dedupCRD := &deduplicationv1alpha1.Deduplication{
+	dedupCRD := &deduplicationv1beta1.Deduplication{
 		ObjectMeta: metav1.ObjectMeta{Name: dedupName},
 	}
 	startTime := time.Now()
@@ -160,7 +160,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// never followed by another plain Update() (which would immediately clobber the
 	// status write again).
 	_, err = controllerutil.CreateOrUpdate(ctx, r.Client, dedupCRD, func() error {
-		dedupCRD.Spec.ProviderConfigRef = deduplicationv1alpha1.ProviderConfigReference{Name: pc.Name}
+		dedupCRD.Spec.ProviderConfigRef = deduplicationv1beta1.ProviderConfigReference{Name: pc.Name}
 		dedupCRD.Spec.Mode = mode
 		dedupCRD.Spec.DeleteOrphanedResources = spec.DeleteOrphanedResources
 		dedupCRD.Spec.TargetGuilds = spec.TargetGuilds
@@ -217,10 +217,10 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	dedupCRD.Status.Phase = "completed"
 	dedupCRD.Status.CompletionTime = &metav1.Time{Time: time.Now()}
 	dedupCRD.Status.Summary = result.Summary
-	dedupCRD.Status.Results = make(map[string]deduplicationv1alpha1.GuildDeduplicationResult)
+	dedupCRD.Status.Results = make(map[string]deduplicationv1beta1.GuildDeduplicationResult)
 
 	for guildID, guildResult := range result.Guilds {
-		dupGroups := make([]deduplicationv1alpha1.DuplicateGroupInfo, 0, len(guildResult.DuplicateGroups))
+		dupGroups := make([]deduplicationv1beta1.DuplicateGroupInfo, 0, len(guildResult.DuplicateGroups))
 		for _, group := range guildResult.DuplicateGroups {
 			keptIDs := make([]string, 0, len(group.KeepIndices))
 			for _, i := range group.KeepIndices {
@@ -230,7 +230,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			for _, i := range group.DeleteIndices {
 				deletedIDs = append(deletedIDs, group.Channels[i].ID)
 			}
-			dupGroups = append(dupGroups, deduplicationv1alpha1.DuplicateGroupInfo{
+			dupGroups = append(dupGroups, deduplicationv1beta1.DuplicateGroupInfo{
 				ChannelName:       group.Name,
 				Count:             len(group.Channels),
 				KeptChannelIDs:    keptIDs,
@@ -240,7 +240,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			})
 		}
 
-		webhookDupGroups := make([]deduplicationv1alpha1.WebhookDuplicateGroupInfo, 0, len(guildResult.WebhookDuplicateGroups))
+		webhookDupGroups := make([]deduplicationv1beta1.WebhookDuplicateGroupInfo, 0, len(guildResult.WebhookDuplicateGroups))
 		for _, group := range guildResult.WebhookDuplicateGroups {
 			deletedIDs := make([]string, 0, len(group.Webhooks)-1)
 			for i, wh := range group.Webhooks {
@@ -248,7 +248,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 					deletedIDs = append(deletedIDs, wh.ID)
 				}
 			}
-			webhookDupGroups = append(webhookDupGroups, deduplicationv1alpha1.WebhookDuplicateGroupInfo{
+			webhookDupGroups = append(webhookDupGroups, deduplicationv1beta1.WebhookDuplicateGroupInfo{
 				WebhookName:       group.Name,
 				Count:             len(group.Webhooks),
 				KeptWebhookID:     group.Webhooks[group.KeepIndex].ID,
@@ -256,7 +256,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			})
 		}
 
-		roleDupGroups := make([]deduplicationv1alpha1.RoleDuplicateGroupInfo, 0, len(guildResult.RoleDuplicateGroups))
+		roleDupGroups := make([]deduplicationv1beta1.RoleDuplicateGroupInfo, 0, len(guildResult.RoleDuplicateGroups))
 		for _, group := range guildResult.RoleDuplicateGroups {
 			deletedIDs := make([]string, 0, len(group.Roles)-1)
 			for i, role := range group.Roles {
@@ -264,7 +264,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 					deletedIDs = append(deletedIDs, role.ID)
 				}
 			}
-			roleDupGroups = append(roleDupGroups, deduplicationv1alpha1.RoleDuplicateGroupInfo{
+			roleDupGroups = append(roleDupGroups, deduplicationv1beta1.RoleDuplicateGroupInfo{
 				RoleName:       group.Name,
 				Count:          len(group.Roles),
 				KeptRoleID:     group.Roles[group.KeepIndex].ID,
@@ -272,7 +272,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			})
 		}
 
-		dedupCRD.Status.Results[guildID] = deduplicationv1alpha1.GuildDeduplicationResult{
+		dedupCRD.Status.Results[guildID] = deduplicationv1beta1.GuildDeduplicationResult{
 			GuildID:                  guildResult.GuildID,
 			GuildName:                guildResult.GuildName,
 			TotalChannels:            guildResult.TotalChannels,
@@ -318,7 +318,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 // It uses the configured SecretRef.Key first, then falls back to the common key names
 // "token" and "credentials" for backward compatibility. The returned token is always
 // whitespace-trimmed to handle secrets provisioned with trailing newlines.
-func (r *ProviderConfigReconciler) extractCredentials(ctx context.Context, pc *discordv1alpha1.ProviderConfig) (string, string, error) {
+func (r *ProviderConfigReconciler) extractCredentials(ctx context.Context, pc *discordv1beta1.ProviderConfig) (string, string, error) {
 	secretRef := pc.Spec.Credentials.SecretRef
 	if secretRef == nil {
 		return "", "", fmt.Errorf("no credentials secret reference found")

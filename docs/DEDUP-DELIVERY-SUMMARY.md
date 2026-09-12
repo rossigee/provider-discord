@@ -30,14 +30,14 @@ Complete delivery of the Discord channel deduplication feature as an in-provider
 ### Code (8 files)
 
 #### API Extensions
-1. **`apis/v1alpha1/types.go`** - Extended ProviderConfig with DeduplicationSpec
+1. **`apis/v1beta1/types.go`** - Extended ProviderConfig with DeduplicationSpec
    - Fields: enabled, mode, deleteOrphanedResources, targetGuilds
    - Enum: DeduplicationMode (report/action)
 
 #### Deduplication CRD (3 files)
-2. **`apis/deduplication/v1alpha1/doc.go`** - Package documentation
-3. **`apis/deduplication/v1alpha1/register.go`** - Schema registration
-4. **`apis/deduplication/v1alpha1/types.go`** - CRD types and status
+2. **`apis/deduplication/v1beta1/doc.go`** - Package documentation
+3. **`apis/deduplication/v1beta1/register.go`** - Schema registration
+4. **`apis/deduplication/v1beta1/types.go`** - CRD types and status
 
 #### Service Layer (2 files)
 5. **`internal/services/deduplication.go`** - Core logic

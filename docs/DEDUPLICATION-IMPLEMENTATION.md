@@ -3,7 +3,7 @@
 ## ✅ Completed Components
 
 ### 1. API Extensions
-- **File**: `apis/v1alpha1/types.go`
+- **File**: `apis/v1beta1/types.go`
 - **Changes**: Added `DeduplicationSpec` to `ProviderConfigSpec`
 - **Features**:
   - `enabled`: Toggle deduplication on/off
@@ -12,7 +12,7 @@
   - `targetGuilds`: Optional guild filtering
 
 ### 2. Deduplication CRD
-- **Location**: `apis/deduplication/v1alpha1/`
+- **Location**: `apis/deduplication/v1beta1/`
 - **Files Created**:
   - `doc.go`: Package metadata
   - `register.go`: Schema registration

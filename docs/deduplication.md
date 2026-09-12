@@ -28,7 +28,7 @@ The Discord channel deduplication feature provides an automated way to identify 
    - Creates/updates Deduplication CRD instances
    - Emits Kubernetes Events for audit trail
 
-3. **Deduplication CRD** (`apis/deduplication/v1alpha1/types.go`)
+3. **Deduplication CRD** (`apis/deduplication/v1beta1/types.go`)
    - Cluster-scoped resource tracking deduplication operations
    - Records per-guild results and summary statistics
    - Queryable history of all deduplication runs
@@ -66,7 +66,7 @@ ProviderConfig with annotation "report"/"action"
 
 3. ProviderConfig with valid credentials:
    ```yaml
-   apiVersion: discord.crossplane.io/v1alpha1
+   apiVersion: discord.m.crossplane.io/v1beta1
    kind: ProviderConfig
    metadata:
      name: default
@@ -222,7 +222,7 @@ status:
 
 ```yaml
 
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default
@@ -435,7 +435,7 @@ Complete audit trail is maintained via:
 
 ```yaml
 
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default

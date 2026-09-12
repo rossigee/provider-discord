@@ -25,8 +25,8 @@ import (
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/meta"
 	"github.com/pkg/errors"
-	channelv1alpha1 "github.com/rossigee/provider-discord/apis/channel/v1alpha1"
-	guildv1alpha1 "github.com/rossigee/provider-discord/apis/guild/v1alpha1"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
+	guildv1beta1 "github.com/rossigee/provider-discord/apis/guild/v1beta1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -95,7 +95,7 @@ func TestObserve(t *testing.T) {
 
 	tests := []struct {
 		name             string
-		channel          *channelv1alpha1.Channel
+		channel          *channelv1beta1.Channel
 		mockSetup        func(*MockChannelClient)
 		expectedExists   bool
 		expectedUpToDate bool
@@ -103,14 +103,14 @@ func TestObserve(t *testing.T) {
 	}{
 		{
 			name: "channel exists and up to date",
-			channel: &channelv1alpha1.Channel{
+			channel: &channelv1beta1.Channel{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: channelID,
 					},
 				},
-				Spec: channelv1alpha1.ChannelSpec{
-					ForProvider: channelv1alpha1.ChannelParameters{
+				Spec: channelv1beta1.ChannelSpec{
+					ForProvider: channelv1beta1.ChannelParameters{
 						Name:    "test-channel",
 						Type:    0, // Text channel
 						GuildID: guildID,
@@ -133,14 +133,14 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "channel exists but needs update",
-			channel: &channelv1alpha1.Channel{
+			channel: &channelv1beta1.Channel{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: channelID,
 					},
 				},
-				Spec: channelv1alpha1.ChannelSpec{
-					ForProvider: channelv1alpha1.ChannelParameters{
+				Spec: channelv1beta1.ChannelSpec{
+					ForProvider: channelv1beta1.ChannelParameters{
 						Name:    "updated-channel",
 						Type:    0,
 						GuildID: guildID,
@@ -163,14 +163,14 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "channel does not exist",
-			channel: &channelv1alpha1.Channel{
+			channel: &channelv1beta1.Channel{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: channelID,
 					},
 				},
-				Spec: channelv1alpha1.ChannelSpec{
-					ForProvider: channelv1alpha1.ChannelParameters{
+				Spec: channelv1beta1.ChannelSpec{
+					ForProvider: channelv1beta1.ChannelParameters{
 						Name:    "test-channel",
 						Type:    0,
 						GuildID: guildID,
@@ -188,9 +188,9 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "no external name set - channel does not exist",
-			channel: &channelv1alpha1.Channel{
-				Spec: channelv1alpha1.ChannelSpec{
-					ForProvider: channelv1alpha1.ChannelParameters{
+			channel: &channelv1beta1.Channel{
+				Spec: channelv1beta1.ChannelSpec{
+					ForProvider: channelv1beta1.ChannelParameters{
 						Name:    "test-channel",
 						Type:    0,
 						GuildID: guildID,
@@ -208,15 +208,15 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "invalid external name (not Discord ID) - channel does not exist",
-			channel: &channelv1alpha1.Channel{
+			channel: &channelv1beta1.Channel{
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "test-resource-name",
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: "test-resource-name", // Invalid - not a Discord snowflake
 					},
 				},
-				Spec: channelv1alpha1.ChannelSpec{
-					ForProvider: channelv1alpha1.ChannelParameters{
+				Spec: channelv1beta1.ChannelSpec{
+					ForProvider: channelv1beta1.ChannelParameters{
 						Name:    "test-channel",
 						Type:    0,
 						GuildID: guildID,
@@ -234,9 +234,9 @@ func TestObserve(t *testing.T) {
 		},
 		{
 			name: "channel exists by name (no external name set)",
-			channel: &channelv1alpha1.Channel{
-				Spec: channelv1alpha1.ChannelSpec{
-					ForProvider: channelv1alpha1.ChannelParameters{
+			channel: &channelv1beta1.Channel{
+				Spec: channelv1beta1.ChannelSpec{
+					ForProvider: channelv1beta1.ChannelParameters{
 						Name:    "existing-channel",
 						Type:    0,
 						GuildID: guildID,
@@ -300,9 +300,9 @@ func TestCreate(t *testing.T) {
 		},
 	}
 
-	channel := &channelv1alpha1.Channel{
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+	channel := &channelv1beta1.Channel{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: guildID,
@@ -336,9 +336,9 @@ func TestCreate_ConcurrentDuplicateAdopted(t *testing.T) {
 		},
 	}
 
-	channel := &channelv1alpha1.Channel{
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+	channel := &channelv1beta1.Channel{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: guildID,
@@ -407,9 +407,9 @@ func TestCreate_ConcurrentReconcilesDoNotDuplicate(t *testing.T) {
 		go func(i int) {
 			defer wg.Done()
 			e := &external{service: newClient(), kube: nil}
-			channel := &channelv1alpha1.Channel{
-				Spec: channelv1alpha1.ChannelSpec{
-					ForProvider: channelv1alpha1.ChannelParameters{
+			channel := &channelv1beta1.Channel{
+				Spec: channelv1beta1.ChannelSpec{
+					ForProvider: channelv1beta1.ChannelParameters{
 						Name:    "race-channel",
 						Type:    0,
 						GuildID: guildID,
@@ -454,14 +454,14 @@ func TestUpdate(t *testing.T) {
 		},
 	}
 
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: channelID,
 			},
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "updated-channel",
 				Type:    0,
 				GuildID: guildID,
@@ -481,13 +481,13 @@ func TestDelete(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		channel     *channelv1alpha1.Channel
+		channel     *channelv1beta1.Channel
 		mockSetup   func(*MockChannelClient)
 		expectError bool
 	}{
 		{
 			name: "successful delete",
-			channel: &channelv1alpha1.Channel{
+			channel: &channelv1beta1.Channel{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: channelID,
@@ -503,7 +503,7 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name: "delete non-existent channel",
-			channel: &channelv1alpha1.Channel{
+			channel: &channelv1beta1.Channel{
 				ObjectMeta: metav1.ObjectMeta{
 					Annotations: map[string]string{
 						meta.AnnotationKeyExternalName: channelID,
@@ -519,7 +519,7 @@ func TestDelete(t *testing.T) {
 		},
 		{
 			name: "no external name",
-			channel: &channelv1alpha1.Channel{
+			channel: &channelv1beta1.Channel{
 				ObjectMeta: metav1.ObjectMeta{},
 			},
 			mockSetup: func(m *MockChannelClient) {
@@ -562,22 +562,22 @@ func TestTypeAssertions(t *testing.T) {
 	}{
 		{
 			name:     "invalid resource type in Observe",
-			resource: &channelv1alpha1.Channel{},
+			resource: &channelv1beta1.Channel{},
 			method:   "Observe",
 		},
 		{
 			name:     "invalid resource type in Create",
-			resource: &channelv1alpha1.Channel{},
+			resource: &channelv1beta1.Channel{},
 			method:   "Create",
 		},
 		{
 			name:     "invalid resource type in Update",
-			resource: &channelv1alpha1.Channel{},
+			resource: &channelv1beta1.Channel{},
 			method:   "Update",
 		},
 		{
 			name:     "invalid resource type in Delete",
-			resource: &channelv1alpha1.Channel{},
+			resource: &channelv1beta1.Channel{},
 			method:   "Delete",
 		},
 	}
@@ -588,7 +588,7 @@ func TestTypeAssertions(t *testing.T) {
 			e := &external{service: mockClient, kube: nil}
 
 			// Test with a non-Channel resource (should fail type assertion)
-			invalidResource := &guildv1alpha1.Guild{} // Use Guild instead of Channel
+			invalidResource := &guildv1beta1.Guild{} // Use Guild instead of Channel
 
 			ctx := context.Background()
 			switch tc.method {
@@ -619,14 +619,14 @@ func TestObservePermissionDenied(t *testing.T) {
 	guildID := "123456789012345678"
 	channelID := "987654321098765432"
 
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: channelID,
 			},
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: guildID,
@@ -655,14 +655,14 @@ func TestObserveUnauthorized(t *testing.T) {
 	guildID := "123456789012345678"
 	channelID := "987654321098765432"
 
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: channelID,
 			},
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: guildID,
@@ -690,12 +690,12 @@ func TestCreatePermissionDenied(t *testing.T) {
 	ctx := context.Background()
 	guildID := "123456789012345678"
 
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "test-channel",
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: guildID,
@@ -725,14 +725,14 @@ func TestUpdatePermissionDenied(t *testing.T) {
 	guildID := "123456789012345678"
 	channelID := "987654321098765432"
 
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: channelID,
 			},
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "updated-name",
 				Type:    0,
 				GuildID: guildID,
@@ -759,14 +759,14 @@ func TestDeletePermissionDenied(t *testing.T) {
 	guildID := "123456789012345678"
 	channelID := "987654321098765432"
 
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: channelID,
 			},
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: guildID,
@@ -794,21 +794,21 @@ func TestObserveCacheSkipsAPI(t *testing.T) {
 	channelID := "987654321098765432"
 
 	now := metav1.Now()
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: channelID,
 			},
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: guildID,
 			},
 		},
-		Status: channelv1alpha1.ChannelStatus{
-			AtProvider: channelv1alpha1.ChannelObservation{
+		Status: channelv1beta1.ChannelStatus{
+			AtProvider: channelv1beta1.ChannelObservation{
 				ID:   channelID,
 				Name: "test-channel",
 				Type: 0,
@@ -840,22 +840,22 @@ func TestObserveUpdatesSyncTime(t *testing.T) {
 	guildID := "123456789012345678"
 	channelID := "987654321098765432"
 
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: channelID,
 			},
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: guildID,
 			},
 		},
 		// No LastSyncTime set (first observe)
-		Status: channelv1alpha1.ChannelStatus{
-			AtProvider: channelv1alpha1.ChannelObservation{},
+		Status: channelv1beta1.ChannelStatus{
+			AtProvider: channelv1beta1.ChannelObservation{},
 		},
 	}
 
@@ -887,21 +887,21 @@ func TestObserveCacheExpiry(t *testing.T) {
 
 	// Create a timestamp 5 minutes + 1 second in the past
 	oldTime := metav1.NewTime(time.Now().Add(-5*time.Minute - 1*time.Second))
-	channel := &channelv1alpha1.Channel{
+	channel := &channelv1beta1.Channel{
 		ObjectMeta: metav1.ObjectMeta{
 			Annotations: map[string]string{
 				meta.AnnotationKeyExternalName: channelID,
 			},
 		},
-		Spec: channelv1alpha1.ChannelSpec{
-			ForProvider: channelv1alpha1.ChannelParameters{
+		Spec: channelv1beta1.ChannelSpec{
+			ForProvider: channelv1beta1.ChannelParameters{
 				Name:    "test-channel",
 				Type:    0,
 				GuildID: guildID,
 			},
 		},
-		Status: channelv1alpha1.ChannelStatus{
-			AtProvider: channelv1alpha1.ChannelObservation{
+		Status: channelv1beta1.ChannelStatus{
+			AtProvider: channelv1beta1.ChannelObservation{
 				ID:   channelID,
 				Name: "test-channel",
 				Type: 0,

@@ -6,7 +6,7 @@
 
 # STEP 1: Create a ProviderConfig with credentials
 # If you don't already have one, create it:
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default
@@ -27,7 +27,7 @@ spec:
 #
 # Or create/patch directly:
 ---
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default
@@ -86,7 +86,7 @@ spec:
 #
 # Or patch the manifest:
 ---
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default
@@ -143,7 +143,7 @@ spec:
 #
 # Instead of deduplicating all guilds, you can target specific ones:
 ---
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default

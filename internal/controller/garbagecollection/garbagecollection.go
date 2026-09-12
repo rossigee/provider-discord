@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"time"
 
-	discordv1alpha1 "github.com/rossigee/provider-discord/apis/v1alpha1"
+	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	"github.com/rossigee/provider-discord/internal/services"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/events"
@@ -53,9 +53,9 @@ func (r *ProviderConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named("garbagecollection").
-		For(&discordv1alpha1.ProviderConfig{}).
+		For(&discordv1beta1.ProviderConfig{}).
 		WithEventFilter(predicate.NewPredicateFuncs(func(obj client.Object) bool {
-			pc := obj.(*discordv1alpha1.ProviderConfig)
+			pc := obj.(*discordv1beta1.ProviderConfig)
 			return pc.Spec.GarbageCollection != nil && pc.Spec.GarbageCollection.Enabled
 		})).
 		Complete(r)
@@ -63,7 +63,7 @@ func (r *ProviderConfigReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 // Reconcile performs periodic garbage collection on the ProviderConfig's Discord resources.
 func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	pc := &discordv1alpha1.ProviderConfig{}
+	pc := &discordv1beta1.ProviderConfig{}
 	if err := r.client.Get(ctx, req.NamespacedName, pc); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
@@ -108,7 +108,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 }
 
 // extractCredentials extracts the bot token and base URL from the ProviderConfig.
-func extractCredentials(ctx context.Context, c client.Client, pc *discordv1alpha1.ProviderConfig) (string, string, error) {
+func extractCredentials(ctx context.Context, c client.Client, pc *discordv1beta1.ProviderConfig) (string, string, error) {
 	secretRef := pc.Spec.Credentials.SecretRef
 	if secretRef == nil {
 		return "", "", fmt.Errorf("no credentials secret reference found")

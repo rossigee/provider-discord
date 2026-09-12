@@ -52,29 +52,29 @@ An enterprise-grade Crossplane provider for managing Discord resources through K
 
 ## Resource Types
 
-Every resource is available in two API versions: cluster-scoped `v1alpha1`
-and namespaced `v1beta1` (`.m.` group), each with its own controller running
-side by side.
+All resources are namespaced `v1beta1` (`.m.` group) for Crossplane v2 multi-tenancy.
 
-| Resource | Cluster-scoped (v1alpha1) | Namespaced (v1beta1) | Description |
-| ---------- | --------------------------- | ----------------------- | ------------- |
-| Guild | `guild.discord.crossplane.io/v1alpha1` | `guild.discord.m.crossplane.io/v1beta1` | Discord servers with full configuration |
-| Channel | `channel.discord.crossplane.io/v1alpha1` | `channel.discord.m.crossplane.io/v1beta1` | Text, voice, and category channels |
-| Role | `role.discord.crossplane.io/v1alpha1` | `role.discord.m.crossplane.io/v1beta1` | Permission management and role hierarchy |
-| Webhook | `webhook.discord.crossplane.io/v1alpha1` | `webhook.discord.m.crossplane.io/v1beta1` | Automated messaging and CI/CD integration |
-| Member | `member.discord.crossplane.io/v1alpha1` | `member.discord.m.crossplane.io/v1beta1` | Guild member management and role assignments |
-| User | `user.discord.crossplane.io/v1alpha1` | `user.discord.m.crossplane.io/v1beta1` | User profile management |
-| Application | `application.discord.crossplane.io/v1alpha1` | `application.discord.m.crossplane.io/v1beta1` | Discord bot application configuration |
-| Integration | `integration.discord.crossplane.io/v1alpha1` | `integration.discord.m.crossplane.io/v1beta1` | Third-party service integrations (Twitch, YouTube, etc.) |
-| Invite | `invite.discord.crossplane.io/v1alpha1` | `invite.discord.m.crossplane.io/v1beta1` | Server invitations with expiration control |
-| ProviderConfig | `discord.crossplane.io/v1alpha1` | — | Provider authentication and configuration |
+| Resource | API Group | Description |
+| ---------- | ------------- | ------------- |
+| Guild | `guild.discord.m.crossplane.io/v1beta1` | Discord servers with full configuration |
+| Channel | `channel.discord.m.crossplane.io/v1beta1` | Text, voice, and category channels |
+| Role | `role.discord.m.crossplane.io/v1beta1` | Permission management and role hierarchy |
+| Webhook | `webhook.discord.m.crossplane.io/v1beta1` | Automated messaging and CI/CD integration |
+| Member | `member.discord.m.crossplane.io/v1beta1` | Guild member management and role assignments |
+| User | `user.discord.m.crossplane.io/v1beta1` | User profile management |
+| Application | `application.discord.m.crossplane.io/v1beta1` | Discord bot application configuration |
+| Integration | `integration.discord.m.crossplane.io/v1beta1` | Third-party service integrations (Twitch, YouTube, etc.) |
+| Invite | `invite.discord.m.crossplane.io/v1beta1` | Server invitations with expiration control |
+| Deduplication | `deduplication.discord.m.crossplane.io/v1beta1` | Channel deduplication operations (cluster-scoped) |
+| ProviderConfig | `discord.m.crossplane.io/v1beta1` | Provider authentication and configuration |
+
+See [docs/index.md](docs/index.md) for the full reference and [API coverage gaps](docs/index.md#api-coverage-gaps).
 
 ### 🎯 Crossplane v2 Native
 
-**Dual-scope implementation**:
+**Crossplane v2 native**:
 
-- **Modern Architecture**: Namespaced resources for multi-tenant isolation,
-  alongside legacy cluster-scoped resources for backward compatibility
+- **Modern Architecture**: Namespaced resources for multi-tenant isolation
 - **Enterprise Features**: Comprehensive observability, resilience, and security
 - **Production Ready**: Health monitoring, metrics, tracing, and circuit breakers
 
@@ -138,7 +138,7 @@ kubectl create secret generic discord-creds \
 1. **Create ProviderConfig**:
 
 ```yaml
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: default
@@ -189,7 +189,7 @@ Generated manifests can be immediately applied with `kubectl apply -f discord-re
 
 ```yaml
 # Create Discord Guild (Server)
-apiVersion: guild.discord.crossplane.io/v1alpha1
+apiVersion: guild.discord.m.crossplane.io/v1beta1
 kind: Guild
 metadata:
   name: my-crossplane-server
@@ -207,7 +207,7 @@ spec:
     name: default
 ---
 # Create Text Channels
-apiVersion: channel.discord.crossplane.io/v1alpha1
+apiVersion: channel.discord.m.crossplane.io/v1beta1
 kind: Channel
 metadata:
   name: general-announcements
@@ -222,7 +222,7 @@ spec:
   providerConfigRef:
     name: default
 ---
-apiVersion: channel.discord.crossplane.io/v1alpha1
+apiVersion: channel.discord.m.crossplane.io/v1beta1
 kind: Channel
 metadata:
   name: general-discussion
@@ -238,7 +238,7 @@ spec:
     name: default
 ---
 # Create Voice Channel
-apiVersion: channel.discord.crossplane.io/v1alpha1
+apiVersion: channel.discord.m.crossplane.io/v1beta1
 kind: Channel
 metadata:
   name: team-voice-chat
@@ -254,7 +254,7 @@ spec:
     name: default
 ---
 # Create Admin Role
-apiVersion: role.discord.crossplane.io/v1alpha1
+apiVersion: role.discord.m.crossplane.io/v1beta1
 kind: Role
 metadata:
   name: admin-role
@@ -271,7 +271,7 @@ spec:
     name: default
 ---
 # Create Webhook for CI/CD Integration
-apiVersion: webhook.discord.crossplane.io/v1alpha1
+apiVersion: webhook.discord.m.crossplane.io/v1beta1
 kind: Webhook
 metadata:
   name: ci-cd-webhook
@@ -281,14 +281,13 @@ spec:
   forProvider:
     name: "CI/CD Bot"
     channelId: "CHANNEL_ID_HERE"
-  writeConnectionSecretsToRef:
+  writeConnectionSecretToRef:
     name: ci-webhook-connection
-    namespace: default
   providerConfigRef:
     name: default
 ---
 # Create Server Invite
-apiVersion: invite.discord.crossplane.io/v1alpha1
+apiVersion: invite.discord.m.crossplane.io/v1beta1
 kind: Invite
 metadata:
   name: server-invite
@@ -301,14 +300,13 @@ spec:
     maxUses: 100       # 100 uses maximum
     temporary: false   # Permanent membership
     unique: false      # Allow similar invites
-  writeConnectionSecretsToRef:
+  writeConnectionSecretToRef:
     name: server-invite-connection
-    namespace: default
   providerConfigRef:
     name: default
 ---
 # Manage Guild Member
-apiVersion: member.discord.crossplane.io/v1alpha1
+apiVersion: member.discord.m.crossplane.io/v1beta1
 kind: Member
 metadata:
   name: user-member
@@ -328,7 +326,7 @@ spec:
     name: default
 ---
 # Manage User Profile (current user only)
-apiVersion: user.discord.crossplane.io/v1alpha1
+apiVersion: user.discord.m.crossplane.io/v1beta1
 kind: User
 metadata:
   name: current-user-profile
@@ -342,7 +340,7 @@ spec:
     name: default
 ---
 # Configure Bot Application
-apiVersion: application.discord.crossplane.io/v1alpha1
+apiVersion: application.discord.m.crossplane.io/v1beta1
 kind: Application
 metadata:
   name: bot-application-config
@@ -361,7 +359,7 @@ spec:
     name: default
 ---
 # Monitor Third-party Integration
-apiVersion: integration.discord.crossplane.io/v1alpha1
+apiVersion: integration.discord.m.crossplane.io/v1beta1
 kind: Integration
 metadata:
   name: twitch-integration
@@ -444,7 +442,7 @@ Distributed tracing with correlation IDs for:
 The provider supports secure authentication through Kubernetes secrets:
 
 ```yaml
-apiVersion: discord.crossplane.io/v1alpha1
+apiVersion: discord.m.crossplane.io/v1beta1
 kind: ProviderConfig
 metadata:
   name: production
