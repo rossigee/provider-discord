@@ -375,48 +375,69 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 			deletesMade := 0
 			duplicatesToDelete := len(deleteIndices)
 
-			s.logger.Info("Deduplication action mode: attempting to delete channels",
-				"guildID", guild.ID, "channelName", name, "countToDelete", duplicatesToDelete)
+			s.logger.Info("Deduplication action mode: processing duplicate group",
+				"guildID", guild.ID, "channelName", name, "duplicateCount", len(group), "safeToDeletCount", duplicatesToDelete)
 
-			for _, i := range deleteIndices {
-				channel := group[i]
+			// Validate that we have channels to delete
+			if duplicatesToDelete == 0 {
+				s.logger.Info("No channels marked for deletion in this group (all channels have message history or are sole survivors)",
+					"guildID", guild.ID, "channelName", name, "keepIndices", len(dupGroup.KeepIndices), "totalChannels", len(dupGroup.Channels))
+			} else {
+				s.logger.Info("Attempting to delete duplicate channels",
+					"guildID", guild.ID, "channelName", name, "countToDelete", duplicatesToDelete)
 
-				// Rate-limit: space out DELETE calls to avoid Discord 429 responses
-				if deletesMade > 0 {
-					select {
-					case <-time.After(discordDeleteDelay):
-					case <-ctx.Done():
-						result.Errors = append(result.Errors, "context cancelled during channel deletion")
-						return result
+				for _, i := range deleteIndices {
+					if i >= len(group) {
+						s.logger.Error(fmt.Errorf("invalid channel index"), "Skipping deletion with out-of-bounds index",
+							"index", i, "groupSize", len(group))
+						continue
+					}
+
+					channel := group[i]
+
+					// Rate-limit: space out DELETE calls to avoid Discord 429 responses
+					if deletesMade > 0 {
+						select {
+						case <-time.After(discordDeleteDelay):
+						case <-ctx.Done():
+							result.Errors = append(result.Errors, "context cancelled during channel deletion")
+							return result
+						}
+					}
+
+					s.logger.Info("Attempting to delete duplicate channel",
+						"channelID", channel.ID, "channelName", channel.Name, "guildID", guild.ID)
+
+					err := s.deleteChannel(ctx, channel.ID)
+					if err != nil {
+						s.logger.Error(err, "Failed to delete duplicate channel",
+							"channelID", channel.ID, "channelName", channel.Name, "guildID", guild.ID)
+						result.Errors = append(result.Errors, fmt.Sprintf("failed to delete channel %s (%s): %v", channel.ID, channel.Name, err))
+					} else {
+						s.logger.Info("Successfully deleted duplicate channel",
+							"channelID", channel.ID, "channelName", channel.Name, "guildID", guild.ID)
+						deletesMade++
+						result.ChannelsDeleted++
+
+						// Clean up corresponding Crossplane resources if requested
+						if deleteOrphanedResources {
+							deletedCount := s.deleteOrphanedResources(ctx, channel.ID)
+							result.OrphanedResourcesDeleted += deletedCount
+						}
 					}
 				}
 
-				s.logger.Info("Attempting to delete duplicate channel",
-					"channelID", channel.ID, "channelName", channel.Name)
-
-				err := s.deleteChannel(ctx, channel.ID)
-				if err != nil {
-					s.logger.Error(err, "Failed to delete duplicate channel",
-						"channelID", channel.ID, "channelName", channel.Name)
-					result.Errors = append(result.Errors, fmt.Sprintf("failed to delete channel %s (%s): %v", channel.ID, channel.Name, err))
-				} else {
-					s.logger.Info("Successfully deleted duplicate channel",
-						"channelID", channel.ID, "channelName", channel.Name)
-					deletesMade++
-					result.ChannelsDeleted++
-
-					// Clean up corresponding Crossplane resources if requested
-					if deleteOrphanedResources {
-						deletedCount := s.deleteOrphanedResources(ctx, channel.ID)
-						result.OrphanedResourcesDeleted += deletedCount
-					}
+				// Log final results for this group
+				if deletesMade < duplicatesToDelete {
+					result.Errors = append(result.Errors, fmt.Sprintf("partial deletion: %d/%d duplicates of %q deleted", deletesMade, duplicatesToDelete, name))
+				} else if deletesMade > 0 {
+					s.logger.Info("Successfully deleted all marked duplicates in group",
+						"guildID", guild.ID, "channelName", name, "deletedCount", deletesMade)
 				}
 			}
-
-			// Log if some duplicates failed to delete
-			if deletesMade < duplicatesToDelete {
-				result.Errors = append(result.Errors, fmt.Sprintf("partial deletion: %d/%d duplicates of %q deleted", deletesMade, duplicatesToDelete, name))
-			}
+		} else {
+			s.logger.V(4).Info("Skipping deletion (not in action mode)",
+				"mode", mode, "guildID", guild.ID, "channelName", name, "duplicateCount", len(group))
 		}
 	}
 
@@ -464,11 +485,16 @@ func (s *DeduplicationService) analyzeGuildWebhooks(ctx context.Context, guild G
 		})
 
 		if mode != "action" {
+			s.logger.V(4).Info("Skipping webhook deletion (not in action mode)",
+				"mode", mode, "guildID", guild.ID, "webhookName", name, "duplicateCount", len(group))
 			continue
 		}
 
 		deletesMade := 0
 		duplicatesToDelete := len(group) - 1
+
+		s.logger.Info("Attempting to delete duplicate webhooks",
+			"guildID", guild.ID, "webhookName", name, "countToDelete", duplicatesToDelete)
 
 		for i, wh := range group {
 			if i == keepIndex {
@@ -484,9 +510,16 @@ func (s *DeduplicationService) analyzeGuildWebhooks(ctx context.Context, guild G
 				}
 			}
 
+			s.logger.Info("Attempting to delete duplicate webhook",
+				"webhookID", wh.ID, "webhookName", wh.Name, "guildID", guild.ID)
+
 			if err := s.deleteWebhook(ctx, wh.ID); err != nil {
+				s.logger.Error(err, "Failed to delete duplicate webhook",
+					"webhookID", wh.ID, "webhookName", wh.Name, "guildID", guild.ID)
 				result.Errors = append(result.Errors, fmt.Sprintf("failed to delete webhook %s (%s): %v", wh.ID, wh.Name, err))
 			} else {
+				s.logger.Info("Successfully deleted duplicate webhook",
+					"webhookID", wh.ID, "webhookName", wh.Name, "guildID", guild.ID)
 				deletesMade++
 				result.WebhooksDeleted++
 
@@ -498,6 +531,9 @@ func (s *DeduplicationService) analyzeGuildWebhooks(ctx context.Context, guild G
 
 		if deletesMade < duplicatesToDelete {
 			result.Errors = append(result.Errors, fmt.Sprintf("partial deletion: %d/%d duplicates of webhook %q deleted", deletesMade, duplicatesToDelete, name))
+		} else if deletesMade > 0 {
+			s.logger.Info("Successfully deleted all duplicate webhooks",
+				"guildID", guild.ID, "webhookName", name, "deletedCount", deletesMade)
 		}
 	}
 }
@@ -541,11 +577,16 @@ func (s *DeduplicationService) analyzeGuildRoles(ctx context.Context, guild Guil
 		})
 
 		if mode != "action" {
+			s.logger.V(4).Info("Skipping role deletion (not in action mode)",
+				"mode", mode, "guildID", guild.ID, "roleName", name, "duplicateCount", len(group))
 			continue
 		}
 
 		deletesMade := 0
 		duplicatesToDelete := len(group) - 1
+
+		s.logger.Info("Attempting to delete duplicate roles",
+			"guildID", guild.ID, "roleName", name, "countToDelete", duplicatesToDelete)
 
 		for i, role := range group {
 			if i == keepIndex {
@@ -561,9 +602,16 @@ func (s *DeduplicationService) analyzeGuildRoles(ctx context.Context, guild Guil
 				}
 			}
 
+			s.logger.Info("Attempting to delete duplicate role",
+				"roleID", role.ID, "roleName", role.Name, "guildID", guild.ID)
+
 			if err := s.deleteRole(ctx, guild.ID, role.ID); err != nil {
+				s.logger.Error(err, "Failed to delete duplicate role",
+					"roleID", role.ID, "roleName", role.Name, "guildID", guild.ID)
 				result.Errors = append(result.Errors, fmt.Sprintf("failed to delete role %s (%s): %v", role.ID, role.Name, err))
 			} else {
+				s.logger.Info("Successfully deleted duplicate role",
+					"roleID", role.ID, "roleName", role.Name, "guildID", guild.ID)
 				deletesMade++
 				result.RolesDeleted++
 
@@ -575,6 +623,9 @@ func (s *DeduplicationService) analyzeGuildRoles(ctx context.Context, guild Guil
 
 		if deletesMade < duplicatesToDelete {
 			result.Errors = append(result.Errors, fmt.Sprintf("partial deletion: %d/%d duplicates of role %q deleted", deletesMade, duplicatesToDelete, name))
+		} else if deletesMade > 0 {
+			s.logger.Info("Successfully deleted all duplicate roles",
+				"guildID", guild.ID, "roleName", name, "deletedCount", deletesMade)
 		}
 	}
 }
