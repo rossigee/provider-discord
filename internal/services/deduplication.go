@@ -25,11 +25,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/go-logr/logr"
 	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
 	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
 	rolev1beta1 "github.com/rossigee/provider-discord/apis/role/v1beta1"
 	webhookv1beta1 "github.com/rossigee/provider-discord/apis/webhook/v1beta1"
-	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
