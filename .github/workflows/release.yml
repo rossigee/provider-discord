@@ -101,8 +101,6 @@ jobs:
           go-version: '1.27.1'
 
       - name: Build Binary
-        env:
-          VERSION: ${{ steps.version.outputs.version }}
         run: |
           export VERSION="${{ steps.version.outputs.version }}"
           make go.build
