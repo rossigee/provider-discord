@@ -63,7 +63,7 @@ func main() {
 		debug                    = app.Flag("debug", "Run with debug logging.").Short('d').Bool()
 		leaderElection           = app.Flag("leader-election", "Use leader election for the controller manager.").Short('l').Default("false").OverrideDefaultFromEnvar("LEADER_ELECTION").Bool()
 		leaderElectionNS         = app.Flag("leader-election-namespace", "Namespace to use for leader election.").Default("crossplane-system").OverrideDefaultFromEnvar("LEADER_ELECTION_NAMESPACE").String()
-		pollInterval             = app.Flag("poll", "How often individual resources will be checked for drift from the desired state").Short('p').Default("1m").Duration()
+		pollInterval             = app.Flag("poll", "How often individual resources will be checked for drift from the desired state (default 5m to respect Discord's strict global rate limits; Discord's per-route limits are ~5 req/s, but the global limit is much stricter and affects all resource types simultaneously, causing multi-minute lockouts at scale)").Short('p').Default("5m").Duration()
 		maxReconcileRate         = app.Flag("max-reconcile-rate", "The global maximum rate per second at which resources may checked for drift from the desired state.").Default("10").Int()
 		syncPeriod               = app.Flag("sync", "How often all resources will be double-checked for drift from the desired state.").Short('s').Default("1h").Duration()
 		enableManagementPolicies = app.Flag("enable-management-policies", "Enable support for management policies.").Default("true").OverrideDefaultFromEnvar("ENABLE_MANAGEMENT_POLICIES").Bool()
