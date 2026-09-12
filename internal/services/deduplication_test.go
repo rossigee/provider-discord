@@ -23,6 +23,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/go-logr/logr"
 )
 
 // respondEmptyForAncillaryEndpoints handles the /channels/*/messages, /guilds/*/webhooks,
@@ -76,7 +78,7 @@ func TestAnalyzeAndDeduplicate_NoDuplicates(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
 	if err != nil {
@@ -122,7 +124,7 @@ func TestAnalyzeAndDeduplicate_WithDuplicates(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
 	if err != nil {
@@ -178,7 +180,7 @@ func TestAnalyzeAndDeduplicate_ActionMode_DeletesDuplicates(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "action", []string{})
 	if err != nil {
@@ -227,7 +229,7 @@ func TestAnalyzeAndDeduplicate_MultipleGuilds(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
 	if err != nil {
@@ -307,7 +309,7 @@ func TestAnalyzeAndDeduplicate_TargetGuilds(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	// Only analyze guild1 and guild3
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{"guild1", "guild3"})
@@ -376,7 +378,7 @@ func TestAnalyzeAndDeduplicate_KeepsChannelWithMessageHistory(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "action", []string{})
 	if err != nil {
@@ -431,7 +433,7 @@ func TestAnalyzeAndDeduplicate_AllEmptyFallsBackToOldestID(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
 	if err != nil {
@@ -477,7 +479,7 @@ func TestAnalyzeAndDeduplicate_ManualReviewWhenMultipleHaveHistory(t *testing.T)
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
 	if err != nil {
@@ -512,7 +514,7 @@ func TestAnalyzeAndDeduplicate_APIError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
 	if err == nil {
@@ -557,7 +559,7 @@ func TestAnalyzeAndDeduplicate_DeleteError(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "action", []string{})
 	if err != nil {
@@ -594,7 +596,7 @@ func TestEmptyGuild(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
 	if err != nil {
@@ -627,7 +629,7 @@ func TestNoGuilds(t *testing.T) {
 	}))
 	defer server.Close()
 
-	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil)
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
 
 	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
 	if err != nil {

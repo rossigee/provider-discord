@@ -193,7 +193,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	// Step 4: Run the deduplication (potentially destructive in "action" mode)
 	httpClient := &http.Client{Timeout: 30 * time.Second}
-	dedupService := services.NewDeduplicationService(httpClient, baseURL, botToken, r.Client)
+	dedupService := services.NewDeduplicationService(httpClient, baseURL, botToken, r.Client, log)
 
 	result, err := dedupService.AnalyzeAndDeduplicate(ctx, mode, spec.TargetGuilds)
 	if err != nil {
