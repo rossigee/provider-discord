@@ -95,6 +95,12 @@ jobs:
           fetch-depth: 0
           submodules: true
 
+      - name: Download XPKG Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: xpkg
+          path: _output/xpkg/linux_amd64
+
       - name: Setup Go
         uses: actions/setup-go@v7
         with:
