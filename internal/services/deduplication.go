@@ -29,6 +29,7 @@ import (
 	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
 	rolev1beta1 "github.com/rossigee/provider-discord/apis/role/v1beta1"
 	webhookv1beta1 "github.com/rossigee/provider-discord/apis/webhook/v1beta1"
+	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -47,10 +48,11 @@ type DeduplicationService struct {
 	baseURL    string
 	botToken   string
 	kubeClient client.Client
+	logger     logr.Logger
 }
 
 // NewDeduplicationService creates a new DeduplicationService.
-func NewDeduplicationService(httpClient *http.Client, baseURL, botToken string, kubeClient client.Client) *DeduplicationService {
+func NewDeduplicationService(httpClient *http.Client, baseURL, botToken string, kubeClient client.Client, logger logr.Logger) *DeduplicationService {
 	if baseURL == "" {
 		baseURL = "https://discord.com/api/v10"
 	}
@@ -59,6 +61,7 @@ func NewDeduplicationService(httpClient *http.Client, baseURL, botToken string, 
 		baseURL:    baseURL,
 		botToken:   botToken,
 		kubeClient: kubeClient,
+		logger:     logger,
 	}
 }
 
@@ -372,6 +375,9 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 			deletesMade := 0
 			duplicatesToDelete := len(deleteIndices)
 
+			s.logger.Info("Deduplication action mode: attempting to delete channels",
+				"guildID", guild.ID, "channelName", name, "countToDelete", duplicatesToDelete)
+
 			for _, i := range deleteIndices {
 				channel := group[i]
 
@@ -385,10 +391,17 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 					}
 				}
 
+				s.logger.Info("Attempting to delete duplicate channel",
+					"channelID", channel.ID, "channelName", channel.Name)
+
 				err := s.deleteChannel(ctx, channel.ID)
 				if err != nil {
+					s.logger.Error(err, "Failed to delete duplicate channel",
+						"channelID", channel.ID, "channelName", channel.Name)
 					result.Errors = append(result.Errors, fmt.Sprintf("failed to delete channel %s (%s): %v", channel.ID, channel.Name, err))
 				} else {
+					s.logger.Info("Successfully deleted duplicate channel",
+						"channelID", channel.ID, "channelName", channel.Name)
 					deletesMade++
 					result.ChannelsDeleted++
 

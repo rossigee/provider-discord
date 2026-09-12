@@ -24,6 +24,7 @@ import (
 
 	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
 	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
+	"github.com/go-logr/logr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -245,21 +246,21 @@ func (s *GarbageCollectionService) deleteUnmanagedChannels(ctx context.Context, 
 // getGuilds retrieves all guilds the bot is a member of.
 func (s *GarbageCollectionService) getGuilds(ctx context.Context) ([]Guild, error) {
 	// Reuse deduplication service logic
-	dedupService := NewDeduplicationService(s.httpClient, s.baseURL, s.botToken, s.k8sClient)
+	dedupService := NewDeduplicationService(s.httpClient, s.baseURL, s.botToken, s.k8sClient, logr.Logger{})
 	return dedupService.getGuilds(ctx)
 }
 
 // getChannels retrieves all channels in a guild.
 func (s *GarbageCollectionService) getChannels(ctx context.Context, guildID string) ([]Channel, error) {
 	// Reuse deduplication service logic
-	dedupService := NewDeduplicationService(s.httpClient, s.baseURL, s.botToken, s.k8sClient)
+	dedupService := NewDeduplicationService(s.httpClient, s.baseURL, s.botToken, s.k8sClient, logr.Logger{})
 	return dedupService.getChannels(ctx, guildID)
 }
 
 // deleteChannel deletes a Discord channel by ID.
 func (s *GarbageCollectionService) deleteChannel(ctx context.Context, channelID string) error {
 	// Reuse deduplication service logic
-	dedupService := NewDeduplicationService(s.httpClient, s.baseURL, s.botToken, s.k8sClient)
+	dedupService := NewDeduplicationService(s.httpClient, s.baseURL, s.botToken, s.k8sClient, logr.Logger{})
 	return dedupService.deleteChannel(ctx, channelID)
 }
 
