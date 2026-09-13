@@ -13,7 +13,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
 	applicationv1beta1 "github.com/rossigee/provider-discord/apis/application/v1beta1"
-	v1alpha1 "github.com/rossigee/provider-discord/apis/v1beta1"
+	v1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	discordclient "github.com/rossigee/provider-discord/internal/clients"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -82,7 +82,7 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
-	pc := &v1alpha1.ProviderConfig{}
+	pc := &v1beta1.ProviderConfig{}
 	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
