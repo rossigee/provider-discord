@@ -23,10 +23,10 @@ func boolPtr(b bool) *bool {
 
 type MockInviteClient struct {
 	CreateChannelInviteFunc func(ctx context.Context, channelID string, req *discordclient.CreateInviteRequest) (*discordclient.Invite, error)
-	GetInviteFunc          func(ctx context.Context, inviteCode string) (*discordclient.Invite, error)
-	DeleteInviteFunc       func(ctx context.Context, inviteCode string) error
-	GetChannelInvitesFunc  func(ctx context.Context, channelID string) ([]discordclient.Invite, error)
-	GetGuildInvitesFunc   func(ctx context.Context, guildID string) ([]discordclient.Invite, error)
+	GetInviteFunc           func(ctx context.Context, inviteCode string) (*discordclient.Invite, error)
+	DeleteInviteFunc        func(ctx context.Context, inviteCode string) error
+	GetChannelInvitesFunc   func(ctx context.Context, channelID string) ([]discordclient.Invite, error)
+	GetGuildInvitesFunc     func(ctx context.Context, guildID string) ([]discordclient.Invite, error)
 }
 
 var _ discordclient.InviteClient = (*MockInviteClient)(nil)
@@ -117,15 +117,15 @@ func TestObserve(t *testing.T) {
 			mockSetup: func(m *MockInviteClient) {
 				m.GetInviteFunc = func(ctx context.Context, code string) (*discordclient.Invite, error) {
 					return &discordclient.Invite{
-						Code:              code,
-						Channel:           &discordclient.Channel{ID: "123456"},
-						Guild:             &discordclient.Guild{ID: "789012"},
-						Inviter:           &discordclient.User{ID: "345678"},
-						MaxAge:            86400,
-						MaxUses:            0,
-						Temporary:          false,
-						Uses:               0,
-						CreatedAt:          "2024-01-01T00:00:00Z",
+						Code:      code,
+						Channel:   &discordclient.Channel{ID: "123456"},
+						Guild:     &discordclient.Guild{ID: "789012"},
+						Inviter:   &discordclient.User{ID: "345678"},
+						MaxAge:    86400,
+						MaxUses:   0,
+						Temporary: false,
+						Uses:      0,
+						CreatedAt: "2024-01-01T00:00:00Z",
 					}, nil
 				}
 			},
@@ -372,22 +372,22 @@ func TestDelete(t *testing.T) {
 func TestIsDiscordPermissionDenied(t *testing.T) {
 	tests := []struct {
 		name     string
-		err     error
+		err      error
 		expected bool
 	}{
 		{
 			name:     "error contains 403",
-			err:     errors.New("Discord API error: 403 Forbidden"),
+			err:      errors.New("Discord API error: 403 Forbidden"),
 			expected: true,
 		},
 		{
 			name:     "error does not contain 403",
-			err:     errors.New("Discord API error: 404 Not Found"),
+			err:      errors.New("Discord API error: 404 Not Found"),
 			expected: false,
 		},
 		{
 			name:     "nil error",
-			err:     nil,
+			err:      nil,
 			expected: false,
 		},
 	}
@@ -403,22 +403,22 @@ func TestIsDiscordPermissionDenied(t *testing.T) {
 func TestIsDiscordUnauthorized(t *testing.T) {
 	tests := []struct {
 		name     string
-		err     error
+		err      error
 		expected bool
 	}{
 		{
 			name:     "error contains 401",
-			err:     errors.New("Discord API error: 401 Unauthorized"),
+			err:      errors.New("Discord API error: 401 Unauthorized"),
 			expected: true,
 		},
 		{
 			name:     "error does not contain 401",
-			err:     errors.New("Discord API error: 403 Forbidden"),
+			err:      errors.New("Discord API error: 403 Forbidden"),
 			expected: false,
 		},
 		{
 			name:     "nil error",
-			err:     nil,
+			err:      nil,
 			expected: false,
 		},
 	}

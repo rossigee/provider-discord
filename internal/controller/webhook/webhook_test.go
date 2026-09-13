@@ -18,12 +18,12 @@ func stringPtr(s string) *string {
 }
 
 type MockWebhookClient struct {
-	CreateWebhookFunc   func(ctx context.Context, channelID string, req *discordclient.CreateWebhookRequest) (*discordclient.Webhook, error)
-	GetWebhookFunc      func(ctx context.Context, webhookID string) (*discordclient.Webhook, error)
-	ModifyWebhookFunc   func(ctx context.Context, webhookID string, req *discordclient.ModifyWebhookRequest) (*discordclient.Webhook, error)
-	DeleteWebhookFunc   func(ctx context.Context, webhookID string) error
+	CreateWebhookFunc      func(ctx context.Context, channelID string, req *discordclient.CreateWebhookRequest) (*discordclient.Webhook, error)
+	GetWebhookFunc         func(ctx context.Context, webhookID string) (*discordclient.Webhook, error)
+	ModifyWebhookFunc      func(ctx context.Context, webhookID string, req *discordclient.ModifyWebhookRequest) (*discordclient.Webhook, error)
+	DeleteWebhookFunc      func(ctx context.Context, webhookID string) error
 	GetChannelWebhooksFunc func(ctx context.Context, channelID string) ([]discordclient.Webhook, error)
-	GetGuildWebhooksFunc  func(ctx context.Context, guildID string) ([]discordclient.Webhook, error)
+	GetGuildWebhooksFunc   func(ctx context.Context, guildID string) ([]discordclient.Webhook, error)
 }
 
 var _ discordclient.WebhookClient = (*MockWebhookClient)(nil)
@@ -120,7 +120,7 @@ func TestObserve(t *testing.T) {
 				},
 				Spec: webhookv1beta1.WebhookSpec{
 					ForProvider: webhookv1beta1.WebhookParameters{
-						Name:     "test-webhook", // Match the mock
+						Name:      "test-webhook", // Match the mock
 						ChannelID: "123456",
 					},
 				},
@@ -128,12 +128,12 @@ func TestObserve(t *testing.T) {
 			mockSetup: func(m *MockWebhookClient) {
 				m.GetWebhookFunc = func(ctx context.Context, id string) (*discordclient.Webhook, error) {
 					return &discordclient.Webhook{
-						ID:          id,
-						ChannelID:   "123456",
-						GuildID:    "789012",
-						Name:        "test-webhook",
-						Avatar:      stringPtr("abc123"),
-						Token:       "",
+						ID:        id,
+						ChannelID: "123456",
+						GuildID:   "789012",
+						Name:      "test-webhook",
+						Avatar:    stringPtr("abc123"),
+						Token:     "",
 					}, nil
 				}
 			},
@@ -318,13 +318,13 @@ func TestUpdate(t *testing.T) {
 				},
 			},
 			mockSetup: func(m *MockWebhookClient) {
- 			m.ModifyWebhookFunc = func(ctx context.Context, id string, req *discordclient.ModifyWebhookRequest) (*discordclient.Webhook, error) {
- 					return &discordclient.Webhook{
- 						ID:        id,
- 						Name:      *req.Name,
- 						ChannelID: "123456",
- 					}, nil
- 				}
+				m.ModifyWebhookFunc = func(ctx context.Context, id string, req *discordclient.ModifyWebhookRequest) (*discordclient.Webhook, error) {
+					return &discordclient.Webhook{
+						ID:        id,
+						Name:      *req.Name,
+						ChannelID: "123456",
+					}, nil
+				}
 			},
 			expectError: false,
 		},
@@ -448,22 +448,22 @@ func TestDelete(t *testing.T) {
 func TestIsDiscordPermissionDenied(t *testing.T) {
 	tests := []struct {
 		name     string
-		err     error
+		err      error
 		expected bool
 	}{
 		{
 			name:     "error contains 403",
-			err:     errors.New("Discord API error: 403 Forbidden"),
+			err:      errors.New("Discord API error: 403 Forbidden"),
 			expected: true,
 		},
 		{
 			name:     "error does not contain 403",
-			err:     errors.New("Discord API error: 404 Not Found"),
+			err:      errors.New("Discord API error: 404 Not Found"),
 			expected: false,
 		},
 		{
 			name:     "nil error",
-			err:     nil,
+			err:      nil,
 			expected: false,
 		},
 	}
@@ -479,22 +479,22 @@ func TestIsDiscordPermissionDenied(t *testing.T) {
 func TestIsDiscordUnauthorized(t *testing.T) {
 	tests := []struct {
 		name     string
-		err     error
+		err      error
 		expected bool
 	}{
 		{
 			name:     "error contains 401",
-			err:     errors.New("Discord API error: 401 Unauthorized"),
+			err:      errors.New("Discord API error: 401 Unauthorized"),
 			expected: true,
 		},
 		{
 			name:     "error does not contain 401",
-			err:     errors.New("Discord API error: 403 Forbidden"),
+			err:      errors.New("Discord API error: 403 Forbidden"),
 			expected: false,
 		},
 		{
 			name:     "nil error",
-			err:     nil,
+			err:      nil,
 			expected: false,
 		},
 	}
@@ -520,7 +520,7 @@ func TestIsValidDiscordID(t *testing.T) {
 		},
 		{
 			name:     "valid 19 digit ID",
-			id:      "1234567890123456789",
+			id:       "1234567890123456789",
 			expected: true,
 		},
 		{
@@ -530,7 +530,7 @@ func TestIsValidDiscordID(t *testing.T) {
 		},
 		{
 			name:     "invalid - too long",
-			id:      "12345678901234567890",
+			id:       "12345678901234567890",
 			expected: false,
 		},
 		{

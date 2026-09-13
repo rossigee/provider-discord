@@ -18,11 +18,11 @@ func stringPtr(s string) *string {
 }
 
 type MockUserClient struct {
-	GetUserFunc            func(ctx context.Context, userID string) (*discordclient.DiscordUser, error)
-	GetCurrentUserFunc     func(ctx context.Context) (*discordclient.DiscordUser, error)
-	ModifyCurrentUserFunc  func(ctx context.Context, req *discordclient.ModifyCurrentUserRequest) (*discordclient.DiscordUser, error)
+	GetUserFunc              func(ctx context.Context, userID string) (*discordclient.DiscordUser, error)
+	GetCurrentUserFunc       func(ctx context.Context) (*discordclient.DiscordUser, error)
+	ModifyCurrentUserFunc    func(ctx context.Context, req *discordclient.ModifyCurrentUserRequest) (*discordclient.DiscordUser, error)
 	GetCurrentUserGuildsFunc func(ctx context.Context, req *discordclient.GetCurrentUserGuildsRequest) ([]discordclient.Guild, error)
-	LeaveGuildFunc         func(ctx context.Context, guildID string) error
+	LeaveGuildFunc           func(ctx context.Context, guildID string) error
 }
 
 var _ discordclient.UserClient = (*MockUserClient)(nil)
@@ -91,8 +91,8 @@ func TestObserve(t *testing.T) {
 			mockSetup: func(m *MockUserClient) {
 				m.GetUserFunc = func(ctx context.Context, uid string) (*discordclient.DiscordUser, error) {
 					return &discordclient.DiscordUser{
-						ID:       uid,
-						Username: "testuser",
+						ID:         uid,
+						Username:   "testuser",
 						GlobalName: stringPtr("Test User"),
 					}, nil
 				}
@@ -111,7 +111,7 @@ func TestObserve(t *testing.T) {
 				},
 				Spec: userv1beta1.UserSpec{
 					ForProvider: userv1beta1.UserParameters{
-						UserID: "@me",
+						UserID:   "@me",
 						Username: stringPtr("newusername"),
 					},
 				},
@@ -282,7 +282,7 @@ func TestUpdate(t *testing.T) {
 				},
 				Spec: userv1beta1.UserSpec{
 					ForProvider: userv1beta1.UserParameters{
-						UserID: "@me",
+						UserID:   "@me",
 						Username: stringPtr("newusername"),
 					},
 				},
@@ -307,7 +307,7 @@ func TestUpdate(t *testing.T) {
 				},
 				Spec: userv1beta1.UserSpec{
 					ForProvider: userv1beta1.UserParameters{
-						UserID: "@me",
+						UserID:   "@me",
 						Username: stringPtr("newusername"),
 					},
 				},
@@ -399,27 +399,27 @@ func TestDelete(t *testing.T) {
 func TestIsDiscordPermissionDenied(t *testing.T) {
 	tests := []struct {
 		name     string
-		err     error
+		err      error
 		expected bool
 	}{
 		{
 			name:     "error contains 403",
-			err:     errors.New("Discord API error: 403 Forbidden"),
+			err:      errors.New("Discord API error: 403 Forbidden"),
 			expected: true,
 		},
 		{
 			name:     "error does not contain 403",
-			err:     errors.New("Discord API error: 404 Not Found"),
+			err:      errors.New("Discord API error: 404 Not Found"),
 			expected: false,
 		},
 		{
 			name:     "nil error",
-			err:     nil,
+			err:      nil,
 			expected: false,
 		},
 		{
 			name:     "error does not contain Discord",
-			err:     errors.New("some other error"),
+			err:      errors.New("some other error"),
 			expected: false,
 		},
 	}
@@ -435,22 +435,22 @@ func TestIsDiscordPermissionDenied(t *testing.T) {
 func TestIsDiscordUnauthorized(t *testing.T) {
 	tests := []struct {
 		name     string
-		err     error
+		err      error
 		expected bool
 	}{
 		{
 			name:     "error contains 401",
-			err:     errors.New("Discord API error: 401 Unauthorized"),
+			err:      errors.New("Discord API error: 401 Unauthorized"),
 			expected: true,
 		},
 		{
 			name:     "error does not contain 401",
-			err:     errors.New("Discord API error: 403 Forbidden"),
+			err:      errors.New("Discord API error: 403 Forbidden"),
 			expected: false,
 		},
 		{
 			name:     "nil error",
-			err:     nil,
+			err:      nil,
 			expected: false,
 		},
 	}

@@ -118,7 +118,7 @@ func setupRBAC(c client.Client, l logging.Logger) error {
 		{APIGroups: []string{"role.discord.m.crossplane.io"}, Resources: []string{"roles", "roles/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{APIGroups: []string{"user.discord.m.crossplane.io"}, Resources: []string{"users", "users/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{APIGroups: []string{"webhook.discord.m.crossplane.io"}, Resources: []string{"webhooks", "webhooks/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
-		{APIGroups: []string{"discord.m.crossplane.io"}, Resources: []string{"providerconfigs", "providerconfigs/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
+		{APIGroups: []string{"discord.m.crossplane.io"}, Resources: []string{"providerconfigs", "providerconfigs/status", "providerconfigusages", "providerconfigusages/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{
 			APIGroups: []string{"application.discord.m.crossplane.io", "channel.discord.m.crossplane.io", "deduplication.discord.m.crossplane.io", "guild.discord.m.crossplane.io", "integration.discord.m.crossplane.io", "invite.discord.m.crossplane.io", "member.discord.m.crossplane.io", "role.discord.m.crossplane.io", "user.discord.m.crossplane.io", "webhook.discord.m.crossplane.io", "discord.m.crossplane.io"},
 			Resources: []string{"*/finalizers"},
