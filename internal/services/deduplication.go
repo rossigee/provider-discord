@@ -283,16 +283,28 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 
 	result.TotalChannels = len(channels)
 
-	// Group channels by name to find duplicates
-	nameGroups := make(map[string][]Channel)
+	// Group channels by (name, type, parentID) to find true duplicates.
+	// Channels with the same name but different types (text vs voice) or in
+	// different categories are NOT duplicates and must not be treated as such.
+	type channelKey struct {
+		name     string
+		typ      int
+		parentID string
+	}
+	nameGroups := make(map[channelKey][]Channel)
 	for _, channel := range channels {
-		nameGroups[channel.Name] = append(nameGroups[channel.Name], channel)
+		key := channelKey{
+			name:     channel.Name,
+			typ:      channel.Type,
+			parentID: channel.ParentID,
+		}
+		nameGroups[key] = append(nameGroups[key], channel)
 	}
 
 	// Find and process duplicate groups. Keep-selection is message-history-based:
 	// a channel with zero sampled messages is safe to delete; a channel with any
 	// messages is never auto-deleted. See DuplicateGroup's doc comment.
-	for name, group := range nameGroups {
+	for key, group := range nameGroups {
 		if len(group) <= 1 {
 			continue
 		}
@@ -311,7 +323,7 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 			if err != nil {
 				// Fail safe: if we can't determine message history, treat as non-empty
 				// so it's never auto-deleted based on incomplete information.
-				result.Errors = append(result.Errors, fmt.Sprintf("failed to sample messages for channel %s (%s): %v — treating as non-empty", channel.ID, name, err))
+				result.Errors = append(result.Errors, fmt.Sprintf("failed to sample messages for channel %s (%s, type=%d, parentID=%q): %v — treating as non-empty", channel.ID, key.name, key.typ, key.parentID, err))
 				messageCounts[i] = -1
 			} else {
 				messageCounts[i] = count
@@ -357,7 +369,7 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 		}
 
 		dupGroup := DuplicateGroup{
-			Name:              name,
+			Name:              key.name,
 			Channels:          group,
 			MessageCounts:     messageCounts,
 			KeepIndices:       keepIndices,
@@ -367,7 +379,7 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 		result.DuplicateGroups = append(result.DuplicateGroups, dupGroup)
 
 		if needsManualReview {
-			result.Errors = append(result.Errors, fmt.Sprintf("manual review needed: %d channels named %q have message history — only the %d empty duplicate(s) will be auto-deleted", nonEmptyCount, name, len(deleteIndices)))
+			result.Errors = append(result.Errors, fmt.Sprintf("manual review needed: %d channels named %q (type=%d, parentID=%q) have message history — only the %d empty duplicate(s) will be auto-deleted", nonEmptyCount, key.name, key.typ, key.parentID, len(deleteIndices)))
 		}
 
 		// If in action mode, delete only the channels marked safe to delete
@@ -376,15 +388,15 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 			duplicatesToDelete := len(deleteIndices)
 
 			s.logger.Info("Deduplication action mode: processing duplicate group",
-				"guildID", guild.ID, "channelName", name, "duplicateCount", len(group), "safeToDeletCount", duplicatesToDelete)
+				"guildID", guild.ID, "channelName", key.name, "channelType", key.typ, "parentID", key.parentID, "duplicateCount", len(group), "safeToDeletCount", duplicatesToDelete)
 
 			// Validate that we have channels to delete
 			if duplicatesToDelete == 0 {
 				s.logger.Info("No channels marked for deletion in this group (all channels have message history or are sole survivors)",
-					"guildID", guild.ID, "channelName", name, "keepIndices", len(dupGroup.KeepIndices), "totalChannels", len(dupGroup.Channels))
+					"guildID", guild.ID, "channelName", key.name, "channelType", key.typ, "parentID", key.parentID, "keepIndices", len(dupGroup.KeepIndices), "totalChannels", len(dupGroup.Channels))
 			} else {
 				s.logger.Info("Attempting to delete duplicate channels",
-					"guildID", guild.ID, "channelName", name, "countToDelete", duplicatesToDelete)
+					"guildID", guild.ID, "channelName", key.name, "channelType", key.typ, "parentID", key.parentID, "countToDelete", duplicatesToDelete)
 
 				for _, i := range deleteIndices {
 					if i >= len(group) {
@@ -429,15 +441,15 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 
 				// Log final results for this group
 				if deletesMade < duplicatesToDelete {
-					result.Errors = append(result.Errors, fmt.Sprintf("partial deletion: %d/%d duplicates of %q deleted", deletesMade, duplicatesToDelete, name))
+					result.Errors = append(result.Errors, fmt.Sprintf("partial deletion: %d/%d duplicates of %q (type=%d, parentID=%q) deleted", deletesMade, duplicatesToDelete, key.name, key.typ, key.parentID))
 				} else if deletesMade > 0 {
 					s.logger.Info("Successfully deleted all marked duplicates in group",
-						"guildID", guild.ID, "channelName", name, "deletedCount", deletesMade)
+						"guildID", guild.ID, "channelName", key.name, "channelType", key.typ, "parentID", key.parentID, "deletedCount", deletesMade)
 				}
 			}
 		} else {
 			s.logger.V(4).Info("Skipping deletion (not in action mode)",
-				"mode", mode, "guildID", guild.ID, "channelName", name, "duplicateCount", len(group))
+				"mode", mode, "guildID", guild.ID, "channelName", key.name, "channelType", key.typ, "parentID", key.parentID, "duplicateCount", len(group))
 		}
 	}
 

@@ -640,3 +640,89 @@ func TestNoGuilds(t *testing.T) {
 		t.Errorf("expected 0 guilds analyzed, got %d", result.Summary.TotalGuildsAnalyzed)
 	}
 }
+
+// TestAnalyzeAndDeduplicate_DifferentTypesSameNameNotDuplicates verifies that channels
+// with the same name but different types (text vs voice) are NOT treated as duplicates.
+// This prevents incorrectly deleting legitimate text and voice channels both named "general".
+func TestAnalyzeAndDeduplicate_DifferentTypesSameNameNotDuplicates(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
+		switch r.URL.Path {
+		case "/users/@me/guilds":
+			guilds := []Guild{
+				{ID: "guild1", Name: "Test Guild"},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(guilds)
+		case "/guilds/guild1/channels":
+			// Two "general" channels: one text (type 0), one voice (type 2)
+			channels := []Channel{
+				{ID: "ch1", Name: "general", Type: 0, GuildID: "guild1", Position: 0, ParentID: ""},
+				{ID: "ch2", Name: "general", Type: 2, GuildID: "guild1", Position: 1, ParentID: ""},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(channels)
+		}
+	}))
+	defer server.Close()
+
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
+
+	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Summary.TotalDuplicateChannelsFound != 0 {
+		t.Errorf("expected 0 duplicates (different types), got %d", result.Summary.TotalDuplicateChannelsFound)
+	}
+
+	if result.Summary.DuplicateGroupsFound != 0 {
+		t.Errorf("expected 0 duplicate groups (different types), got %d", result.Summary.DuplicateGroupsFound)
+	}
+}
+
+// TestAnalyzeAndDeduplicate_DifferentParentSameNameNotDuplicates verifies that channels
+// with the same name but different parent categories are NOT treated as duplicates.
+// This prevents incorrectly deleting legitimate channels in different categories.
+func TestAnalyzeAndDeduplicate_DifferentParentSameNameNotDuplicates(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if respondEmptyForAncillaryEndpoints(w, r) {
+			return
+		}
+		switch r.URL.Path {
+		case "/users/@me/guilds":
+			guilds := []Guild{
+				{ID: "guild1", Name: "Test Guild"},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(guilds)
+		case "/guilds/guild1/channels":
+			// Two "rules" channels: one in category cat1, one in category cat2
+			channels := []Channel{
+				{ID: "ch1", Name: "rules", Type: 0, GuildID: "guild1", Position: 0, ParentID: "cat1"},
+				{ID: "ch2", Name: "rules", Type: 0, GuildID: "guild1", Position: 1, ParentID: "cat2"},
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(channels)
+		}
+	}))
+	defer server.Close()
+
+	svc := NewDeduplicationService(server.Client(), server.URL, "fake-token", nil, logr.Logger{})
+
+	result, err := svc.AnalyzeAndDeduplicate(context.Background(), "report", []string{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if result.Summary.TotalDuplicateChannelsFound != 0 {
+		t.Errorf("expected 0 duplicates (different parents), got %d", result.Summary.TotalDuplicateChannelsFound)
+	}
+
+	if result.Summary.DuplicateGroupsFound != 0 {
+		t.Errorf("expected 0 duplicate groups (different parents), got %d", result.Summary.DuplicateGroupsFound)
+	}
+}
