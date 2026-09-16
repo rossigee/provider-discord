@@ -230,3 +230,27 @@ func TestConstants(t *testing.T) {
 	assert.Equal(t, "error", StatusError)
 	assert.Equal(t, "rate_limited", StatusRateLimited)
 }
+
+func TestMetricsRecorder_UpdateGlobalRateLimit(t *testing.T) {
+	recorder := NewMetricsRecorder()
+
+	// Test when rate limited (reset time in future)
+	futureReset := time.Now().Add(30 * time.Minute)
+	recorder.UpdateGlobalRateLimit(futureReset)
+
+	limitedGauge := testutil.ToFloat64(globalRateLimited)
+	assert.Equal(t, float64(1), limitedGauge)
+
+	resetGauge := testutil.ToFloat64(globalRateLimitReset)
+	assert.Equal(t, float64(futureReset.Unix()), resetGauge)
+
+	// Test when not rate limited (reset time in past)
+	pastReset := time.Now().Add(-10 * time.Minute)
+	recorder.UpdateGlobalRateLimit(pastReset)
+
+	limitedGauge = testutil.ToFloat64(globalRateLimited)
+	assert.Equal(t, float64(0), limitedGauge)
+
+	resetGauge = testutil.ToFloat64(globalRateLimitReset)
+	assert.Equal(t, float64(0), resetGauge)
+}

@@ -163,6 +163,16 @@ func SetGlobalMetricsRecorder(recorder *metrics.MetricsRecorder) {
 	globalMetricsRecorder = recorder
 }
 
+// GetGlobalRateLimitInfo returns the current global rate limit state
+func GetGlobalRateLimitInfo() (isLimited bool, resetAfter time.Time) {
+	globalRateLimitMutex.Lock()
+	defer globalRateLimitMutex.Unlock()
+	if time.Now().Before(globalRateLimitUntil) {
+		return true, globalRateLimitUntil
+	}
+	return false, time.Time{}
+}
+
 // NewDiscordClient creates a new Discord API client
 func NewDiscordClient(token string) *DiscordClient {
 	return NewDiscordClientWithMetrics(token, globalMetricsRecorder)
@@ -368,8 +378,13 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 		newLimit := time.Now().Add(waitDuration)
 		if newLimit.After(globalRateLimitUntil) {
 			globalRateLimitUntil = newLimit
-			c.logger.Info("Updated global rate limit window",
-				"new_limit", globalRateLimitUntil,
+			// Update the global rate limit metric
+			if globalMetricsRecorder != nil {
+				globalMetricsRecorder.UpdateGlobalRateLimit(newLimit)
+			}
+			c.logger.Info("Global rate limit active - will retry after",
+				"retry_after_seconds", waitDuration.Round(time.Second),
+				"retry_at", newLimit.Format(time.RFC3339),
 				"wait_duration", waitDuration)
 		}
 		globalRateLimitMutex.Unlock()

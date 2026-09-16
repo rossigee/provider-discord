@@ -144,6 +144,24 @@ var (
 		},
 		[]string{"component"},
 	)
+
+	// Global rate limit metric - 1 when rate limited, 0 when not
+	globalRateLimited = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: ProviderNamespace,
+			Name:      "global_rate_limited",
+			Help:      "1 when the provider is currently rate-limited, 0 otherwise",
+		},
+	)
+
+	// Global rate limit reset timestamp
+	globalRateLimitReset = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace: ProviderNamespace,
+			Name:      "global_rate_limit_reset_timestamp_seconds",
+			Help:      "Unix timestamp when the global rate limit will reset",
+		},
+	)
 )
 
 func init() {
@@ -159,6 +177,8 @@ func init() {
 		resourceReconciliationDuration,
 		discordAPIErrors,
 		providerHealth,
+		globalRateLimited,
+		globalRateLimitReset,
 	)
 }
 
@@ -253,6 +273,22 @@ func (m *MetricsRecorder) SetProviderHealth(component string, healthy bool) {
 		"component", component,
 		"healthy", healthy,
 	)
+}
+
+// UpdateGlobalRateLimit updates the global rate limit status
+func (m *MetricsRecorder) UpdateGlobalRateLimit(resetTime time.Time) {
+	now := time.Now()
+	if now.Before(resetTime) {
+		globalRateLimited.Set(1.0)
+		globalRateLimitReset.Set(float64(resetTime.Unix()))
+		m.logger.Info("Global rate limit active",
+			"reset_timestamp", resetTime,
+			"seconds_until_reset", resetTime.Sub(now).Seconds(),
+		)
+	} else {
+		globalRateLimited.Set(0.0)
+		globalRateLimitReset.Set(0.0)
+	}
 }
 
 // RecordOperationWithTimer records an operation with automatic timing

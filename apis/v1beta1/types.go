@@ -55,6 +55,25 @@ type ProviderCredentials struct {
 // A ProviderConfigStatus reflects the observed state of a ProviderConfig.
 type ProviderConfigStatus struct {
 	xpv1.ProviderConfigStatus `json:",inline"`
+
+	// RateLimitStatus contains current rate limit information.
+	// +optional
+	RateLimitStatus *RateLimitStatus `json:"rateLimitStatus,omitempty"`
+}
+
+// RateLimitStatus indicates the current global rate limit state.
+type RateLimitStatus struct {
+	// RateLimited indicates if the provider is currently rate-limited.
+	// +optional
+	RateLimited bool `json:"rateLimited,omitempty"`
+
+	// ResetAfter is the time when the rate limit will be reset.
+	// +optional
+	ResetAfter *metav1.Time `json:"resetAfter,omitempty"`
+
+	// Reason describes the cause of the rate limit.
+	// +optional
+	Reason string `json:"reason,omitempty"`
 }
 
 // +kubebuilder:object:root=true
