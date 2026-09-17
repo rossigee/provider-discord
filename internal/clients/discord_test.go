@@ -905,3 +905,36 @@ func TestExtractRetryAfterFromHeader(t *testing.T) {
 		})
 	}
 }
+
+func TestGetGlobalRateLimitInfo(t *testing.T) {
+	// Test when not rate limited
+	isLimited, resetAfter := GetGlobalRateLimitInfo()
+	if isLimited {
+		t.Error("Expected not rate limited initially")
+	}
+	if !resetAfter.IsZero() {
+		t.Error("Expected zero reset time when not limited")
+	}
+
+	// Manually set global rate limit for testing
+	globalRateLimitMutex.Lock()
+	globalRateLimitUntil = time.Now().Add(10 * time.Second)
+	globalRateLimitMutex.Unlock()
+
+	// Test when rate limited
+	isLimited, resetAfter = GetGlobalRateLimitInfo()
+	if !isLimited {
+		t.Error("Expected to be rate limited")
+	}
+	if resetAfter.IsZero() {
+		t.Error("Expected non-zero reset time when limited")
+	}
+	if time.Now().After(resetAfter) {
+		t.Error("Expected reset time to be in the future")
+	}
+
+	// Clean up - clear the rate limit
+	globalRateLimitMutex.Lock()
+	globalRateLimitUntil = time.Time{}
+	globalRateLimitMutex.Unlock()
+}

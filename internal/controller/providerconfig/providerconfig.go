@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/go-logr/logr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -29,6 +30,7 @@ import (
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 
 	"github.com/rossigee/provider-discord/apis/v1beta1"
+	"github.com/rossigee/provider-discord/internal/clients"
 )
 
 const controllerName = "providerconfig.discord.crossplane.io"
@@ -58,6 +60,25 @@ func (r *reconciler) Reconcile(ctx context.Context, req reconcile.Request) (reco
 
 	log.Info("ProviderConfig available")
 	pc.Status.SetConditions(xpv1.Available())
+
+	// Update rate limit status
+	isLimited, resetAfter := clients.GetGlobalRateLimitInfo()
+	if isLimited {
+		pc.Status.RateLimitStatus = &v1beta1.RateLimitStatus{
+			RateLimited: true,
+			ResetAfter:  &metav1.Time{Time: resetAfter},
+			Reason:      "Global Discord API rate limit active",
+		}
+		log.Info("Rate limited - will retry after",
+			"reset_after", resetAfter.Format(time.RFC3339))
+	} else if pc.Status.RateLimitStatus != nil && pc.Status.RateLimitStatus.RateLimited {
+		// Clear the rate limit status when no longer limited
+		pc.Status.RateLimitStatus = &v1beta1.RateLimitStatus{
+			RateLimited: false,
+			Reason:      "Rate limit cleared",
+		}
+		log.Info("Rate limit cleared")
+	}
 
 	fresh := &v1beta1.ProviderConfig{}
 	if err := r.kube.Get(ctx, client.ObjectKey{Name: pc.GetName()}, fresh); err != nil {
