@@ -351,6 +351,10 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 			return nil, errors.Wrap(err, "rate limiter context cancelled")
 		}
 
+		// Add delay to respect Discord's global rate limit (1 req per 10 seconds)
+		// Using 15 seconds to be safe and avoid hitting the global limit
+		time.Sleep(15 * time.Second)
+
 		resp, err := c.makeRequestOnce(ctx, method, endpoint, body)
 
 		// If not a 429, return immediately (either success or non-retryable error)
