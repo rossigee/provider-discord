@@ -10,7 +10,7 @@ This project adheres to the [Crossplane Code of Conduct](https://github.com/cros
 
 ### Prerequisites
 
-- Go 1.24.5 or later
+- Go 1.27.1 or later
 - Docker
 - Kind (for integration testing)
 - kubectl
@@ -91,8 +91,8 @@ make lint
 provider-discord/
 ├── apis/                   # API definitions
 │   ├── v1beta1/           # Provider config APIs
-│   ├── guild/v1alpha1/    # Guild resource APIs
-│   └── channel/v1alpha1/  # Channel resource APIs
+│   ├── guild/v1beta1/     # Guild resource APIs
+│   └── channel/v1beta1/   # Channel resource APIs
 ├── cmd/provider/          # Main provider entry point
 ├── examples/              # Example manifests
 ├── internal/              # Internal code
@@ -135,7 +135,7 @@ Documentation improvements are always welcome:
 
 When adding new Discord resources:
 
-1. Create API types in `apis/RESOURCE/v1alpha1/`
+1. Create API types in `apis/RESOURCE/v1beta1/`
 2. Implement Discord client methods in `internal/clients/`
 3. Create controller in `internal/controller/RESOURCE/`
 4. Add to controller registration in `internal/controller/controller.go`
