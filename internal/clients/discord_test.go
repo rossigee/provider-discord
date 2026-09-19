@@ -29,6 +29,25 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
+// resetGlobalRateLimit clears the package-level rate-limit window so tests
+// do not leak state into one another. Tests that exercise 429 retry paths
+// extend globalRateLimitUntil into the future; without this reset, a later
+// test calling makeRequest would block in the global rate-limit wait branch.
+func resetGlobalRateLimit() {
+	globalRateLimitMutex.Lock()
+	globalRateLimitUntil = time.Time{}
+	globalRateLimitMutex.Unlock()
+}
+
+// useFastRetryPolicy shortens the client's retry budget and exponential backoff
+// ceiling so tests can exercise 429 retry paths in milliseconds rather than
+// the production 1+2+4+8+15s envelope. Registers t.Cleanup to restore defaults.
+func useFastRetryPolicy(t *testing.T, c *DiscordClient) {
+	t.Helper()
+	c.setRetryPolicy(5, 10*time.Millisecond)
+	t.Cleanup(c.resetRetryPolicy)
+}
+
 func TestNewDiscordClient(t *testing.T) {
 	token := "test-token"
 	client := NewDiscordClient(token)
@@ -713,6 +732,8 @@ func TestMakeRequest429WithRetryAfter(t *testing.T) {
 
 	client := NewDiscordClient("test-token")
 	client.baseURL = server.URL
+	useFastRetryPolicy(t, client)
+	t.Cleanup(resetGlobalRateLimit)
 
 	guild, err := client.GetGuild(context.Background(), "123456789")
 	if err != nil {
@@ -741,6 +762,7 @@ func TestMakeRequest429ExhaustedRetries(t *testing.T) {
 
 	client := NewDiscordClient("test-token")
 	client.baseURL = server.URL
+	useFastRetryPolicy(t, client)
 
 	_, err := client.GetGuild(context.Background(), "123456789")
 	if err == nil {
@@ -750,9 +772,14 @@ func TestMakeRequest429ExhaustedRetries(t *testing.T) {
 	if !strings.Contains(err.Error(), "Discord API error: 429") {
 		t.Errorf("Expected 429 error, got: %v", err)
 	}
+
+	t.Cleanup(resetGlobalRateLimit)
 }
 
 func TestRateLimiterThrottles(t *testing.T) {
+	resetGlobalRateLimit()
+	t.Cleanup(resetGlobalRateLimit)
+
 	start := time.Now()
 	callCount := 0
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -832,6 +859,7 @@ func TestMakeRequest429WithRetryAfterHeader(t *testing.T) {
 
 	client := NewDiscordClient("test-token")
 	client.baseURL = server.URL
+	useFastRetryPolicy(t, client)
 
 	guild, err := client.GetGuild(context.Background(), "123456789")
 	if err != nil {
@@ -845,6 +873,8 @@ func TestMakeRequest429WithRetryAfterHeader(t *testing.T) {
 	if callCount != 2 {
 		t.Errorf("Expected 2 calls (1 429 + 1 retry), got %d", callCount)
 	}
+
+	t.Cleanup(resetGlobalRateLimit)
 }
 
 func TestExtractRetryAfterFromHeader(t *testing.T) {

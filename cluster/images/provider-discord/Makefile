@@ -20,7 +20,7 @@ img.build:
 img.build.shared:
 	@cp Dockerfile $(IMAGE_TEMP_DIR)
 	@cp -r $(OUTPUT_DIR)/bin/ $(IMAGE_TEMP_DIR)/
-	@cp ../../../package.yaml $(IMAGE_TEMP_DIR)/
+	@cp ../../../package/crossplane.yaml $(IMAGE_TEMP_DIR)/package.yaml
 	@docker build $(BUILD_ARGS) --build-arg TARGETOS=$(TARGETOS) --build-arg TARGETARCH=$(TARGETARCH) -t $(IMAGE) $(IMAGE_TEMP_DIR)
 
 # ====================================================================================
