@@ -73,9 +73,14 @@ jobs:
           # Point the package metadata at the image we are about to publish.
           # This runs before the Docker image build so the package.yaml embedded
           # in the controller image, and the xpkg built later, both reference the
-          # real pullable image instead of a stale/placeholder tag.
-          sed -i "s|^\( *image:\).*|\1 ${CONTROLLER_IMAGE}|" package/crossplane.yaml
-          grep -n "image:" package/crossplane.yaml
+          # real pullable image instead of a stale/placeholder tag. Both the
+          # `image:` field and the install snippet in the embedded README
+          # (`package:`) are updated.
+          sed -i \
+            -e "s|^\( *image:\).*|\1 ${CONTROLLER_IMAGE}|" \
+            -e "s|^\( *package:\).*|\1 ${CONTROLLER_IMAGE}|" \
+            package/crossplane.yaml
+          grep -nE "image:|package:" package/crossplane.yaml
 
       - name: Setup Go
         uses: actions/setup-go@v7

@@ -1,0 +1,19 @@
+apiVersion: member.discord.m.crossplane.io/v1beta1
+kind: Member
+metadata:
+  name: example-member
+  namespace: default
+  annotations:
+    kubernetes.io/description: "Example guild member managed by Crossplane"
+spec:
+  forProvider:
+    guildId: "GUILD_ID_HERE"   # Replace with actual guild ID
+    userId: "USER_ID_HERE"     # Replace with actual user ID
+    nick: "Crossplane Member"  # Optional guild nickname
+    roles:                     # Optional role IDs assigned to the member
+      - "ROLE_ID_HERE"
+    mute: false                # Voice mute
+    deaf: false                # Voice deafen
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default

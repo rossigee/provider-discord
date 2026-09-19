@@ -1,0 +1,14 @@
+apiVersion: integration.discord.m.crossplane.io/v1beta1
+kind: Integration
+metadata:
+  name: example-integration
+  namespace: default
+  annotations:
+    kubernetes.io/description: "Example third-party integration observed by Crossplane"
+spec:
+  forProvider:
+    guildId: "GUILD_ID_HERE"              # Replace with actual guild ID
+    integrationId: "INTEGRATION_ID_HERE"  # Replace with actual integration ID
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default

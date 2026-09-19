@@ -1,0 +1,27 @@
+apiVersion: user.discord.m.crossplane.io/v1beta1
+kind: User
+metadata:
+  name: example-user
+  namespace: default
+  annotations:
+    kubernetes.io/description: "Example Discord user observed by Crossplane"
+spec:
+  forProvider:
+    userId: "USER_ID_HERE"   # Replace with actual user ID
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default
+---
+apiVersion: user.discord.m.crossplane.io/v1beta1
+kind: User
+metadata:
+  name: current-user
+  namespace: default
+  annotations:
+    kubernetes.io/description: "The authenticated bot user (@me)"
+spec:
+  forProvider:
+    userId: "@me"
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default

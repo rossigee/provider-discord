@@ -44,8 +44,10 @@
 ## Provider Architecture
 
 ### API Groups
-- `discord.crossplane.io/v1alpha1` - Main API group
-- Resources will follow Crossplane patterns with:
+- `<resource>.discord.m.crossplane.io/v1beta1` - Per-resource API groups (e.g. `guild.discord.m.crossplane.io/v1beta1`), all namespaced
+- `discord.m.crossplane.io/v1beta1` - `ProviderConfig` (cluster-scoped)
+- `deduplication.discord.m.crossplane.io/v1beta1` - Deduplication operations (cluster-scoped)
+- Resources follow Crossplane patterns with:
   - Spec/Status structure
   - Managed resource lifecycle
   - Connection/credential management
