@@ -282,8 +282,10 @@ func TestDeletePermissionDenied(t *testing.T) {
 	e := &external{discord: mockClient}
 	_, err := e.Delete(ctx, integration)
 
-	// Should return nil error (no retry on permission error)
-	assert.NoError(t, err)
+	// Should return an error so the integration is not orphaned: the Discord
+	// resource still exists (bot lacks permission), so deletion must not
+	// report success.
+	assert.Error(t, err)
 }
 
 func TestTypeAssertions(t *testing.T) {

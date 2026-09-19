@@ -879,46 +879,50 @@ func TestMakeRequest429WithRetryAfterHeader(t *testing.T) {
 
 func TestExtractRetryAfterFromHeader(t *testing.T) {
 	tests := []struct {
-		name    string
-		errMsg  string
-		want    time.Duration
-		minWait time.Duration
-		maxWait time.Duration
+		name      string
+		errMsg    string
+		want      time.Duration
+		wantFound bool
+		minWait   time.Duration
+		maxWait   time.Duration
 	}{
 		{
-			name:    "Retry-After header with seconds",
-			errMsg:  `Discord API error: 429 - {"message": "Rate limited"} | Retry-After: 0.5`,
-			want:    500 * time.Millisecond,
-			minWait: 400 * time.Millisecond,
-			maxWait: 600 * time.Millisecond,
+			name:      "Retry-After header with fractional seconds",
+			errMsg:    `Discord API error: 429 - {"message": "Rate limited"} | Retry-After: 0.5`,
+			want:      500 * time.Millisecond,
+			wantFound: true,
+			minWait:   500 * time.Millisecond,
+			maxWait:   500 * time.Millisecond,
 		},
 		{
-			name:    "Retry-After header with fractional seconds",
-			errMsg:  `Discord API error: 429 - {"message": "Rate limited"} | Retry-After: 2.5`,
-			want:    2500 * time.Millisecond,
-			minWait: 2400 * time.Millisecond,
-			maxWait: 2600 * time.Millisecond,
+			name:      "Retry-After header with fractional seconds",
+			errMsg:    `Discord API error: 429 - {"message": "Rate limited"} | Retry-After: 2.5`,
+			want:      2500 * time.Millisecond,
+			wantFound: true,
+			minWait:   2500 * time.Millisecond,
+			maxWait:   2500 * time.Millisecond,
 		},
 		{
-			name:    "Retry-After header with integer",
-			errMsg:  `Discord API error: 429 - {"message": "Rate limited"} | Retry-After: 1`,
-			want:    1000 * time.Millisecond,
-			minWait: 900 * time.Millisecond,
-			maxWait: 1100 * time.Millisecond,
+			name:      "Retry-After header with integer",
+			errMsg:    `Discord API error: 429 - {"message": "Rate limited"} | Retry-After: 1`,
+			want:      1000 * time.Millisecond,
+			wantFound: true,
+			minWait:   1000 * time.Millisecond,
+			maxWait:   1000 * time.Millisecond,
 		},
 		{
-			name:    "No Retry-After header, uses JSON body",
-			errMsg:  `Discord API error: 429 - {"retry_after": 0.1, "message": "Rate limited"}`,
-			want:    100 * time.Millisecond,
-			minWait: 50 * time.Millisecond,
-			maxWait: 200 * time.Millisecond,
+			name:      "No Retry-After header, uses JSON body",
+			errMsg:    `Discord API error: 429 - {"retry_after": 0.1, "message": "Rate limited"}`,
+			want:      100 * time.Millisecond,
+			wantFound: true,
+			minWait:   100 * time.Millisecond,
+			maxWait:   100 * time.Millisecond,
 		},
 		{
-			name:    "No Retry-After anywhere, uses default",
-			errMsg:  `Discord API error: 429 - {"message": "Rate limited"}`,
-			want:    1000 * time.Millisecond,
-			minWait: 900 * time.Millisecond,
-			maxWait: 1100 * time.Millisecond,
+			name:      "No Retry-After anywhere, found=false",
+			errMsg:    `Discord API error: 429 - {"message": "Rate limited"}`,
+			want:      0,
+			wantFound: false,
 		},
 	}
 
@@ -926,8 +930,11 @@ func TestExtractRetryAfterFromHeader(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			client := NewDiscordClient("test-token")
 			err := fmt.Errorf("%s", tt.errMsg)
-			got := client.extractRetryAfter(err)
+			got, found := client.extractRetryAfter(err)
 
+			if found != tt.wantFound {
+				t.Errorf("extractRetryAfter() found = %v, want %v", found, tt.wantFound)
+			}
 			if got < tt.minWait || got > tt.maxWait {
 				t.Errorf("extractRetryAfter() = %v, want %v (range %v-%v)",
 					got, tt.want, tt.minWait, tt.maxWait)

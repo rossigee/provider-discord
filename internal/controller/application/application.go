@@ -73,8 +73,7 @@ type connector struct {
 // 3. Getting the credentials specified by the ProviderConfig.
 // 4. Using the credentials to form a client.
 func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.ExternalClient, error) {
-	cr, ok := mg.(*applicationv1beta1.Application)
-	if !ok {
+	if _, ok := mg.(*applicationv1beta1.Application); !ok {
 		return nil, errors.New(errNotApplication)
 	}
 
@@ -82,8 +81,22 @@ func (c *connector) Connect(ctx context.Context, mg resource.Managed) (managed.E
 		return nil, errors.Wrap(err, errTrackPCUsage)
 	}
 
+	// Get provider config reference from the managed resource's ResourceSpec
+	var pcRef *xpv1.ProviderConfigReference
+	switch mr := mg.(type) {
+	case interface {
+		GetProviderConfigReference() *xpv1.ProviderConfigReference
+	}:
+		pcRef = mr.GetProviderConfigReference()
+	default:
+		return nil, errors.New(errGetPC)
+	}
+	if pcRef == nil {
+		return nil, errors.New(errGetPC)
+	}
+
 	pc := &v1beta1.ProviderConfig{}
-	if err := c.kube.Get(ctx, types.NamespacedName{Name: cr.GetProviderConfigReference().Name}, pc); err != nil {
+	if err := c.kube.Get(ctx, types.NamespacedName{Name: pcRef.Name}, pc); err != nil {
 		return nil, errors.Wrap(err, errGetPC)
 	}
 

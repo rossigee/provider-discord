@@ -574,8 +574,10 @@ func TestDeletePermissionDenied(t *testing.T) {
 
 	_, err := e.Delete(ctx, role)
 
-	// Should return nil error (no retry on permission error)
-	assert.NoError(t, err)
+	// Should return an error so the role is not orphaned: the Discord
+	// resource still exists (bot lacks permission), so deletion must not
+	// report success.
+	assert.Error(t, err)
 }
 
 // Test type assertions
