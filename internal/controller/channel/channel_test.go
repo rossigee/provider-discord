@@ -783,8 +783,10 @@ func TestDeletePermissionDenied(t *testing.T) {
 	e := &external{service: mockClient, kube: nil}
 	_, err := e.Delete(ctx, channel)
 
-	// Should return nil error (no retry on permission error)
-	assert.NoError(t, err)
+	// Should return an error so the channel is not orphaned: the Discord
+	// resource still exists (bot lacks permission), so deletion must not
+	// report success.
+	assert.Error(t, err)
 }
 
 // TestObserveCacheSkipsAPI validates that recently synced resources skip API calls.

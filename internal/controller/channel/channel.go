@@ -668,12 +668,12 @@ func (c *external) Delete(ctx context.Context, mg resource.Managed) (managed.Ext
 		if isDiscordPermissionDenied(err) {
 			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to delete channel"))
 			log.Error(err, "Permission denied: bot lacks permissions to delete channel")
-			return managed.ExternalDelete{}, nil
+			return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete channel: permission denied")
 		}
 		if isDiscordUnauthorized(err) {
 			cr.SetConditions(xpv1.Unavailable().WithMessage("invalid or expired bot token"))
 			log.Error(err, "Invalid or expired bot token")
-			return managed.ExternalDelete{}, nil
+			return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete channel: unauthorized")
 		}
 		return managed.ExternalDelete{}, errors.Wrap(err, "failed to delete channel")
 	}

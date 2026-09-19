@@ -19,6 +19,8 @@ jobs:
     permissions:
       contents: write
       packages: write
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -27,6 +29,17 @@ jobs:
 
       - name: Init build submodule
         run: git submodule update --init --depth 1 build
+
+      - name: Authorize Release
+        run: |
+          set -e
+          ACTOR="${{ github.actor }}"
+          OWNER="${{ github.repository_owner }}"
+          if [[ "$ACTOR" != "$OWNER" ]]; then
+            echo "❌ Refusing release: actor '$ACTOR' is not repository owner '$OWNER'"
+            exit 1
+          fi
+          echo "✅ Release authorized for $ACTOR"
 
       - name: Determine Version
         id: version
@@ -38,6 +51,31 @@ jobs:
           fi
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
           echo "Detected version: $VERSION"
+
+      - name: Validate Version
+        run: |
+          set -e
+          VERSION="${{ steps.version.outputs.version }}"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ Invalid version '$VERSION'. Must match ^v[0-9]+.[0-9]+.[0-9]+$ (e.g. v1.2.3)."
+            exit 1
+          fi
+          echo "✅ Valid version: $VERSION"
+
+      - name: Sync Package Metadata
+        run: |
+          set -e
+          VERSION="${{ steps.version.outputs.version }}"
+          REGISTRY="ghcr.io/${{ github.repository_owner }}"
+          PACKAGE_NAME=$(basename ${{ github.repository }})
+          CONTROLLER_IMAGE="${REGISTRY}/${PACKAGE_NAME}:${VERSION}"
+
+          # Point the package metadata at the image we are about to publish.
+          # This runs before the Docker image build so the package.yaml embedded
+          # in the controller image, and the xpkg built later, both reference the
+          # real pullable image instead of a stale/placeholder tag.
+          sed -i "s|^\( *image:\).*|\1 ${CONTROLLER_IMAGE}|" package/crossplane.yaml
+          grep -n "image:" package/crossplane.yaml
 
       - name: Setup Go
         uses: actions/setup-go@v7
@@ -107,10 +145,26 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           REGISTRY="ghcr.io/${{ github.repository_owner }}"
           PACKAGE_NAME=$(basename ${{ github.repository }})
+          CONTROLLER_IMAGE="${REGISTRY}/${PACKAGE_NAME}:${VERSION}"
           
           echo "Installing Crossplane CLI and publishing XPKG"
           go install github.com/crossplane/crossplane/cmd/crank@latest
-          
+
+          # The xpkg produced by `make build.all build.artifacts` embeds the
+          # per-host build-registry image (BUILD_REGISTRY=build-<hash>/...),
+          # which is never pushed and cannot be pulled after the build. Rebuild
+          # the package embedding the real OCI image we published to ghcr.io so
+          # Crossplane can run the provider from the released package.
+          # `--embed-runtime-image` loads the image from the local Docker daemon,
+          # so pull the published image first.
+          docker pull "${CONTROLLER_IMAGE}"
+
+          $(go env GOPATH)/bin/crank xpkg build \
+            --embed-runtime-image "${CONTROLLER_IMAGE}" \
+            --package-root package \
+            --examples-root examples \
+            --package-file _output/xpkg/linux_amd64/${PACKAGE_NAME}-${VERSION}.xpkg
+
           $(go env GOPATH)/bin/crank xpkg push \
             --package-files _output/xpkg/linux_amd64/${PACKAGE_NAME}-${VERSION}.xpkg \
             ${REGISTRY}/${PACKAGE_NAME}:${VERSION}
@@ -134,7 +188,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: xpkg
-          path: _output/xpkg/linux_amd64/$(basename ${{ github.repository }})-${{ steps.version.outputs.version }}.xpkg
+          path: _output/xpkg/linux_amd64/${{ github.event.repository.name }}-${{ steps.version.outputs.version }}.xpkg
 
   publish:
     runs-on: ubuntu-24.04
@@ -143,15 +197,14 @@ jobs:
       contents: write
 
     steps:
-      - name: Determine Version
+      - name: Use Released Version
         id: version
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION="${GITHUB_REF#refs/tags/}"
-          fi
+          # Reuse the version validated and gated by the release job instead of
+          # re-reading the raw workflow_dispatch input here.
+          VERSION="${{ needs.release.outputs.version }}"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Released version: $VERSION"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3

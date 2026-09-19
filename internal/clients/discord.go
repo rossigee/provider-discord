@@ -24,6 +24,7 @@ import (
 	"io"
 	"math/rand"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -193,6 +194,16 @@ func NewDiscordClientWithMetrics(token string, metricsRecorder *metrics.MetricsR
 	return &DiscordClient{
 		httpClient: &http.Client{
 			Timeout: 30 * time.Second,
+			// Never forward the Authorization header (Bot token) to a
+			// different host on redirect. Discord does not redirect between
+			// hosts, so a cross-host redirect is best treated as the final
+			// response rather than leaking the token.
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				if len(via) > 0 && req.URL.Host != via[0].URL.Host {
+					return http.ErrUseLastResponse
+				}
+				return nil
+			},
 		},
 		token:           token,
 		baseURL:         DiscordAPIBaseURL,
@@ -362,10 +373,14 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 			waitDuration := globalRateLimitUntil.Sub(now)
 			globalRateLimitMutex.Unlock()
 
+			timer := time.NewTimer(waitDuration)
 			select {
 			case <-ctx.Done():
+				if !timer.Stop() {
+					<-timer.C
+				}
 				return nil, errors.Wrap(ctx.Err(), "context cancelled during global rate limit wait")
-			case <-time.After(waitDuration):
+			case <-timer.C:
 				// Continue to next attempt after global limit expires
 			}
 		} else {
@@ -384,19 +399,29 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 			return resp, err
 		}
 
-		// It's a 429 — use exponential backoff with jitter, prefer Retry-After if present
-		retryAfter := c.extractRetryAfter(err)
-		// If no explicit Retry-After, use exponential backoff: 1s, 2s, 4s, 8s, ... capped at c.maxBackoff
-		if retryAfter <= 1*time.Second {
+		// It's a 429 — prefer the server-specified Retry-After, falling back
+		// to exponential backoff 1s, 2s, 4s, 8s, ... capped at c.maxBackoff.
+		retryAfter, explicit := c.extractRetryAfter(err)
+		if !explicit {
 			backoff := time.Duration(1<<uint(attempt)) * time.Second
 			if backoff > c.maxBackoff {
 				backoff = c.maxBackoff
 			}
 			retryAfter = backoff
 		}
-		// Add jitter: ±20% of wait duration
-		jitter := time.Duration(int64(retryAfter) * int64(20+(rand.Intn(40)%40)) / 100)
-		waitDuration := retryAfter + jitter
+		// Add symmetric jitter (±20%) only to the internally-computed backoff.
+		// Server-provided Retry-After values are authoritative and left un-jittered.
+		waitDuration := retryAfter
+		if !explicit {
+			jitter := time.Duration(int64(retryAfter) * int64(rand.Intn(41)-20) / 100)
+			waitDuration = retryAfter + jitter
+			if waitDuration < 0 {
+				waitDuration = 0
+			}
+			if waitDuration > c.maxBackoff {
+				waitDuration = c.maxBackoff
+			}
+		}
 
 		// Update global rate limit window to block all clients during this backoff period
 		globalRateLimitMutex.Lock()
@@ -424,11 +449,14 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 				"wait_duration", waitDuration)
 
 			// Wait the indicated duration, respecting context cancellation
+			timer := time.NewTimer(waitDuration)
 			select {
 			case <-ctx.Done():
-				lastErr = err
-				break
-			case <-time.After(waitDuration):
+				if !timer.Stop() {
+					<-timer.C
+				}
+				return nil, errors.Wrap(ctx.Err(), "context cancelled during rate limit retry")
+			case <-timer.C:
 				// Continue to next retry
 			}
 		} else {
@@ -447,7 +475,6 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 // makeRequestOnce performs a single HTTP request without retries or pre-flight rate limiting.
 func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
 	var reqBody io.Reader
-	var bodyStr string
 	if body != nil {
 		jsonBody, err := json.Marshal(body)
 		if err != nil {
@@ -455,14 +482,15 @@ func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint st
 			return nil, errors.Wrap(err, "failed to marshal request body")
 		}
 		reqBody = bytes.NewReader(jsonBody)
-		bodyStr = string(jsonBody)
+		// Request bodies may contain sensitive fields (e.g. OAuth2 tokens in
+		// member invites), so only log them at V(1) (debug) - never Info.
+		c.logger.V(1).Info("Discord API request body", "body", string(jsonBody))
 	}
 
 	url := c.baseURL + endpoint
 	c.logger.Info("Making Discord API request",
 		"method", method,
-		"url", url,
-		"body", bodyStr)
+		"url", url)
 
 	req, err := http.NewRequestWithContext(ctx, method, url, reqBody)
 	if err != nil {
@@ -512,7 +540,8 @@ func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint st
 
 	if resp.StatusCode >= 400 {
 		defer func() { _ = resp.Body.Close() }()
-		bodyBytes, _ := io.ReadAll(resp.Body)
+		// Cap error body reads at 64KB to bound memory on unexpected responses.
+		bodyBytes, _ := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
 
 		// For rate limit errors, capture the Retry-After header if present
 		errMsg := string(bodyBytes)
@@ -551,10 +580,10 @@ func (c *DiscordClient) is429Error(err error) bool {
 
 // extractRetryAfter extracts the Retry-After duration from a 429 error, checking both
 // the response headers (Retry-After) and the response body (Discord JSON format).
-// Returns a reasonable default if no Retry-After is found.
-func (c *DiscordClient) extractRetryAfter(err error) time.Duration {
+// Returns ok=false when no server-specified value is present.
+func (c *DiscordClient) extractRetryAfter(err error) (time.Duration, bool) {
 	if err == nil {
-		return 1 * time.Second
+		return 0, false
 	}
 
 	errStr := err.Error()
@@ -563,41 +592,38 @@ func (c *DiscordClient) extractRetryAfter(err error) time.Duration {
 	if idx := strings.LastIndex(errStr, " | Retry-After: "); idx != -1 {
 		retryAfterStr := errStr[idx+len(" | Retry-After: "):]
 		if seconds, err := strconv.ParseFloat(retryAfterStr, 64); err == nil {
-			duration := time.Duration(seconds*1000) * time.Millisecond
+			d := time.Duration(seconds * float64(time.Second))
 			c.logger.Info("Using Retry-After header",
 				"retry_after_seconds", seconds,
-				"wait_duration", duration)
-			return duration
+				"wait_duration", d)
+			return d, true
 		}
 	}
 
 	// Fallback: try to parse the response body for retry_after field
 	parts := strings.Split(errStr, " - ")
-	if len(parts) < 2 {
-		// No response body in error; use default backoff
-		return 1 * time.Second
+	if len(parts) >= 2 {
+		respBody := parts[len(parts)-1]
+		// Remove the Retry-After header suffix if present
+		if idx := strings.LastIndex(respBody, " | Retry-After: "); idx != -1 {
+			respBody = respBody[:idx]
+		}
+
+		// Try to parse Discord's JSON response format (looks for retry_after field in seconds)
+		var resp struct {
+			RetryAfter *float64 `json:"retry_after"`
+		}
+		if err := json.Unmarshal([]byte(respBody), &resp); err == nil && resp.RetryAfter != nil {
+			d := time.Duration(*resp.RetryAfter * float64(time.Second))
+			c.logger.Info("Using retry_after from response body",
+				"retry_after_seconds", *resp.RetryAfter,
+				"wait_duration", d)
+			return d, true
+		}
 	}
 
-	respBody := parts[len(parts)-1]
-	// Remove the Retry-After header suffix if present
-	if idx := strings.LastIndex(respBody, " | Retry-After: "); idx != -1 {
-		respBody = respBody[:idx]
-	}
-
-	// Try to parse Discord's JSON response format (looks for retry_after field in seconds)
-	var resp struct {
-		RetryAfter *float64 `json:"retry_after"`
-	}
-	if err := json.Unmarshal([]byte(respBody), &resp); err == nil && resp.RetryAfter != nil {
-		duration := time.Duration(*resp.RetryAfter*1000) * time.Millisecond
-		c.logger.Info("Using retry_after from response body",
-			"retry_after_seconds", *resp.RetryAfter,
-			"wait_duration", duration)
-		return duration
-	}
-
-	// Default backoff: 1 second
-	return 1 * time.Second
+	// No server-specified value
+	return 0, false
 }
 
 // GetGuild retrieves a guild by ID
@@ -1343,21 +1369,22 @@ func (c *DiscordClient) GetGuildMember(ctx context.Context, guildID, userID stri
 
 // ListGuildMembers lists guild members
 func (c *DiscordClient) ListGuildMembers(ctx context.Context, guildID string, req *ListGuildMembersRequest) ([]GuildMember, error) {
-	query := ""
+	params := &url.Values{}
 	if req != nil {
-		params := make([]string, 0)
 		if req.Limit != nil {
-			params = append(params, fmt.Sprintf("limit=%d", *req.Limit))
+			params.Set("limit", strconv.Itoa(*req.Limit))
 		}
 		if req.After != nil {
-			params = append(params, fmt.Sprintf("after=%s", *req.After))
-		}
-		if len(params) > 0 {
-			query = "?" + strings.Join(params, "&")
+			params.Set("after", *req.After)
 		}
 	}
 
-	resp, err := c.makeRequest(ctx, "GET", "/guilds/"+guildID+"/members"+query, nil)
+	path := "/guilds/" + guildID + "/members"
+	if encoded := params.Encode(); encoded != "" {
+		path += "?" + encoded
+	}
+
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to list guild members")
 	}
@@ -1459,12 +1486,24 @@ func (c *DiscordClient) RemoveGuildMember(ctx context.Context, guildID, userID s
 
 // SearchGuildMembers searches for guild members by username or nickname
 func (c *DiscordClient) SearchGuildMembers(ctx context.Context, guildID string, req *SearchGuildMembersRequest) ([]GuildMember, error) {
-	query := fmt.Sprintf("?query=%s", req.Query)
-	if req.Limit != nil {
-		query += fmt.Sprintf("&limit=%d", *req.Limit)
+	params := &url.Values{}
+	if req != nil {
+		if req.Query != "" {
+			params.Set("query", req.Query)
+		}
+		if req.Limit != nil {
+			params.Set("limit", strconv.Itoa(*req.Limit))
+		}
 	}
 
-	resp, err := c.makeRequest(ctx, "GET", "/guilds/"+guildID+"/members/search"+query, nil)
+	var path string
+	if encoded := params.Encode(); encoded != "" {
+		path = "/guilds/" + guildID + "/members/search?" + encoded
+	} else {
+		path = "/guilds/" + guildID + "/members/search"
+	}
+
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to search guild members")
 	}
@@ -1530,24 +1569,25 @@ func (c *DiscordClient) ModifyCurrentUser(ctx context.Context, req *ModifyCurren
 
 // GetCurrentUserGuilds gets the current user's guilds
 func (c *DiscordClient) GetCurrentUserGuilds(ctx context.Context, req *GetCurrentUserGuildsRequest) ([]Guild, error) {
-	query := ""
+	params := &url.Values{}
 	if req != nil {
-		params := make([]string, 0)
 		if req.Before != nil {
-			params = append(params, fmt.Sprintf("before=%s", *req.Before))
+			params.Set("before", *req.Before)
 		}
 		if req.After != nil {
-			params = append(params, fmt.Sprintf("after=%s", *req.After))
+			params.Set("after", *req.After)
 		}
 		if req.Limit != nil {
-			params = append(params, fmt.Sprintf("limit=%d", *req.Limit))
-		}
-		if len(params) > 0 {
-			query = "?" + strings.Join(params, "&")
+			params.Set("limit", strconv.Itoa(*req.Limit))
 		}
 	}
 
-	resp, err := c.makeRequest(ctx, "GET", "/users/@me/guilds"+query, nil)
+	path := "/users/@me/guilds"
+	if encoded := params.Encode(); encoded != "" {
+		path += "?" + encoded
+	}
+
+	resp, err := c.makeRequest(ctx, "GET", path, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get current user guilds")
 	}
@@ -1724,7 +1764,7 @@ func (c *DiscordClient) recordRateLimitMetrics(resourceType, endpoint string, he
 			var resetTime time.Time
 			if resetAfter != "" {
 				if resetAfterFloat, err := strconv.ParseFloat(resetAfter, 64); err == nil {
-					resetTime = time.Now().Add(time.Duration(resetAfterFloat) * time.Second)
+					resetTime = time.Now().Add(time.Duration(resetAfterFloat * float64(time.Second)))
 				}
 			}
 
@@ -1742,9 +1782,15 @@ func (c *DiscordClient) recordRateLimitMetrics(resourceType, endpoint string, he
 }
 
 // updateGlobalRateLimitFromHeaders updates the global rate limit window from response headers.
-// This allows proactive rate limiting using X-RateLimit-Reset-After from successful responses,
-// without waiting for a 429 response.
+// The X-RateLimit-Reset-After header is present on every response and describes the
+// per-route/bucket limit, not a global one. Only Discord's explicit global limit
+// response (X-RateLimit-Global: true) pauses every client; otherwise unrelated
+// routes would be throttled unnecessarily.
 func (c *DiscordClient) updateGlobalRateLimitFromHeaders(headers http.Header) {
+	if !strings.EqualFold(headers.Get("X-RateLimit-Global"), "true") {
+		return
+	}
+
 	resetAfter := headers.Get("X-RateLimit-Reset-After")
 	if resetAfter == "" {
 		return
@@ -1756,7 +1802,7 @@ func (c *DiscordClient) updateGlobalRateLimitFromHeaders(headers http.Header) {
 	}
 
 	// Only update if the reset time is in the future (more than 100ms to avoid noise)
-	resetTime := time.Now().Add(time.Duration(resetAfterFloat) * time.Second)
+	resetTime := time.Now().Add(time.Duration(resetAfterFloat * float64(time.Second)))
 	if time.Until(resetTime) <= 100*time.Millisecond {
 		return
 	}

@@ -78,7 +78,8 @@ func (c *ProviderCredentials) Extract(ctx context.Context, client client.Client)
 		return "", errors.Errorf("credentials secret does not contain key %s", c.SecretRef.Key)
 	}
 
-	return string(token), nil
+	// Trim whitespace/newlines that sneak in from base64-encoded secrets or `echo`-style provisioning
+	return strings.TrimSpace(string(token)), nil
 }
 
 // GetConfig extracts the Discord bot token from a ProviderConfig

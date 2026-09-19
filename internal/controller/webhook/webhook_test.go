@@ -408,7 +408,7 @@ func TestDelete(t *testing.T) {
 					return errors.New("Discord API error: 403")
 				}
 			},
-			expectError: false, // Returns nil error but sets condition
+			expectError: true, // No swallow: the webhook still exists in Discord, so deletion must not report success
 		},
 		{
 			name: "delete fails with API error",
