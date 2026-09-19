@@ -74,12 +74,24 @@ jobs:
           set -e
           export VERSION="${{ steps.version.outputs.version }}"
           export REGISTRY="ghcr.io/${{ github.repository_owner }}"
-          
+
           # Extract package name from repository
           PACKAGE_NAME=$(basename ${{ github.repository }})
-          
+
           echo "Pushing multi-arch Docker image to ${REGISTRY}/${PACKAGE_NAME}:${VERSION}"
-          
+
+          # Stage build context for the multi-arch Dockerfile.
+          # `make build.all build.artifacts` writes binaries to _output/bin/<os>_<arch>/provider,
+          # but cluster/images/<image>/Dockerfile expects bin/<os>_<arch>/provider at the
+          # build-context root. Mirror _output/bin into ./bin so docker buildx finds it.
+          rm -rf bin
+          cp -r _output/bin bin
+
+          # The Dockerfile also expects package.yaml at the build-context root.
+          # The authoritative metadata now lives at package/crossplane.yaml; stage it as
+          # package.yaml so the multi-arch image embeds the same metadata the xpkg uses.
+          cp package/crossplane.yaml package.yaml
+
           # Push Docker image directly for multi-arch from repo root
           docker buildx build \
             --push \

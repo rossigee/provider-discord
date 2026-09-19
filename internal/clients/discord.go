@@ -130,7 +130,17 @@ type DiscordClient struct {
 	baseURL         string
 	logger          logr.Logger
 	metricsRecorder *metrics.MetricsRecorder
+	maxRetries      int
+	maxBackoff      time.Duration
 }
+
+// Default retry/backoff values applied by NewDiscordClientWithMetrics.
+// Field accessors are exposed via setRetryPolicy / resetRetryPolicy so tests
+// can shorten backoffs without changing production behaviour.
+const (
+	defaultMaxRetries = 5
+	defaultMaxBackoff = 15 * time.Second
+)
 
 // Ensure DiscordClient implements all client interfaces
 var _ RoleClient = (*DiscordClient)(nil)
@@ -188,7 +198,24 @@ func NewDiscordClientWithMetrics(token string, metricsRecorder *metrics.MetricsR
 		baseURL:         DiscordAPIBaseURL,
 		logger:          ctrl.Log.WithName("discord-client"),
 		metricsRecorder: metricsRecorder,
+		maxRetries:      defaultMaxRetries,
+		maxBackoff:      defaultMaxBackoff,
 	}
+}
+
+// setRetryPolicy overrides the per-request retry budget and exponential
+// backoff ceiling. Intended for unit tests so they can exercise the retry
+// paths without paying production wall-clock backoff (1+2+4+8+15s). Pair
+// with t.Cleanup(resetRetryPolicy) to restore defaults.
+func (c *DiscordClient) setRetryPolicy(maxRetries int, maxBackoff time.Duration) {
+	c.maxRetries = maxRetries
+	c.maxBackoff = maxBackoff
+}
+
+// resetRetryPolicy restores the production retry budget / backoff ceiling.
+func (c *DiscordClient) resetRetryPolicy() {
+	c.maxRetries = defaultMaxRetries
+	c.maxBackoff = defaultMaxBackoff
 }
 
 // Guild represents a Discord guild
@@ -325,9 +352,8 @@ type ModifyGuildRequest struct {
 
 // makeRequest performs an HTTP request to the Discord API with rate limiting and exponential backoff on 429 errors.
 func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string, body interface{}) (*http.Response, error) {
-	const maxRetries = 5
 	var lastErr error
-	for attempt := 0; attempt <= maxRetries; attempt++ {
+	for attempt := 0; attempt <= c.maxRetries; attempt++ {
 		// Check if we're in a global rate-limit window set by ANY client
 		globalRateLimitMutex.Lock()
 		now := time.Now()
@@ -351,10 +377,6 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 			return nil, errors.Wrap(err, "rate limiter context cancelled")
 		}
 
-		// Add delay to respect Discord's global rate limit (1 req per 10 seconds)
-		// Using 15 seconds to be safe and avoid hitting the global limit
-		time.Sleep(15 * time.Second)
-
 		resp, err := c.makeRequestOnce(ctx, method, endpoint, body)
 
 		// If not a 429, return immediately (either success or non-retryable error)
@@ -364,12 +386,11 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 
 		// It's a 429 — use exponential backoff with jitter, prefer Retry-After if present
 		retryAfter := c.extractRetryAfter(err)
-		// If no explicit Retry-After, use exponential backoff: 1s, 2s, 4s, 8s, 15s (capped)
+		// If no explicit Retry-After, use exponential backoff: 1s, 2s, 4s, 8s, ... capped at c.maxBackoff
 		if retryAfter <= 1*time.Second {
 			backoff := time.Duration(1<<uint(attempt)) * time.Second
-			// Cap at 15 seconds to avoid exceeding HTTP client timeout (30s)
-			if backoff > 15*time.Second {
-				backoff = 15 * time.Second
+			if backoff > c.maxBackoff {
+				backoff = c.maxBackoff
 			}
 			retryAfter = backoff
 		}
@@ -393,12 +414,12 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 		}
 		globalRateLimitMutex.Unlock()
 
-		if attempt < maxRetries {
+		if attempt < c.maxRetries {
 			c.logger.Info("Rate limited by Discord API, will retry",
 				"method", method,
 				"url", c.baseURL+endpoint,
 				"attempt", attempt+1,
-				"max_retries", maxRetries,
+				"max_retries", c.maxRetries,
 				"retry_after_header", retryAfter,
 				"wait_duration", waitDuration)
 
@@ -414,7 +435,7 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 			c.logger.Error(nil, "Rate limited by Discord API after retries exhausted",
 				"method", method,
 				"url", c.baseURL+endpoint,
-				"max_retries", maxRetries,
+				"max_retries", c.maxRetries,
 				"final_wait_duration", waitDuration)
 			lastErr = err
 		}
@@ -481,6 +502,12 @@ func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint st
 
 		// Parse and record rate limit information from headers
 		c.recordRateLimitMetrics(resourceType, endpoint, resp.Header)
+	}
+
+	// Update global rate limit state from successful response headers
+	// This allows proactive rate limiting without waiting for 429
+	if resp.StatusCode < 400 {
+		c.updateGlobalRateLimitFromHeaders(resp.Header)
 	}
 
 	if resp.StatusCode >= 400 {
@@ -1711,6 +1738,41 @@ func (c *DiscordClient) recordRateLimitMetrics(resourceType, endpoint string, he
 				"limit", limit,
 				"resetAfter", resetAfter)
 		}
+	}
+}
+
+// updateGlobalRateLimitFromHeaders updates the global rate limit window from response headers.
+// This allows proactive rate limiting using X-RateLimit-Reset-After from successful responses,
+// without waiting for a 429 response.
+func (c *DiscordClient) updateGlobalRateLimitFromHeaders(headers http.Header) {
+	resetAfter := headers.Get("X-RateLimit-Reset-After")
+	if resetAfter == "" {
+		return
+	}
+
+	resetAfterFloat, err := strconv.ParseFloat(resetAfter, 64)
+	if err != nil {
+		return
+	}
+
+	// Only update if the reset time is in the future (more than 100ms to avoid noise)
+	resetTime := time.Now().Add(time.Duration(resetAfterFloat) * time.Second)
+	if time.Until(resetTime) <= 100*time.Millisecond {
+		return
+	}
+
+	globalRateLimitMutex.Lock()
+	defer globalRateLimitMutex.Unlock()
+
+	if resetTime.After(globalRateLimitUntil) {
+		globalRateLimitUntil = resetTime
+		// Update the global rate limit metric
+		if globalMetricsRecorder != nil {
+			globalMetricsRecorder.UpdateGlobalRateLimit(resetTime)
+		}
+		c.logger.Info("Updated global rate limit from response headers",
+			"reset_after_seconds", resetAfterFloat,
+			"retry_at", resetTime.Format(time.RFC3339))
 	}
 }
 
