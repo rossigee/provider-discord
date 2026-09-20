@@ -22,7 +22,9 @@ on:
 
 permissions:
   contents: read
-  actions: read  # Needed for detecting duplicate actions
+  packages: write  # Needed for security scanning uploads
+  id-token: write  # Needed for OIDC
+  actions: read    # Needed for detecting duplicate actions
 
 env:
   GO_VERSION: '1.27.1'
