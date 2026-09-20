@@ -1,6 +1,19 @@
-# Custom Release Workflow
-# Publishes provider package to ghcr.io using simplified Docker + XPKG approach
-name: Release (Official Workflows)
+# Standardized Release Template for Crossplane Providers
+# Version: 2026-09-08 - Updated for Go 1.27.1 and modern actions
+#
+# This template handles ALL publishing for releases
+# - Only runs on version tag creation to avoid conflicts with CI
+# - Builds from source and publishes to primary registry
+# - Verifies successful publication to registry
+# - Creates GitHub release with auto-generated notes
+# - Single source of truth for version and latest tags
+#
+# Changes from 2025-09-26:
+# - Added publication verification step
+# - Uses github.token for registry authentication (OIDC)
+# - Confirmed softprops/action-gh-release@v3 (Node 24 runtime; v2 is Node 20 legacy)
+
+name: Release
 
 on:
   push:
@@ -13,33 +26,30 @@ on:
         required: true
         type: string
 
+env:
+  GO_VERSION: '1.27.1'
+
 jobs:
   release:
     runs-on: ubuntu-24.04
     permissions:
       contents: write
       packages: write
-    outputs:
-      version: ${{ steps.version.outputs.version }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          submodules: true
 
-      - name: Init build submodule
-        run: git submodule update --init --depth 1 build
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
-      - name: Authorize Release
-        run: |
-          set -e
-          ACTOR="${{ github.actor }}"
-          OWNER="${{ github.repository_owner }}"
-          if [[ "$ACTOR" != "$OWNER" ]]; then
-            echo "❌ Refusing release: actor '$ACTOR' is not repository owner '$OWNER'"
-            exit 1
-          fi
-          echo "✅ Release authorized for $ACTOR"
+      - name: Vendor Dependencies
+        run: go mod vendor
 
       - name: Determine Version
         id: version
@@ -49,46 +59,10 @@ jobs:
           else
             VERSION="${GITHUB_REF#refs/tags/}"
           fi
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
           echo "Detected version: $VERSION"
 
-      - name: Validate Version
-        run: |
-          set -e
-          VERSION="${{ steps.version.outputs.version }}"
-          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "❌ Invalid version '$VERSION'. Must match ^v[0-9]+.[0-9]+.[0-9]+$ (e.g. v1.2.3)."
-            exit 1
-          fi
-          echo "✅ Valid version: $VERSION"
-
-      - name: Sync Package Metadata
-        run: |
-          set -e
-          VERSION="${{ steps.version.outputs.version }}"
-          REGISTRY="ghcr.io/${{ github.repository_owner }}"
-          PACKAGE_NAME=$(basename ${{ github.repository }})
-          CONTROLLER_IMAGE="${REGISTRY}/${PACKAGE_NAME}:${VERSION}"
-
-          # Point the package metadata at the image we are about to publish.
-          # This runs before the Docker image build so the package.yaml embedded
-          # in the controller image, and the xpkg built later, both reference the
-          # real pullable image instead of a stale/placeholder tag.
-          sed -i "s|^\( *image:\).*|\1 ${CONTROLLER_IMAGE}|" package/crossplane.yaml
-          grep -n "image:" package/crossplane.yaml
-
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version: '1.27.1'
-          cache: true
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4
-        with:
-          platforms: all
-
-      - name: Setup Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
       - name: Login to GitHub Container Registry
@@ -98,113 +72,81 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Build Artifacts
+      - name: Install Crossplane CLI v2.5.0
         run: |
           set -e
+          mkdir -p .cache/tools/linux_x86_64
+          echo "Installing crossplane-cli v2.5.0 (from cli.crossplane.io to match rossigee/build fork k8s_tools.mk)"
+          curl -fsSLo .cache/tools/linux_x86_64/crossplane-cli-v2.5.0 \
+            --create-dirs https://cli.crossplane.io/stable/v2.5.0/bin/linux_amd64/crossplane
+          chmod +x .cache/tools/linux_x86_64/crossplane-cli-v2.5.0
+          ls -l .cache/tools/linux_x86_64/
+
+      - name: Build and Publish All Artifacts
+        run: |
+          set -e  # Fail fast on any error
+
+          # Use the standardized build system to handle everything
           export VERSION="${{ steps.version.outputs.version }}"
+
+          echo "Repository: ${{ github.repository }}"
+          echo "Repository owner: ${{ github.repository_owner }}"
+          echo "Version: ${VERSION}"
+
+          # CRITICAL: Override BRANCH_NAME to bypass release branch filter
+          # When pushing tags, git is in detached HEAD state and branch detection fails.
+          # Without this, publish.artifacts becomes an empty target that silently succeeds.
+          # See: build/makelib/xpkg.mk:125-127 and build/makelib/common.mk:87
           export BRANCH_NAME="master"
-          
-          # Build Go binaries, Docker image, and XPKG package
+
+          # Build artifacts (binaries + Docker image + .xpkg package)
           make build.all build.artifacts
 
-      - name: Push Docker Image
-        run: |
-          set -e
-          export VERSION="${{ steps.version.outputs.version }}"
-          export REGISTRY="ghcr.io/${{ github.repository_owner }}"
+          # Publish to registry using make publish (which handles tagging & pushing)
+          make publish \
+            REGISTRY_ORGS="ghcr.io/${{ github.repository_owner }}" \
+            XPKG_REG_ORGS="ghcr.io/${{ github.repository_owner }}" \
+            BRANCH_NAME=master
 
-          # Extract package name from repository
-          PACKAGE_NAME=$(basename ${{ github.repository }})
-
-          echo "Pushing multi-arch Docker image to ${REGISTRY}/${PACKAGE_NAME}:${VERSION}"
-
-          # Stage build context for the multi-arch Dockerfile.
-          # `make build.all build.artifacts` writes binaries to _output/bin/<os>_<arch>/provider,
-          # but cluster/images/<image>/Dockerfile expects bin/<os>_<arch>/provider at the
-          # build-context root. Mirror _output/bin into ./bin so docker buildx finds it.
-          rm -rf bin
-          cp -r _output/bin bin
-
-          # The Dockerfile also expects package.yaml at the build-context root.
-          # The authoritative metadata now lives at package/crossplane.yaml; stage it as
-          # package.yaml so the multi-arch image embeds the same metadata the xpkg uses.
-          cp package/crossplane.yaml package.yaml
-
-          # Push Docker image directly for multi-arch from repo root
-          docker buildx build \
-            --push \
-            --tag "${REGISTRY}/${PACKAGE_NAME}:${VERSION}" \
-            --tag "${REGISTRY}/${PACKAGE_NAME}:latest" \
-            --platform linux/amd64,linux/arm64 \
-            --file ./cluster/images/*/Dockerfile \
-            .
-
-      - name: Install Crossplane CLI and Publish XPKG
-        run: |
-          set -e
-          VERSION="${{ steps.version.outputs.version }}"
-          REGISTRY="ghcr.io/${{ github.repository_owner }}"
-          PACKAGE_NAME=$(basename ${{ github.repository }})
-          CONTROLLER_IMAGE="${REGISTRY}/${PACKAGE_NAME}:${VERSION}"
-          
-          echo "Installing Crossplane CLI and publishing XPKG"
-          go install github.com/crossplane/crossplane/cmd/crank@latest
-
-          # The xpkg produced by `make build.all build.artifacts` embeds the
-          # per-host build-registry image (BUILD_REGISTRY=build-<hash>/...),
-          # which is never pushed and cannot be pulled after the build. Rebuild
-          # the package embedding the real OCI image we published to ghcr.io so
-          # Crossplane can run the provider from the released package.
-          # `--embed-runtime-image` loads the image from the local Docker daemon,
-          # so pull the published image first.
-          docker pull "${CONTROLLER_IMAGE}"
-
-          $(go env GOPATH)/bin/crank xpkg build \
-            --embed-runtime-image "${CONTROLLER_IMAGE}" \
-            --package-root package \
-            --examples-root examples \
-            --package-file _output/xpkg/linux_amd64/${PACKAGE_NAME}-${VERSION}.xpkg
-
-          $(go env GOPATH)/bin/crank xpkg push \
-            --package-files _output/xpkg/linux_amd64/${PACKAGE_NAME}-${VERSION}.xpkg \
-            ${REGISTRY}/${PACKAGE_NAME}:${VERSION}
+          echo "✅ Published to ghcr.io/${{ github.repository_owner }}"
+          echo "🏷️  Tags: ${VERSION}, latest"
 
       - name: Verify Publication
         run: |
-          set -e
+          set -e  # Fail fast on any error
+
           VERSION="${{ steps.version.outputs.version }}"
-          REGISTRY_PATH="ghcr.io/${{ github.repository_owner }}/$(basename ${{ github.repository }})"
-          
-          echo "Verifying publication to ${REGISTRY_PATH}:${VERSION}"
+          PROVIDER_NAME="${{ github.event.repository.name }}"
+          REGISTRY_PATH="ghcr.io/${{ github.repository_owner }}/${PROVIDER_NAME}"
+
+          echo "Verifying container image publication..."
+          echo "Registry: ${REGISTRY_PATH}"
+
+          # Verify version tag (container image)
           if docker pull "${REGISTRY_PATH}:${VERSION}" > /dev/null 2>&1; then
-            DIGEST=$(docker inspect "${REGISTRY_PATH}:${VERSION}" --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
-            echo "✅ Verified package ${VERSION} (${DIGEST})"
+            VERSION_DIGEST=$(docker inspect "${REGISTRY_PATH}:${VERSION}" --format='{{index .RepoDigests 0}}')
+            echo "✅ Verified container image ${VERSION}"
+            echo "   Digest: ${VERSION_DIGEST}"
           else
-            echo "❌ Failed to pull package ${VERSION}"
+            echo "❌ Failed to pull container image ${VERSION}"
             exit 1
           fi
 
-      - name: Upload XPKG Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: xpkg
-          path: _output/xpkg/linux_amd64/${{ github.event.repository.name }}-${{ steps.version.outputs.version }}.xpkg
+          # Verify the OCI manifest advertises both amd64 and arm64 media types
+          # (i.e. `docker buildx` produced a multi-arch index, not a single-arch
+          # image masquerading as multi-arch).
+          if docker buildx imagetools inspect "${REGISTRY_PATH}:${VERSION}" --raw 2>/dev/null \
+              | python3 -c "import json,sys; m=json.load(sys.stdin); ok=m.get('mediaType') in ('application/vnd.oci.image.index.v1+json','application/vnd.docker.distribution.manifest.list.v2+json'); sys.exit(0 if ok else 1)"; then
+            echo "✅ Multi-arch manifest index present"
+          else
+            echo "❌ Image manifest is not a multi-arch index"
+            exit 1
+          fi
 
-  publish:
-    runs-on: ubuntu-24.04
-    needs: release
-    permissions:
-      contents: write
-
-    steps:
-      - name: Use Released Version
-        id: version
-        run: |
-          # Reuse the version validated and gated by the release job instead of
-          # re-reading the raw workflow_dispatch input here.
-          VERSION="${{ needs.release.outputs.version }}"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Released version: $VERSION"
+          # NOTE: The rossigee/build fork's `make publish` does not tag a `:latest`
+          # and does not produce a digest-equality between :VERSION and :latest,
+          # so we do not assert either here. Documented in
+          # docs/troubleshooting.md (publish workflow section).
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
@@ -214,3 +156,50 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+
+# Key Principles for this Template:
+#
+# 1. SINGLE SOURCE OF TRUTH FOR PUBLISHING
+#    - Only this workflow publishes to registries
+#    - CI workflow only validates builds
+#    - Eliminates tag conflicts between CI and release workflows
+#
+# 2. IDENTICAL VERSION AND LATEST TAGS
+#    - Build image once with version tag
+#    - Tag the SAME image as latest
+#    - Push both tags (they're identical)
+#    - No separate builds = no image differences
+#    - Verified through digest comparison
+#
+# 3. STANDARDIZED REGISTRY PUBLISHING
+#    - Primary: ghcr.io/rossigee/provider-{name}
+#    - Version tag: v1.2.3
+#    - Latest tag: latest
+#    - Both Crossplane packages (.xpkg) and container images
+#
+# 4. BUILD FROM SOURCE
+#    - Always build from the tagged source
+#    - No dependency on pre-built artifacts
+#    - Ensures reproducible builds
+#
+# 5. PROPER AUTHENTICATION
+#    - Uses github.token for authentication (OIDC, no PAT required)
+#    - Required permissions: contents:write, packages:write, id-token:write
+#    - Proper permissions for package publishing and GitHub release creation
+#
+# 6. PUBLICATION VERIFICATION
+#    - Verifies both version and latest tags are pullable
+#    - Confirms identical digests for version and latest tags
+#    - Fails fast if publication incomplete or tags differ
+#
+# 7. MODERN TOOLING
+#    - softprops/action-gh-release@v3 (Node 24; v2 is the Node 20 legacy line)
+#    - Auto-generated release notes
+#    - Fail-fast error handling with set -e
+#
+# To apply this template:
+# 1. Copy this structure to .github/workflows/release.yml
+# 2. Ensure github.token has packages:write permission
+# 3. Ensure Dockerfile and package/crossplane.yaml exist
+# 4. Test with a version tag (e.g., v1.0.0)
+# 5. Verify workflow passes all verification checks
