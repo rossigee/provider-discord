@@ -23,13 +23,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
 	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	"github.com/rossigee/provider-discord/internal/services"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -50,14 +50,14 @@ const (
 // ProviderConfigReconciler reconciles ProviderConfig objects and handles deduplication.
 type ProviderConfigReconciler struct {
 	client.Client
-	Recorder events.EventRecorder
+	Recorder event.Recorder
 }
 
 // Setup adds the reconciler to the manager.
 func Setup(mgr ctrl.Manager) error {
 	r := &ProviderConfigReconciler{
 		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorder("discord-provider-deduplication"),
+		Recorder: event.NewAPIRecorder(mgr.GetEventRecorder("discord-provider-deduplication")),
 	}
 
 	// Predicate to only watch ProviderConfigs with the deduplication annotation
