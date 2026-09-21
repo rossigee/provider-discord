@@ -1,5 +1,74 @@
 # Changelog
 
+## v0.16.1 (2026-09-19)
+
+### Security
+
+- Stop logging Discord request bodies at Info level. OAuth2 invite tokens and
+  similar secrets are now logged only at `V(1)` debug
+  (`internal/clients/discord.go`).
+- Block `http.Client` redirects from forwarding the `Authorization` (bot token)
+  header to a different host.
+- Scope the CI workflow permissions to `contents: read` and `actions: read`,
+  removing the workflow-wide `packages: write` and `id-token: write` grants.
+- Gate the release workflow on a trusted actor (repository owner) and validate
+  the version tag against `^v[0-9]+\.[0-9]+\.[0-9]+$` before publishing.
+
+### Fixes
+
+- Return an error when `Delete` receives a 403/401 from the Discord API instead
+  of reporting success, so managed resources stay in `Deleting` and retry rather
+  than orphaning the Discord resource (guild, webhook, channel, role, member,
+  integration, invite).
+- Honour server `Retry-After` values even when fractional/sub-second, and only
+  engage the global pause on `X-RateLimit-Global: true`.
+- Clamp exponential backoff to `maxBackoff` and apply symmetric jitter.
+- Cap error response body reads at 64 KiB.
+- Trim whitespace from bot tokens extracted from Kubernetes secrets.
+- Nil-guard `ProviderConfigReference` in the application connector and
+  `SearchGuildMembers` request construction; encode list query parameters with
+  `url.Values`.
+
+### Build & Release
+
+- The release workflow embeds the published
+  `ghcr.io/rossigee/provider-discord` controller image in the xpkg instead of an
+  unpushable per-host build ref, keeps the embedded package metadata (both the
+  `image:` field and the install snippet in the embedded README) in sync with
+  the released image, and fixes the uploaded xpkg artifact path.
+- Resolve a `structured-merge-diff` v6/v7 mismatch by dropping the extraneous
+  `k8s.io/kube-openapi` dependency.
+- Refresh documentation, examples (add `member`, `user`, `application`,
+  `integration`), and version references to `v0.16.1`.
+
+---
+
+## Release summary: v0.13.0 – v0.16.0 (collated)
+
+These releases were published without changelog entries; the summary below is
+collated from the merged pull requests and release tags in that range.
+
+### Features
+
+- Deduplication: message-history-based keep selection, webhook and role
+  deduplication, and a deduplication action/report workflow.
+- Global rate limit monitoring and status reporting.
+- Multi-arch Docker image and Crossplane v2 XPKG release workflow.
+
+### Fixes
+
+- Deduplication safety fix (only deduplicate when channel type and parent
+  category match) and improved deletion logging/validation for action mode.
+- Increase the default poll interval from 1m to 5m and reduce the reconcile rate
+  to 1 req/s to avoid Discord global rate limits.
+- Graceful handling of RBAC errors; remove an invalid CEL validation rule from
+  the ProviderConfig CRD; use `POD_SERVICE_ACCOUNT` for the RBAC binding.
+- Drop the redundant v1beta1 controllers for 9 resource types and remove
+  misleading v1alpha1 import aliases.
+- Improve webhook, invite, and user controller test coverage.
+
+---
+
 ## v0.12.1 (2026-08-09)
 
 ### Fixes

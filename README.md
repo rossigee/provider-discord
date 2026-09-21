@@ -13,7 +13,7 @@ monitoring.
 
 ## Container Registry
 
-- **Primary**: `ghcr.io/rossigee/provider-discord:v0.14.12`
+- **Primary**: `ghcr.io/rossigee/provider-discord:v0.16.1`
 
 ## Overview
 
@@ -46,7 +46,7 @@ An enterprise-grade Crossplane provider for managing Discord resources through K
 ### Production Ready
 
 - **Discord API v10**: Latest Discord API with rate limiting and error handling
-- **Test Coverage**: 62-100% test coverage across all modules with comprehensive validation
+- **Test Coverage**: unit tests for the client, controllers, and support modules (see [docs/TEST-COVERAGE.md](docs/TEST-COVERAGE.md) for per-package coverage)
 - **Observability**: Structured logging, metrics collection, and tracing integration
 - **Deployment**: Production-ready configurations with monitoring and security
 
@@ -490,7 +490,7 @@ env:
 
 ### Prerequisites
 
-- Go 1.24.5+
+- Go 1.27.1+
 - Docker
 - Kind (for integration tests)
 - Pre-commit hooks (recommended)
@@ -524,7 +524,7 @@ make test
 # Run integration tests (requires Kind cluster)
 make integration-test
 
-# Run tests with coverage (target: >70% coverage)
+# Run tests with coverage (reports coverage; see docs/TEST-COVERAGE.md)
 make test.cover
 
 # Run specific module tests
@@ -580,14 +580,15 @@ make run
 
 ### Test Coverage
 
-- **Controllers**: 62-78% coverage with comprehensive CRUD testing
-- **Enterprise Modules**: 72-100% coverage
-  - Health Monitoring: 77.2%
-  - Metrics Framework: 100.0%
-  - Resilience Module: 94.8%
-  - Tracing Module: 72.0%
-- **API Packages**: 30-56% validation and marshaling tests
-- **Client Library**: 91.9% with comprehensive error scenarios
+Overall statement coverage is ~41%. See
+[docs/TEST-COVERAGE.md](docs/TEST-COVERAGE.md) for the full breakdown. Highlights:
+
+- **Controllers**: guild 78%, invite 72%, webhook 70%, role 67%, application 63%,
+  channel/dedup 60%, user 58%, integration 53%. `member` is low (8%) and
+  `garbagecollection`/`providerconfig` are untested.
+- **Support modules**: metrics 100%, resilience 96%, health 74%
+- **API packages**: channel/guild/role 46–54%; other resource API packages are untested
+- **Client library**: 43% (request construction, error mapping, rate-limit/retry paths)
 
 ## Contributing
 
@@ -598,7 +599,7 @@ We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for deta
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests for your changes (maintain >70% coverage)
+4. Add tests for your changes (see docs/TEST-COVERAGE.md for priorities)
 5. Ensure all tests pass: `make test`
 6. Ensure code is properly formatted: `make lint`
 7. Test enterprise features locally
@@ -657,7 +658,7 @@ This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENS
 - ✅ OpenTelemetry tracing integration with correlation IDs
 - ✅ Circuit breakers and resilience patterns
 - ✅ Production-ready deployment configurations
-- ✅ Comprehensive test coverage (62-100%)
+- ✅ Unit test coverage for the client, controllers, and support modules (see docs/TEST-COVERAGE.md)
 - ✅ Complete linting and code quality compliance
 - ✅ Security hardening with pod security contexts
 - ✅ Network policies and RBAC configurations
