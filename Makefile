@@ -60,6 +60,13 @@ publish.artifacts:
 	fi
 	$(foreach r,$(XPKG_REG_ORGS), $(foreach x,$(XPKGS),@$(MAKE) xpkg.release.publish.$(r).$(x)))
 	$(foreach r,$(REGISTRY_ORGS), $(foreach i,$(IMAGES),@$(MAKE) img.release.publish.$(r).$(i)))
+xpkg.release.publish.ghcr.io/rossigee.provider-discord:
+	@$(foreach p,$(XPKG_LINUX_PLATFORMS),$(MAKE) xpkg.build.provider-discord PLATFORM=$(p) || exit 1;)
+	@$(CROSSPLANE_CLI) xpkg push \
+		$(foreach p,$(XPKG_LINUX_PLATFORMS),--package-files $(XPKG_OUTPUT_DIR)/$(p)/provider-discord-$(VERSION).xpkg ) \
+		ghcr.io/rossigee/provider-discord:$(VERSION)
+	@$(OK) Pushed package ghcr.io/rossigee/provider-discord:$(VERSION)
+
 
 # Setup Package Metadata
 CROSSPLANE_VERSION = 2.0.2
@@ -104,3 +111,7 @@ run: go.build
 xpkg.build: $(UP)
 
 .PHONY: submodules run
+
+# Neutralize plain image publish for ghcr (xpkg uses same ref; plain push would clobber package.yaml)
+img.release.publish.ghcr.io/rossigee.provider-discord:
+	@:
