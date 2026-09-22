@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/pkg/errors"
 	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
 	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	"github.com/rossigee/provider-discord/internal/services"
@@ -126,7 +127,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	botToken, baseURL, err := r.extractCredentials(ctx, pc)
 	if err != nil {
 		log.Error(err, "failed to extract credentials")
-		r.Recorder.Eventf(pc, nil, corev1.EventTypeWarning, "DeduplicationFailed", "credentials", "Failed to extract credentials: %v", err)
+		r.Recorder.Event(pc, event.Warning("DeduplicationFailed", errors.Wrap(err, "Failed to extract credentials")))
 		return ctrl.Result{}, err
 	}
 
@@ -198,7 +199,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	result, err := dedupService.AnalyzeAndDeduplicate(ctx, mode, spec.TargetGuilds)
 	if err != nil {
 		log.Error(err, "deduplication analysis failed")
-		r.Recorder.Eventf(pc, nil, corev1.EventTypeWarning, "DeduplicationFailed", "analysis", "Analysis failed: %v", err)
+		r.Recorder.Event(pc, event.Warning("DeduplicationFailed", errors.Wrap(err, "Analysis failed")))
 		// Best-effort: record failure directly on the status subresource so operators can
 		// see what happened (no spec change needed here, so no CreateOrUpdate/plain-Update
 		// step to clobber it - see the comment on the Step 2 status write above).
@@ -305,7 +306,11 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		eventType = corev1.EventTypeWarning
 		eventMsg += fmt.Sprintf(". Error: %s", result.Error)
 	}
-	r.Recorder.Eventf(pc, nil, eventType, "DeduplicationCompleted", "summary", "%s", eventMsg)
+	if result.HasError {
+		r.Recorder.Event(pc, event.Warning("DeduplicationCompleted", errors.New(eventMsg)))
+	} else {
+		r.Recorder.Event(pc, event.Normal("DeduplicationCompleted", eventMsg))
+	}
 
 	log.Info("Deduplication completed", "mode", mode, "guilds", result.Summary.TotalGuildsAnalyzed,
 		"duplicatesFound", result.Summary.TotalDuplicateChannelsFound,

@@ -27,6 +27,7 @@ import (
 	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
 	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	"github.com/rossigee/provider-discord/internal/services"
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -444,7 +445,7 @@ func TestReconcile_PersistsStatus(t *testing.T) {
 
 	r := &ProviderConfigReconciler{
 		Client:   fakeClient,
-		Recorder: events.NewFakeRecorder(10),
+		Recorder: event.NewAPIRecorder(events.NewFakeRecorder(10)),
 	}
 
 	_, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Name: "test-pc"}})
