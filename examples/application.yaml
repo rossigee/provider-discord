@@ -1,0 +1,18 @@
+apiVersion: application.discord.m.crossplane.io/v1beta1
+kind: Application
+metadata:
+  name: example-application
+  namespace: default
+  annotations:
+    kubernetes.io/description: "Example bot application configured by Crossplane"
+spec:
+  forProvider:
+    applicationId: "@me"                  # Only the current application can be modified
+    description: "Managed by Crossplane"
+    botPublic: false
+    botRequireCodeGrant: false
+    tags:
+      - crossplane
+  providerConfigRef:
+    kind: ClusterProviderConfig
+    name: default

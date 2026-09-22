@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -974,4 +975,111 @@ func TestGetGlobalRateLimitInfo(t *testing.T) {
 	globalRateLimitMutex.Lock()
 	globalRateLimitUntil = time.Time{}
 	globalRateLimitMutex.Unlock()
+}
+
+func TestCheckRedirectDoesNotForwardAuthorizationCrossHost(t *testing.T) {
+	client := NewDiscordClient("secret-token")
+
+	via := []*http.Request{{URL: &url.URL{Scheme: "https", Host: "discord.com"}}}
+
+	sameHost := &http.Request{URL: &url.URL{Scheme: "https", Host: "discord.com"}}
+	if err := client.httpClient.CheckRedirect(sameHost, via); err != nil {
+		t.Errorf("same-host redirect: expected nil error, got %v", err)
+	}
+
+	crossHost := &http.Request{URL: &url.URL{Scheme: "https", Host: "evil.example.com"}}
+	if err := client.httpClient.CheckRedirect(crossHost, via); err != http.ErrUseLastResponse {
+		t.Errorf("cross-host redirect: expected http.ErrUseLastResponse, got %v", err)
+	}
+
+	if err := client.httpClient.CheckRedirect(sameHost, nil); err != nil {
+		t.Errorf("initial request (no via): expected nil error, got %v", err)
+	}
+}
+
+func TestGlobalRateLimitNotUpdatedOnErrorResponse(t *testing.T) {
+	resetGlobalRateLimit()
+	t.Cleanup(resetGlobalRateLimit)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-RateLimit-Global", "true")
+		w.Header().Set("X-RateLimit-Reset-After", "10")
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer server.Close()
+
+	client := NewDiscordClient("test-token")
+	client.baseURL = server.URL
+
+	if _, err := client.GetGuild(context.Background(), "123456789"); err == nil {
+		t.Fatal("expected error for 500 response, got nil")
+	}
+
+	if isLimited, _ := GetGlobalRateLimitInfo(); isLimited {
+		t.Error("global rate limit must not be engaged for error responses")
+	}
+}
+
+func TestUpdateGlobalRateLimitFromHeaders(t *testing.T) {
+	tests := []struct {
+		name        string
+		headers     map[string]string
+		wantLimited bool
+	}{
+		{
+			name:        "global rate limit header sets window",
+			headers:     map[string]string{"X-RateLimit-Global": "true", "X-RateLimit-Reset-After": "10"},
+			wantLimited: true,
+		},
+		{
+			name:        "global header is case-insensitive",
+			headers:     map[string]string{"X-RateLimit-Global": "TRUE", "X-RateLimit-Reset-After": "10"},
+			wantLimited: true,
+		},
+		{
+			name:        "per-route reset-after without global flag is ignored",
+			headers:     map[string]string{"X-RateLimit-Reset-After": "10"},
+			wantLimited: false,
+		},
+		{
+			name:        "global flag without reset-after is ignored",
+			headers:     map[string]string{"X-RateLimit-Global": "true"},
+			wantLimited: false,
+		},
+		{
+			name:        "sub-100ms reset is ignored",
+			headers:     map[string]string{"X-RateLimit-Global": "true", "X-RateLimit-Reset-After": "0.05"},
+			wantLimited: false,
+		},
+		{
+			name:        "unparseable reset-after is ignored",
+			headers:     map[string]string{"X-RateLimit-Global": "true", "X-RateLimit-Reset-After": "not-a-number"},
+			wantLimited: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetGlobalRateLimit()
+			t.Cleanup(resetGlobalRateLimit)
+
+			client := NewDiscordClient("test-token")
+			header := http.Header{}
+			for k, v := range tt.headers {
+				header.Set(k, v)
+			}
+			client.updateGlobalRateLimitFromHeaders(header)
+
+			isLimited, resetAfter := GetGlobalRateLimitInfo()
+			if isLimited != tt.wantLimited {
+				t.Errorf("isLimited = %v, want %v", isLimited, tt.wantLimited)
+			}
+			if tt.wantLimited && (resetAfter.IsZero() || time.Now().After(resetAfter)) {
+				t.Errorf("expected reset time in the future, got %v", resetAfter)
+			}
+			if !tt.wantLimited && !resetAfter.IsZero() {
+				t.Errorf("expected zero reset time, got %v", resetAfter)
+			}
+		})
+	}
 }

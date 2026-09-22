@@ -1,241 +1,88 @@
-# Test Coverage Analysis & Improvement Plan
+# Test Coverage Analysis
 
-## Current Status
+Snapshot: **v0.16.1 (2026-09-19)**, measured with `go test ./... -cover`.
+Overall statement coverage is **40.7%**. Coverage is reported in CI but **not
+enforced** (no minimum threshold); `go test ./...` failing is the only gate.
 
-### Controllers WITH Tests (4/13)
-| Controller | Coverage | Tests File | Notes |
-|------------|----------|-----------|-------|
-| channel | 49.3% | ✅ channel_test.go | Moderate - Observe/Create/Delete tested |
-| guild | 67.8% | ✅ guild_test.go | Best coverage - type assertions, isUpToDate |
-| role | 47.2% | ✅ role_test.go | Basic - Observe/Create/Update/Delete |
-| deduplication | 60.5% | ✅ deduplication_test.go | Good - complex workflow tested |
+## Coverage by package
 
-### Controllers WITHOUT Tests (9/13)
-| Controller | Coverage | Status |
-|------------|----------|--------|
-| application | 0.0% | ❌ No tests |
-| integration | 0.0% | ❌ No tests |
-| invite | 0.0% | ❌ No tests |
-| member | 0.0% | ❌ No tests |
-| user | 0.0% | ❌ No tests |
-| webhook | 0.0% | ❌ No tests |
-| garbagecollection | 0.0% | ❌ No tests |
-| providerconfig | 0.0% | ❌ No tests |
-| (root controller) | 0.0% | ❌ No tests |
+### Strong (>= 70%)
 
-## Test Coverage by Feature
+| Package | Coverage |
+|---------|----------|
+| `internal/metrics` | 100.0% |
+| `internal/resilience` | 96.1% |
+| `internal/controller/guild` | 78.4% |
+| `internal/health` | 73.9% |
+| `internal/controller/invite` | 71.7% |
+| `internal/controller/webhook` | 70.3% |
 
-### ✅ NEWLY TESTED (This Session)
+### Moderate (40% – 69%)
 
-#### `internal/controller/cache.go`
-- **TestShouldSkipObserve** - 6 test cases
-  - nil timestamp (first observe)
-  - recently synced (within 5min)
-  - just synced (current time)
-  - expired cache (6min old)
-  - at cache boundary (exactly 5min)
-  - near boundary (4:59)
-  - **Verdict:** Full coverage with edge cases
+| Package | Coverage |
+|---------|----------|
+| `internal/controller/role` | 67.1% |
+| `internal/controller/application` | 62.5% |
+| `internal/controller/deduplication` | 60.5% |
+| `internal/controller/channel` | 60.0% |
+| `internal/controller/user` | 58.2% |
+| `internal/services` | 55.4% |
+| `apis/role/v1beta1` | 53.5% |
+| `internal/controller/integration` | 52.5% |
+| `apis/guild/v1beta1` | 48.0% |
+| `apis/channel/v1beta1` | 45.6% |
+| `internal/clients` | 43.4% |
 
-- **TestUpdateSyncTime** - 3 test cases
-  - nil pointer update
-  - old timestamp replacement
-  - recent timestamp update
-  - **Verdict:** Full coverage
+### None / very low (< 40%)
 
-- **TestCacheIntegration** - Full lifecycle
-  - Observe → Update → Skip workflow
-  - **Verdict:** Integration verified
+| Package | Coverage | Notes |
+|---------|----------|-------|
+| `internal/controller/member` | 7.6% | Controller has tests but most branches unexercised |
+| `internal/controller` (root) | 5.4% | Cache/permission helpers only |
+| `internal/controller/garbagecollection` | 0.0% | No tests |
+| `internal/controller/providerconfig` | 0.0% | No tests |
+| `internal/tracing` | 0.0% | No tests |
+| `cmd/provider` | 0.0% | No tests (main wiring) |
+| `apis/{application,deduplication,integration,invite,member,user,webhook}/v1beta1` | 0.0% | No per-type tests |
+| `apis/v1beta1`, `apis` (root) | 0.0% | No tests |
 
-- **Benchmarks**
-  - BenchmarkShouldSkipObserve
-  - BenchmarkUpdateSyncTime
-  - **Verdict:** Performance characterized
+## What the client tests cover
 
-#### Permission Error Handling
-- **TestPermissionErrorDetection** - 5 test cases
-  - 403 Forbidden detection
-  - 401 Unauthorized detection
-  - Status code differentiation
-  - Nil error safety
-  - **Verdict:** Detection robust
+`internal/clients` (43.4%) exercises request construction, error mapping, the
+429 retry/backoff path, the global rate-limit window, `Retry-After` parsing, and:
 
-- **TestPermissionErrorConditions** - 2 test cases
-  - Condition message appropriateness
-  - Status field correctness
-  - **Verdict:** Condition setting validated
+- `TestCheckRedirectDoesNotForwardAuthorizationCrossHost` — cross-host redirects
+  return `http.ErrUseLastResponse` so the bot token is not forwarded.
+- `TestGlobalRateLimitNotUpdatedOnErrorResponse` — the global pause is not
+  engaged from error (`>= 400`) responses.
+- `TestUpdateGlobalRateLimitFromHeaders` — only an explicit
+  `X-RateLimit-Global: true` with a parseable reset > 100ms engages the pause;
+  per-route `X-RateLimit-Reset-After` alone is ignored.
 
-- **TestPermissionErrorDoesNotRetry** - 4 test cases
-  - Observe, Create, Update, Delete
-  - Confirms nil return on permission errors
-  - **Verdict:** Non-retry behavior documented
+## Behavior note (permission errors)
 
-### ⚠️  PARTIAL COVERAGE (Existing Tests)
+As of v0.16.1, `Delete` returns an **error** on a Discord 403/401 so the
+resource stays in `Deleting` and retries instead of being reported deleted while
+the Discord object is orphaned. Tests for this live in each controller's
+`*_test.go` (`TestDeletePermissionDenied`) for guild, webhook, channel, role,
+integration, invite, and member. Older revisions of this document stated the
+opposite (nil return); that is no longer accurate.
 
-**channel_test.go**
-- ✅ Type assertion checks
-- ✅ Basic Observe logic
-- ❌ Permission error scenarios
-- ❌ Cache integration
-- ❌ Update/position logic
-- ❌ Permission overwrite handling
+## Priorities
 
-**guild_test.go**
-- ✅ Type assertions
-- ✅ isUpToDate comparisons
-- ❌ Permission error scenarios
-- ❌ Cache logic
-- ❌ All create/update fields
+1. **`internal/controller/member`** — raise from 7.6% toward the other
+   controllers (~60%+).
+2. **`internal/clients`** — cover the create/update/delete request builders and
+   the remaining error branches.
+3. **Untested controllers** — `garbagecollection`, `providerconfig`.
+4. **API type packages** — add `types_test.go` (deepcopy/JSON) for application,
+   integration, invite, member, user, webhook like the channel/guild/role ones.
+5. **Enforce coverage in CI** — optional minimum threshold so coverage does not
+   regress.
 
-**role_test.go**
-- ✅ Observe/Create/Update/Delete
-- ❌ Permission error scenarios
-- ❌ Cache logic
+## CI integration
 
-**deduplication_test.go**
-- ✅ Complex deduplication workflow
-- ✅ Guild analysis
-- ❌ Permission handling (service-level)
-
-## Coverage Gaps by Priority
-
-### 🔴 CRITICAL (Breaking Changes)
-- [ ] Permission error handling in channels, guild, role (recently added)
-- [ ] Cache helper integration with existing controllers (foundation laid)
-- [ ] Clients package: Discord API request testing
-
-### 🟠 HIGH (Correctness)
-- [ ] 9 controllers with 0% test coverage
-- [ ] Permission handling in 6 untested controllers
-- [ ] Cache scenarios in all Observe methods
-
-### 🟡 MEDIUM (Maintenance)
-- [ ] Error recovery paths in tested controllers
-- [ ] Rate-limiting behavior
-- [ ] Edge cases in permission overwrites
-
-### 🟢 LOW (Polish)
-- [ ] Benchmarks for non-cache paths
-- [ ] Integration tests (multi-controller scenarios)
-
-## Recommended Testing Strategy
-
-### Phase 1: Foundation ✅ COMPLETE
-- [x] Cache helper (`cache_test.go`) - 11 tests, 100% coverage
-- [x] Permission error detection (`permission_test.go`) - 11 tests, 100% coverage
-
-### Phase 2: Permission Error Propagation (NEXT)
-Add tests to existing test files:
-- [ ] `channel_test.go` → 403/401 scenarios in Observe/Create/Update/Delete
-- [ ] `guild_test.go` → 403/401 scenarios
-- [ ] `role_test.go` → 403/401 scenarios
-- [ ] `deduplication_test.go` → service-level permission handling
-- **Expected:** 20-30 new tests
-
-### Phase 3: Cache Integration (AFTER)
-Add to tested controllers:
-- [ ] `channel_test.go` → ShouldSkipObserve integration, LastSyncTime updates
-- [ ] `guild_test.go` → Cache boundary cases
-- [ ] `role_test.go` → Cache with concurrent updates
-- **Expected:** 15-20 new tests
-
-### Phase 4: Coverage for Untested Controllers (LATER)
-Create `*_test.go` files for:
-- [ ] `application_test.go` - Target 50%+ coverage
-- [ ] `webhook_test.go` - Target 50%+ coverage
-- [ ] `member_test.go` - Target 50%+ coverage
-- [ ] `user_test.go` - Target 50%+ coverage
-- [ ] `invite_test.go` - Target 50%+ coverage
-- [ ] `integration_test.go` - Target 50%+ coverage
-- **Expected:** 100-150 new tests
-
-## Testing Best Practices (This Codebase)
-
-### Pattern 1: Error Scenario Testing
-```go
-// Test that permission errors set correct conditions
-func TestObservePermissionDenied(t *testing.T) {
-  // Mock Discord client to return 403 error
-  // Call Observe() 
-  // Verify: cr.Status has Unavailable condition
-  // Verify: error returned is nil (no retry)
-}
-```
-
-### Pattern 2: Cache Lifecycle Testing
-```go
-// Test full lifecycle: never-synced → recent → expired
-func TestObserveCacheBehavior(t *testing.T) {
-  // First observe: no cache, make API call
-  // Verify API called, sync time set
-  // Second observe: skip API call
-  // Verify API not called, returns cached state
-  // Wait 6min: expired cache, make API call again
-}
-```
-
-### Pattern 3: Field Update Testing
-```go
-// Test that Observe correctly updates all status fields
-func TestObserveUpdateStatus(t *testing.T) {
-  // Create resource with partial status
-  // Call Observe()
-  // Verify all fields updated: ID, Name, Position, etc.
-  // Verify LastSyncTime set
-}
-```
-
-## CI/CD Integration
-
-### Current
-- ✅ `go test ./...` runs all tests
-- ✅ Coverage reported but not enforced
-- ❌ No coverage gate (minimum % required)
-
-### Recommended
-```yaml
-# Add to CI
-- name: Test Coverage
-  run: |
-    go test ./... -coverprofile=coverage.out
-    go tool cover -func=coverage.out | grep total
-    # Fail if coverage < 50%
-    COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print int($3)}')
-    if [ "$COVERAGE" -lt 50 ]; then
-      echo "Coverage $COVERAGE% below threshold of 50%"
-      exit 1
-    fi
-```
-
-## Maintenance Notes
-
-### Test Stability
-- Cache tests use time-based comparisons (may flake if timing is tight)
-  - **Mitigation:** Use 1-second deltas for boundaries
-- Permission tests mock error strings (fragile if message format changes)
-  - **Mitigation:** Use error type assertions (if we refactor to custom errors)
-
-### Future Improvements
-1. **Custom Error Types** - Replace string matching with type assertions
-   ```go
-   type PermissionError struct { StatusCode int }
-   type UnauthorizedError struct { Reason string }
-   ```
-2. **Mock Interfaces** - Extract DiscordClient to interface for better testing
-3. **Table-Driven Tests** - Systematize Observe/Create/Update/Delete patterns
-
-## Reporting
-
-To check current coverage:
-```bash
-go test ./... -cover
-go tool cover -html=coverage.out  # Visual report
-```
-
-Target for next release: **50% overall coverage** (from current ~26%)
-- Phase 1: ✅ Done (cache + permission helpers)
-- Phase 2: +15-20% (permission handling in existing tests)
-- Phase 3: +10-15% (cache integration)
-- Phase 4: +5-10% (untested controllers)
-
-**Estimated effort:** 2-3 days for full Phase 1-3 completion
+- `go test ./...` runs on every PR (`unit-tests` job) and fails on test errors.
+- `coverage.out` is uploaded to Codecov.
+- There is **no** coverage gate today; adding one would require a threshold in
+  the workflow or a Codecov project/patch target.
