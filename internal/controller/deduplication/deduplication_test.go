@@ -23,6 +23,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
 	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
@@ -444,7 +445,7 @@ func TestReconcile_PersistsStatus(t *testing.T) {
 
 	r := &ProviderConfigReconciler{
 		Client:   fakeClient,
-		Recorder: events.NewFakeRecorder(10),
+		Recorder: event.NewAPIRecorder(events.NewFakeRecorder(10)),
 	}
 
 	_, err := r.Reconcile(context.Background(), ctrl.Request{NamespacedName: types.NamespacedName{Name: "test-pc"}})
