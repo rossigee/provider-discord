@@ -23,11 +23,11 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
 	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	"github.com/rossigee/provider-discord/internal/services"
-	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
