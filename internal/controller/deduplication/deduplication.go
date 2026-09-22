@@ -301,12 +301,8 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		result.Summary.TotalGuildsAnalyzed,
 		result.Summary.TotalDuplicateChannelsFound,
 		result.Summary.ChannelsDeleted)
-	eventType := corev1.EventTypeNormal
 	if result.HasError {
-		eventType = corev1.EventTypeWarning
 		eventMsg += fmt.Sprintf(". Error: %s", result.Error)
-	}
-	if result.HasError {
 		r.Recorder.Event(pc, event.Warning("DeduplicationCompleted", errors.New(eventMsg)))
 	} else {
 		r.Recorder.Event(pc, event.Normal("DeduplicationCompleted", eventMsg))
