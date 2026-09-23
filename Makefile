@@ -104,3 +104,13 @@ run: go.build
 xpkg.build: $(UP)
 
 .PHONY: submodules run
+# === Standardization follow-up: ghcr xpkg-only publish + img neutralization ===
+xpkg.release.publish.ghcr.io/rossigee.provider-discord:
+	@$(foreach p,$(XPKG_LINUX_PLATFORMS),$(MAKE) xpkg.build.provider-discord PLATFORM=$(p) || exit 1;)
+	@$(CROSSPLANE_CLI) xpkg push \
+		$(foreach p,$(XPKG_LINUX_PLATFORMS),--package-files $(XPKG_OUTPUT_DIR)/$(p)/provider-discord-$(VERSION).xpkg ) \
+		ghcr.io/rossigee/provider-discord:$(VERSION)
+	@$(OK) Pushed package ghcr.io/rossigee/provider-discord:$(VERSION)
+
+XPKG_REG_ORGS ?= ghcr.io/rossigee
+img.release.publish: ; @echo "img.release neutralized for xpkg-only pattern"
