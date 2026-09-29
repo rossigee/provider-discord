@@ -230,6 +230,65 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			mockSetup: func(m *MockWebhookClient) {
+				m.GetChannelWebhooksFunc = func(ctx context.Context, channelID string) ([]discordclient.Webhook, error) {
+					return []discordclient.Webhook{}, nil
+				}
+				m.CreateWebhookFunc = func(ctx context.Context, channelID string, req *discordclient.CreateWebhookRequest) (*discordclient.Webhook, error) {
+					return &discordclient.Webhook{
+						ID:        "newwebhook123",
+						ChannelID: channelID,
+						Name:      req.Name,
+					}, nil
+				}
+			},
+			expectError: false,
+		},
+		{
+			name: "adopt existing webhook instead of creating duplicate",
+			webhook: &webhookv1beta1.Webhook{
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec: webhookv1beta1.WebhookSpec{
+					ForProvider: webhookv1beta1.WebhookParameters{
+						ChannelID: "123456",
+						Name:      "existing-webhook",
+					},
+				},
+			},
+			mockSetup: func(m *MockWebhookClient) {
+				m.GetChannelWebhooksFunc = func(ctx context.Context, channelID string) ([]discordclient.Webhook, error) {
+					return []discordclient.Webhook{
+						{
+							ID:        "existing123",
+							ChannelID: channelID,
+							Name:      "existing-webhook",
+							Token:     "token123",
+							URL:       "https://discord.com/api/webhooks/existing123/token123",
+						},
+					}, nil
+				}
+				// CreateWebhookFunc should NOT be called
+				m.CreateWebhookFunc = func(ctx context.Context, channelID string, req *discordclient.CreateWebhookRequest) (*discordclient.Webhook, error) {
+					t.Fatal("CreateWebhook should not be called when existing webhook found")
+					return nil, nil
+				}
+			},
+			expectError: false,
+		},
+		{
+			name: "create webhook when GetChannelWebhooks fails",
+			webhook: &webhookv1beta1.Webhook{
+				ObjectMeta: metav1.ObjectMeta{},
+				Spec: webhookv1beta1.WebhookSpec{
+					ForProvider: webhookv1beta1.WebhookParameters{
+						ChannelID: "123456",
+						Name:      "my-webhook",
+					},
+				},
+			},
+			mockSetup: func(m *MockWebhookClient) {
+				m.GetChannelWebhooksFunc = func(ctx context.Context, channelID string) ([]discordclient.Webhook, error) {
+					return nil, errors.New("API error")
+				}
 				m.CreateWebhookFunc = func(ctx context.Context, channelID string, req *discordclient.CreateWebhookRequest) (*discordclient.Webhook, error) {
 					return &discordclient.Webhook{
 						ID:        "newwebhook123",
@@ -251,6 +310,9 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			mockSetup: func(m *MockWebhookClient) {
+				m.GetChannelWebhooksFunc = func(ctx context.Context, channelID string) ([]discordclient.Webhook, error) {
+					return []discordclient.Webhook{}, nil
+				}
 				m.CreateWebhookFunc = func(ctx context.Context, channelID string, req *discordclient.CreateWebhookRequest) (*discordclient.Webhook, error) {
 					return nil, errors.New("Discord API error: 403")
 				}
@@ -268,6 +330,9 @@ func TestCreate(t *testing.T) {
 				},
 			},
 			mockSetup: func(m *MockWebhookClient) {
+				m.GetChannelWebhooksFunc = func(ctx context.Context, channelID string) ([]discordclient.Webhook, error) {
+					return []discordclient.Webhook{}, nil
+				}
 				m.CreateWebhookFunc = func(ctx context.Context, channelID string, req *discordclient.CreateWebhookRequest) (*discordclient.Webhook, error) {
 					return nil, errors.New("Discord API error: 500")
 				}
