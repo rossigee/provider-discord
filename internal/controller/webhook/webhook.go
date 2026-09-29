@@ -215,36 +215,37 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 	// webhook name.
 	existingWebhooks, err := c.service.GetChannelWebhooks(ctx, cr.Spec.ForProvider.ChannelID)
 	if err != nil {
-		// Non-fatal: if we can't list webhooks, continue to create. This is better
-		// than orphaning resources if the API is temporarily unavailable.
-		log.V(1).Info("Failed to check for existing webhooks; proceeding with creation", "channelID", cr.Spec.ForProvider.ChannelID, "error", err)
-	} else {
-		// Search for a webhook with the same name in the channel
-		for _, existing := range existingWebhooks {
-			if existing.Name == cr.Spec.ForProvider.Name {
-				// Found an existing webhook with the same name; adopt it instead of creating
-				log.Info("Adopting existing webhook instead of creating duplicate",
-					"channelID", cr.Spec.ForProvider.ChannelID,
-					"webhookName", cr.Spec.ForProvider.Name,
-					"webhookID", existing.ID)
+		// Fail closed: if we can't list webhooks, don't create blindly. This prevents
+		// the duplication loop where stale external-name causes repeated creates.
+		log.Error(err, "Failed to check for existing webhooks; cannot proceed with creation", "channelID", cr.Spec.ForProvider.ChannelID)
+		return managed.ExternalCreation{}, errors.Wrap(err, "cannot list existing webhooks before creation")
+	}
 
-				meta.SetExternalName(cr, existing.ID)
+	// Search for a webhook with the same name in the channel
+	for _, existing := range existingWebhooks {
+		if existing.Name == cr.Spec.ForProvider.Name {
+			// Found an existing webhook with the same name; adopt it instead of creating
+			log.Info("Adopting existing webhook instead of creating duplicate",
+				"channelID", cr.Spec.ForProvider.ChannelID,
+				"webhookName", cr.Spec.ForProvider.Name,
+				"webhookID", existing.ID)
 
-				// Store sensitive fields in connection secret
-				connectionDetails := managed.ConnectionDetails{}
-				if existing.Token != "" {
-					connectionDetails["token"] = []byte(existing.Token)
-				}
-				if existing.URL != "" {
-					connectionDetails["url"] = []byte(existing.URL)
-				}
+			meta.SetExternalName(cr, existing.ID)
 
-				cr.SetConditions(xpv1.Available())
-
-				return managed.ExternalCreation{
-					ConnectionDetails: connectionDetails,
-				}, nil
+			// Store sensitive fields in connection secret
+			connectionDetails := managed.ConnectionDetails{}
+			if existing.Token != "" {
+				connectionDetails["token"] = []byte(existing.Token)
 			}
+			if existing.URL != "" {
+				connectionDetails["url"] = []byte(existing.URL)
+			}
+
+			cr.SetConditions(xpv1.Available())
+
+			return managed.ExternalCreation{
+				ConnectionDetails: connectionDetails,
+			}, nil
 		}
 	}
 

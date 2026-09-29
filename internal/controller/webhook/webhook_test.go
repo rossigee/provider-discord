@@ -275,7 +275,7 @@ func TestCreate(t *testing.T) {
 			expectError: false,
 		},
 		{
-			name: "create webhook when GetChannelWebhooks fails",
+			name: "fail closed when GetChannelWebhooks fails",
 			webhook: &webhookv1beta1.Webhook{
 				ObjectMeta: metav1.ObjectMeta{},
 				Spec: webhookv1beta1.WebhookSpec{
@@ -287,17 +287,15 @@ func TestCreate(t *testing.T) {
 			},
 			mockSetup: func(m *MockWebhookClient) {
 				m.GetChannelWebhooksFunc = func(ctx context.Context, channelID string) ([]discordclient.Webhook, error) {
-					return nil, errors.New("API error")
+					return nil, errors.New("Discord API error: 429")
 				}
+				// CreateWebhookFunc should NOT be called
 				m.CreateWebhookFunc = func(ctx context.Context, channelID string, req *discordclient.CreateWebhookRequest) (*discordclient.Webhook, error) {
-					return &discordclient.Webhook{
-						ID:        "newwebhook123",
-						ChannelID: channelID,
-						Name:      req.Name,
-					}, nil
+					t.Fatal("CreateWebhook should not be called when GetChannelWebhooks fails")
+					return nil, nil
 				}
 			},
-			expectError: false,
+			expectError: true,
 		},
 		{
 			name: "create fails with permission denied",
