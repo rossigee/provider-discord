@@ -181,6 +181,10 @@ spec:
                       type: string
                     type: array
                 type: object
+                x-kubernetes-validations:
+                - message: pollIntervalSeconds must be between 60 and 3600
+                  rule: self.pollIntervalSeconds == null || (self.pollIntervalSeconds
+                    >= 60 && self.pollIntervalSeconds <= 3600)
             required:
             - credentials
             type: object
@@ -233,6 +237,22 @@ spec:
                 x-kubernetes-list-map-keys:
                 - type
                 x-kubernetes-list-type: map
+              rateLimitStatus:
+                description: RateLimitStatus contains current rate limit information.
+                properties:
+                  rateLimited:
+                    description: RateLimited indicates if the provider is currently
+                      rate-limited.
+                    type: boolean
+                  reason:
+                    description: Reason describes the cause of the rate limit.
+                    type: string
+                  resetAfter:
+                    description: ResetAfter is the time when the rate limit will be
+                      reset.
+                    format: date-time
+                    type: string
+                type: object
               users:
                 description: Users of this provider configuration.
                 format: int64
