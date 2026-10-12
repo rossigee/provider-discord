@@ -183,8 +183,8 @@ spec:
                 type: object
                 x-kubernetes-validations:
                 - message: pollIntervalSeconds must be between 60 and 3600
-                  rule: self.pollIntervalSeconds == null || (self.pollIntervalSeconds
-                    >= 60 && self.pollIntervalSeconds <= 3600)
+                  rule: '!has(self.pollIntervalSeconds) || (self.pollIntervalSeconds
+                    >= 60 && self.pollIntervalSeconds <= 3600)'
             required:
             - credentials
             type: object
