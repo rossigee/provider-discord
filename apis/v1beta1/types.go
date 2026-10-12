@@ -140,7 +140,7 @@ const (
 )
 
 // GarbageCollectionSpec defines autonomous cleanup configuration.
-// +kubebuilder:validation:XValidation:rule="self.pollIntervalSeconds == null || (self.pollIntervalSeconds >= 60 && self.pollIntervalSeconds <= 3600)",message="pollIntervalSeconds must be between 60 and 3600"
+// +kubebuilder:validation:XValidation:rule="!has(self.pollIntervalSeconds) || (self.pollIntervalSeconds >= 60 && self.pollIntervalSeconds <= 3600)",message="pollIntervalSeconds must be between 60 and 3600"
 type GarbageCollectionSpec struct {
 	// Enabled indicates if garbage collection is active.
 	// When enabled, the provider automatically prevents and cleans up duplicates.
