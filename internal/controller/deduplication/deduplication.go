@@ -179,18 +179,10 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		log.Error(err, "failed to persist initial Deduplication status")
 	}
 
-	// Step 3: Stamp the idempotency annotation BEFORE the destructive operation so that
-	// a mid-run restart does not trigger a second deletion pass.
-	// Trade-off: if the operation is interrupted, a manual annotation reset is needed to retry.
-	patchData := client.MergeFrom(pc.DeepCopy())
-	if pc.Annotations == nil {
-		pc.Annotations = make(map[string]string)
-	}
-	pc.Annotations[lastProcessedAnnotation] = mode
-	if err := r.Patch(ctx, pc, patchData); err != nil {
-		log.Error(err, "failed to set idempotency annotation")
-		return ctrl.Result{}, err
-	}
+	// Step 3: Stamp the idempotency annotation AFTER a successful analysis (not before),
+	// so that if the analysis fails, the next reconcile can retry without manual intervention.
+	// This prevents getting stuck when Discord is temporarily unavailable (429 rate limits, etc).
+	// We'll stamp it after AnalyzeAndDeduplicate returns successfully.
 
 	// Step 4: Run the deduplication (potentially destructive in "action" mode)
 	httpClient := &http.Client{Timeout: 30 * time.Second}
@@ -311,6 +303,17 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	log.Info("Deduplication completed", "mode", mode, "guilds", result.Summary.TotalGuildsAnalyzed,
 		"duplicatesFound", result.Summary.TotalDuplicateChannelsFound,
 		"channelsDeleted", result.Summary.ChannelsDeleted)
+
+	// Step 6: Stamp the idempotency annotation AFTER successful completion so we don't retry.
+	patchData := client.MergeFrom(pc.DeepCopy())
+	if pc.Annotations == nil {
+		pc.Annotations = make(map[string]string)
+	}
+	pc.Annotations[lastProcessedAnnotation] = mode
+	if err := r.Patch(ctx, pc, patchData); err != nil {
+		// Non-fatal: operation succeeded but we can't stamp idempotency; next reconcile may re-run.
+		log.Error(err, "failed to set idempotency annotation after successful deduplication")
+	}
 
 	return ctrl.Result{}, nil
 }

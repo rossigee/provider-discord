@@ -196,3 +196,5 @@ spec:
           - "*"
   controller:
     image: ghcr.io/rossigee/provider-discord:v0.16.1
+  crossplane:
+    version: ">=v2.5.0"
