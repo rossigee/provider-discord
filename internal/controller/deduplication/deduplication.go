@@ -23,13 +23,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/crossplane/crossplane-runtime/v2/pkg/event"
+	"github.com/pkg/errors"
 	deduplicationv1beta1 "github.com/rossigee/provider-discord/apis/deduplication/v1beta1"
 	discordv1beta1 "github.com/rossigee/provider-discord/apis/v1beta1"
 	"github.com/rossigee/provider-discord/internal/services"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -50,14 +51,14 @@ const (
 // ProviderConfigReconciler reconciles ProviderConfig objects and handles deduplication.
 type ProviderConfigReconciler struct {
 	client.Client
-	Recorder events.EventRecorder
+	Recorder event.Recorder
 }
 
 // Setup adds the reconciler to the manager.
 func Setup(mgr ctrl.Manager) error {
 	r := &ProviderConfigReconciler{
 		Client:   mgr.GetClient(),
-		Recorder: mgr.GetEventRecorder("discord-provider-deduplication"),
+		Recorder: event.NewAPIRecorder(mgr.GetEventRecorder("discord-provider-deduplication")),
 	}
 
 	// Predicate to only watch ProviderConfigs with the deduplication annotation
@@ -126,7 +127,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	botToken, baseURL, err := r.extractCredentials(ctx, pc)
 	if err != nil {
 		log.Error(err, "failed to extract credentials")
-		r.Recorder.Eventf(pc, nil, corev1.EventTypeWarning, "DeduplicationFailed", "credentials", "Failed to extract credentials: %v", err)
+		r.Recorder.Event(pc, event.Warning("DeduplicationFailed", errors.Wrap(err, "Failed to extract credentials")))
 		return ctrl.Result{}, err
 	}
 
@@ -178,18 +179,10 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		log.Error(err, "failed to persist initial Deduplication status")
 	}
 
-	// Step 3: Stamp the idempotency annotation BEFORE the destructive operation so that
-	// a mid-run restart does not trigger a second deletion pass.
-	// Trade-off: if the operation is interrupted, a manual annotation reset is needed to retry.
-	patchData := client.MergeFrom(pc.DeepCopy())
-	if pc.Annotations == nil {
-		pc.Annotations = make(map[string]string)
-	}
-	pc.Annotations[lastProcessedAnnotation] = mode
-	if err := r.Patch(ctx, pc, patchData); err != nil {
-		log.Error(err, "failed to set idempotency annotation")
-		return ctrl.Result{}, err
-	}
+	// Step 3: Stamp the idempotency annotation AFTER a successful analysis (not before),
+	// so that if the analysis fails, the next reconcile can retry without manual intervention.
+	// This prevents getting stuck when Discord is temporarily unavailable (429 rate limits, etc).
+	// We'll stamp it after AnalyzeAndDeduplicate returns successfully.
 
 	// Step 4: Run the deduplication (potentially destructive in "action" mode)
 	httpClient := &http.Client{Timeout: 30 * time.Second}
@@ -198,7 +191,7 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	result, err := dedupService.AnalyzeAndDeduplicate(ctx, mode, spec.TargetGuilds)
 	if err != nil {
 		log.Error(err, "deduplication analysis failed")
-		r.Recorder.Eventf(pc, nil, corev1.EventTypeWarning, "DeduplicationFailed", "analysis", "Analysis failed: %v", err)
+		r.Recorder.Event(pc, event.Warning("DeduplicationFailed", errors.Wrap(err, "Analysis failed")))
 		// Best-effort: record failure directly on the status subresource so operators can
 		// see what happened (no spec change needed here, so no CreateOrUpdate/plain-Update
 		// step to clobber it - see the comment on the Step 2 status write above).
@@ -300,16 +293,27 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		result.Summary.TotalGuildsAnalyzed,
 		result.Summary.TotalDuplicateChannelsFound,
 		result.Summary.ChannelsDeleted)
-	eventType := corev1.EventTypeNormal
 	if result.HasError {
-		eventType = corev1.EventTypeWarning
 		eventMsg += fmt.Sprintf(". Error: %s", result.Error)
+		r.Recorder.Event(pc, event.Warning("DeduplicationCompleted", errors.New(eventMsg)))
+	} else {
+		r.Recorder.Event(pc, event.Normal("DeduplicationCompleted", eventMsg))
 	}
-	r.Recorder.Eventf(pc, nil, eventType, "DeduplicationCompleted", "summary", "%s", eventMsg)
 
 	log.Info("Deduplication completed", "mode", mode, "guilds", result.Summary.TotalGuildsAnalyzed,
 		"duplicatesFound", result.Summary.TotalDuplicateChannelsFound,
 		"channelsDeleted", result.Summary.ChannelsDeleted)
+
+	// Step 6: Stamp the idempotency annotation AFTER successful completion so we don't retry.
+	patchData := client.MergeFrom(pc.DeepCopy())
+	if pc.Annotations == nil {
+		pc.Annotations = make(map[string]string)
+	}
+	pc.Annotations[lastProcessedAnnotation] = mode
+	if err := r.Patch(ctx, pc, patchData); err != nil {
+		// Non-fatal: operation succeeded but we can't stamp idempotency; next reconcile may re-run.
+		log.Error(err, "failed to set idempotency annotation after successful deduplication")
+	}
 
 	return ctrl.Result{}, nil
 }

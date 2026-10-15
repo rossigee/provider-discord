@@ -459,9 +459,9 @@ func (s *DeduplicationService) analyzeGuild(ctx context.Context, guild Guild, mo
 	return result
 }
 
-// analyzeGuildWebhooks analyzes a single guild's webhooks for duplicates, mirroring
-// analyzeGuild's logic (group by name, keep lowest snowflake ID, delete the rest in
-// action mode), and writes its findings into the shared GuildResult.
+// analyzeGuildWebhooks analyzes a single guild's webhooks for duplicates.
+// Groups by (channelID, name), keeps webhooks referenced by Webhook CRs (via status.atProvider.id),
+// falls back to lowest snowflake ID if no CR references any in the group, and deletes the rest in action mode.
 func (s *DeduplicationService) analyzeGuildWebhooks(ctx context.Context, guild Guild, mode string, deleteOrphanedResources bool, result *GuildResult) {
 	webhooks, err := s.getGuildWebhooks(ctx, guild.ID)
 	if err != nil {
@@ -471,34 +471,63 @@ func (s *DeduplicationService) analyzeGuildWebhooks(ctx context.Context, guild G
 
 	result.TotalWebhooks = len(webhooks)
 
-	nameGroups := make(map[string][]Webhook)
+	// Group by (channelID, name) to avoid deleting legitimately same-named webhooks in different channels
+	type webhookKey struct {
+		channelID string
+		name      string
+	}
+	nameGroups := make(map[webhookKey][]Webhook)
 	for _, wh := range webhooks {
-		nameGroups[wh.Name] = append(nameGroups[wh.Name], wh)
+		key := webhookKey{channelID: wh.ChannelID, name: wh.Name}
+		nameGroups[key] = append(nameGroups[key], wh)
 	}
 
-	for name, group := range nameGroups {
+	// Load all Webhook CRs to know which Discord IDs are referenced
+	webhookCRs := &webhookv1beta1.WebhookList{}
+	referencedIDs := make(map[string]bool)
+	if s.kubeClient != nil {
+		if err := s.kubeClient.List(ctx, webhookCRs); err == nil {
+			for i := range webhookCRs.Items {
+				cr := &webhookCRs.Items[i]
+				if cr.Status.AtProvider.ID != "" {
+					referencedIDs[cr.Status.AtProvider.ID] = true
+				}
+			}
+		}
+	}
+
+	for key, group := range nameGroups {
 		if len(group) <= 1 {
 			continue
 		}
 
-		// Keep the webhook with the lowest (earliest-created) snowflake ID - see
-		// olderSnowflake's doc comment for why Position-like fields must not be used.
-		keepIndex := 0
+		// Prefer to keep a webhook that a Webhook CR references
+		keepIndex := -1
 		for i, wh := range group {
-			if olderSnowflake(wh.ID, group[keepIndex].ID) {
+			if referencedIDs[wh.ID] {
 				keepIndex = i
+				break
+			}
+		}
+		// Fall back to lowest (earliest-created) snowflake ID - see olderSnowflake's doc comment
+		if keepIndex < 0 {
+			keepIndex = 0
+			for i, wh := range group {
+				if olderSnowflake(wh.ID, group[keepIndex].ID) {
+					keepIndex = i
+				}
 			}
 		}
 
 		result.WebhookDuplicateGroups = append(result.WebhookDuplicateGroups, WebhookDuplicateGroup{
-			Name:      name,
+			Name:      key.name,
 			Webhooks:  group,
 			KeepIndex: keepIndex,
 		})
 
 		if mode != "action" {
 			s.logger.V(4).Info("Skipping webhook deletion (not in action mode)",
-				"mode", mode, "guildID", guild.ID, "webhookName", name, "duplicateCount", len(group))
+				"mode", mode, "guildID", guild.ID, "channelID", key.channelID, "webhookName", key.name, "duplicateCount", len(group))
 			continue
 		}
 
@@ -506,7 +535,7 @@ func (s *DeduplicationService) analyzeGuildWebhooks(ctx context.Context, guild G
 		duplicatesToDelete := len(group) - 1
 
 		s.logger.Info("Attempting to delete duplicate webhooks",
-			"guildID", guild.ID, "webhookName", name, "countToDelete", duplicatesToDelete)
+			"guildID", guild.ID, "channelID", key.channelID, "webhookName", key.name, "countToDelete", duplicatesToDelete)
 
 		for i, wh := range group {
 			if i == keepIndex {
@@ -542,10 +571,10 @@ func (s *DeduplicationService) analyzeGuildWebhooks(ctx context.Context, guild G
 		}
 
 		if deletesMade < duplicatesToDelete {
-			result.Errors = append(result.Errors, fmt.Sprintf("partial deletion: %d/%d duplicates of webhook %q deleted", deletesMade, duplicatesToDelete, name))
+			result.Errors = append(result.Errors, fmt.Sprintf("partial deletion: %d/%d duplicates of webhook %q deleted", deletesMade, duplicatesToDelete, key.name))
 		} else if deletesMade > 0 {
 			s.logger.Info("Successfully deleted all duplicate webhooks",
-				"guildID", guild.ID, "webhookName", name, "deletedCount", deletesMade)
+				"guildID", guild.ID, "webhookName", key.name, "deletedCount", deletesMade)
 		}
 	}
 }
@@ -829,6 +858,21 @@ func (s *DeduplicationService) getGuildWebhooks(ctx context.Context, guildID str
 		return nil, err
 	}
 	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode == 429 {
+		retryAfter := discordDefaultRetryAfter
+		if ra := resp.Header.Get("Retry-After"); ra != "" {
+			if secs, parseErr := strconv.ParseFloat(ra, 64); parseErr == nil && secs > 0 {
+				retryAfter = time.Duration(secs * float64(time.Second))
+			}
+		}
+		select {
+		case <-time.After(retryAfter):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+		return nil, fmt.Errorf("discord API rate limited (429) fetching guild webhooks; waited %s — caller should retry", retryAfter)
+	}
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
