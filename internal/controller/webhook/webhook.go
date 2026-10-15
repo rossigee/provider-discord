@@ -207,6 +207,49 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	cr.SetConditions(xpv1.Creating())
 
+	log := ctrl.LoggerFrom(ctx)
+
+	// First, check if a webhook with the same name already exists in the channel
+	// to avoid creating duplicates. This handles the case where multiple Webhook
+	// resources or repeated reconciliations target the same channel with the same
+	// webhook name.
+	existingWebhooks, err := c.service.GetChannelWebhooks(ctx, cr.Spec.ForProvider.ChannelID)
+	if err != nil {
+		// Fail closed: if we can't list webhooks, don't create blindly. This prevents
+		// the duplication loop where stale external-name causes repeated creates.
+		log.Error(err, "Failed to check for existing webhooks; cannot proceed with creation", "channelID", cr.Spec.ForProvider.ChannelID)
+		return managed.ExternalCreation{}, errors.Wrap(err, "cannot list existing webhooks before creation")
+	}
+
+	// Search for a webhook with the same name in the channel
+	for _, existing := range existingWebhooks {
+		if existing.Name == cr.Spec.ForProvider.Name {
+			// Found an existing webhook with the same name; adopt it instead of creating
+			log.Info("Adopting existing webhook instead of creating duplicate",
+				"channelID", cr.Spec.ForProvider.ChannelID,
+				"webhookName", cr.Spec.ForProvider.Name,
+				"webhookID", existing.ID)
+
+			meta.SetExternalName(cr, existing.ID)
+
+			// Store sensitive fields in connection secret
+			connectionDetails := managed.ConnectionDetails{}
+			if existing.Token != "" {
+				connectionDetails["token"] = []byte(existing.Token)
+			}
+			if existing.URL != "" {
+				connectionDetails["url"] = []byte(existing.URL)
+			}
+
+			cr.SetConditions(xpv1.Available())
+
+			return managed.ExternalCreation{
+				ConnectionDetails: connectionDetails,
+			}, nil
+		}
+	}
+
+	// No existing webhook found; create a new one
 	req := &clients.CreateWebhookRequest{
 		Name:   cr.Spec.ForProvider.Name,
 		Avatar: cr.Spec.ForProvider.Avatar,
@@ -214,7 +257,6 @@ func (c *external) Create(ctx context.Context, mg resource.Managed) (managed.Ext
 
 	webhook, err := c.service.CreateWebhook(ctx, cr.Spec.ForProvider.ChannelID, req)
 	if err != nil {
-		log := ctrl.LoggerFrom(ctx)
 		if isDiscordPermissionDenied(err) {
 			cr.SetConditions(xpv1.Unavailable().WithMessage("missing permissions to create webhook"))
 			log.Error(err, "Permission denied: bot lacks permissions to create webhook")

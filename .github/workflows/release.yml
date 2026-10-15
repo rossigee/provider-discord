@@ -1,63 +1,47 @@
-# Custom Release Workflow
-# Publishes provider package to ghcr.io using simplified Docker + XPKG approach
-name: Release (Official Workflows)
+name: Release
 
 on:
   push:
     tags:
       - 'v*.*.*'
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version tag to release (e.g., v1.0.0)'
-        required: true
-        type: string
+
+env:
+  GO_VERSION: '1.27.2'
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-24.04
+    timeout-minutes: 120
     permissions:
       contents: write
       packages: write
-    outputs:
-      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
+          submodules: true
 
-      - name: Init build submodule
-        run: git submodule update --init --depth 1 build
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
 
-      - name: Authorize Release
-        run: |
-          set -e
-          ACTOR="${{ github.actor }}"
-          OWNER="${{ github.repository_owner }}"
-          if [[ "$ACTOR" != "$OWNER" ]]; then
-            echo "❌ Refusing release: actor '$ACTOR' is not repository owner '$OWNER'"
-            exit 1
-          fi
-          echo "✅ Release authorized for $ACTOR"
+      - name: Vendor Dependencies
+        run: go mod vendor
 
       - name: Determine Version
         id: version
+        shell: bash
         run: |
-          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
-            VERSION="${{ github.event.inputs.version }}"
-          else
-            VERSION="${GITHUB_REF#refs/tags/}"
-          fi
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Detected version: $VERSION"
-
-      - name: Validate Version
-        run: |
-          set -e
-          VERSION="${{ steps.version.outputs.version }}"
+          set -euo pipefail
+          VERSION="${GITHUB_REF#refs/tags/}"
           if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "❌ Invalid version '$VERSION'. Must match ^v[0-9]+.[0-9]+.[0-9]+$ (e.g. v1.2.3)."
+            echo "Invalid release version: $VERSION" >&2
             exit 1
           fi
           echo "✅ Valid version: $VERSION"
@@ -87,13 +71,19 @@ jobs:
         with:
           go-version: '1.27.1'
           cache: true
+          git fetch origin master
+          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/master)" ]]; then
+            echo "Release tag must point at the current origin/master commit" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
         with:
-          platforms: all
+          platforms: arm64
 
-      - name: Setup Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
       - name: Login to GitHub Container Registry
@@ -103,113 +93,79 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
-      - name: Build Artifacts
+      - name: Install Crossplane CLI
+        shell: bash
         run: |
-          set -e
-          export VERSION="${{ steps.version.outputs.version }}"
-          export BRANCH_NAME="master"
-          
-          # Build Go binaries, Docker image, and XPKG package
-          make build.all build.artifacts
+          set -euo pipefail
+          mkdir -p .cache/tools/linux_x86_64
+          curl -fsSLo .cache/tools/linux_x86_64/crossplane-cli-v2.5.0 \
+            --create-dirs https://cli.crossplane.io/stable/v2.5.0/bin/linux_amd64/crossplane
+          chmod +x .cache/tools/linux_x86_64/crossplane-cli-v2.5.0
 
-      - name: Push Docker Image
+      - name: Build and Publish Package
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          set -e
-          export VERSION="${{ steps.version.outputs.version }}"
-          export REGISTRY="ghcr.io/${{ github.repository_owner }}"
-
-          # Extract package name from repository
-          PACKAGE_NAME=$(basename ${{ github.repository }})
-
-          echo "Pushing multi-arch Docker image to ${REGISTRY}/${PACKAGE_NAME}:${VERSION}"
-
-          # Stage build context for the multi-arch Dockerfile.
-          # `make build.all build.artifacts` writes binaries to _output/bin/<os>_<arch>/provider,
-          # but cluster/images/<image>/Dockerfile expects bin/<os>_<arch>/provider at the
-          # build-context root. Mirror _output/bin into ./bin so docker buildx finds it.
-          rm -rf bin
-          cp -r _output/bin bin
-
-          # The Dockerfile also expects package.yaml at the build-context root.
-          # The authoritative metadata now lives at package/crossplane.yaml; stage it as
-          # package.yaml so the multi-arch image embeds the same metadata the xpkg uses.
-          cp package/crossplane.yaml package.yaml
-
-          # Push Docker image directly for multi-arch from repo root
-          docker buildx build \
-            --push \
-            --tag "${REGISTRY}/${PACKAGE_NAME}:${VERSION}" \
-            --tag "${REGISTRY}/${PACKAGE_NAME}:latest" \
-            --platform linux/amd64,linux/arm64 \
-            --file ./cluster/images/*/Dockerfile \
-            .
-
-      - name: Install Crossplane CLI and Publish XPKG
-        run: |
-          set -e
-          VERSION="${{ steps.version.outputs.version }}"
-          REGISTRY="ghcr.io/${{ github.repository_owner }}"
-          PACKAGE_NAME=$(basename ${{ github.repository }})
-          CONTROLLER_IMAGE="${REGISTRY}/${PACKAGE_NAME}:${VERSION}"
-          
-          echo "Installing Crossplane CLI and publishing XPKG"
-          go install github.com/crossplane/crossplane/cmd/crank@latest
-
-          # The xpkg produced by `make build.all build.artifacts` embeds the
-          # per-host build-registry image (BUILD_REGISTRY=build-<hash>/...),
-          # which is never pushed and cannot be pulled after the build. Rebuild
-          # the package embedding the real OCI image we published to ghcr.io so
-          # Crossplane can run the provider from the released package.
-          # `--embed-runtime-image` loads the image from the local Docker daemon,
-          # so pull the published image first.
-          docker pull "${CONTROLLER_IMAGE}"
-
-          $(go env GOPATH)/bin/crank xpkg build \
-            --embed-runtime-image "${CONTROLLER_IMAGE}" \
-            --package-root package \
-            --examples-root examples \
-            --package-file _output/xpkg/linux_amd64/${PACKAGE_NAME}-${VERSION}.xpkg
-
-          $(go env GOPATH)/bin/crank xpkg push \
-            --package-files _output/xpkg/linux_amd64/${PACKAGE_NAME}-${VERSION}.xpkg \
-            ${REGISTRY}/${PACKAGE_NAME}:${VERSION}
+          set -euo pipefail
+          platforms=(linux_amd64 linux_arm64)
+          provider_name="${GITHUB_REPOSITORY##*/}"
+          registry_org="ghcr.io/${GITHUB_REPOSITORY_OWNER}"
+          registry_path="${registry_org}/${provider_name}"
+          export BRANCH_NAME=master
+          make build.all build.artifacts VERSION="$VERSION" PLATFORMS="${platforms[*]}"
+          for platform in "${platforms[@]}"; do
+            make xpkg.build VERSION="$VERSION" PLATFORMS="${platforms[*]}" PLATFORM="$platform"
+            test -f "_output/xpkg/${platform}/${provider_name}-${VERSION}.xpkg"
+          done
+          make publish \
+            VERSION="$VERSION" \
+            PLATFORMS="${platforms[*]}" \
+            REGISTRY_ORGS="$registry_org" \
+            XPKG_REG_ORGS="$registry_org" \
+            BRANCH_NAME=master
+          docker buildx imagetools create --tag "${registry_path}:latest" "${registry_path}:${VERSION}"
 
       - name: Verify Publication
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          set -e
-          VERSION="${{ steps.version.outputs.version }}"
-          REGISTRY_PATH="ghcr.io/${{ github.repository_owner }}/$(basename ${{ github.repository }})"
-          
-          echo "Verifying publication to ${REGISTRY_PATH}:${VERSION}"
-          if docker pull "${REGISTRY_PATH}:${VERSION}" > /dev/null 2>&1; then
-            DIGEST=$(docker inspect "${REGISTRY_PATH}:${VERSION}" --format='{{index .RepoDigests 0}}' | cut -d'@' -f2)
-            echo "✅ Verified package ${VERSION} (${DIGEST})"
-          else
-            echo "❌ Failed to pull package ${VERSION}"
+          set -euo pipefail
+          provider_name="${GITHUB_REPOSITORY##*/}"
+          registry_path="ghcr.io/${GITHUB_REPOSITORY_OWNER}/${provider_name}"
+          verify_manifest() {
+            local ref="$1"
+            local digest
+            digest="$(docker buildx imagetools inspect "$ref" --format '{{.Manifest.Digest}}')"
+            docker buildx imagetools inspect "$ref" --raw | python3 -c '
+          import json
+          import sys
+          manifest = json.load(sys.stdin)
+          media_type = manifest.get("mediaType")
+          allowed_media_types = {
+              "application/vnd.oci.image.index.v1+json",
+              "application/vnd.docker.distribution.manifest.list.v2+json",
+          }
+          if media_type not in allowed_media_types:
+              raise SystemExit(f"unsupported manifest media type: {media_type}")
+          platforms = set()
+          for entry in manifest.get("manifests", []):
+              platform = entry.get("platform") or {}
+              platforms.add((platform.get("os"), platform.get("architecture")))
+          required = {("linux", "amd64"), ("linux", "arm64")}
+          if not required.issubset(platforms):
+              raise SystemExit(f"missing required platforms: {sorted(required - platforms)}")
+          '
+            echo "$ref $digest"
+          }
+          version_digest="$(verify_manifest "${registry_path}:${VERSION}" | cut -d' ' -f2)"
+          latest_digest="$(verify_manifest "${registry_path}:latest" | cut -d' ' -f2)"
+          if [[ "$version_digest" != "$latest_digest" ]]; then
+            echo "Version and latest digests differ" >&2
             exit 1
           fi
-
-      - name: Upload XPKG Artifact
-        uses: actions/upload-artifact@v7
-        with:
-          name: xpkg
-          path: _output/xpkg/linux_amd64/${{ github.event.repository.name }}-${{ steps.version.outputs.version }}.xpkg
-
-  publish:
-    runs-on: ubuntu-24.04
-    needs: release
-    permissions:
-      contents: write
-
-    steps:
-      - name: Use Released Version
-        id: version
-        run: |
-          # Reuse the version validated and gated by the release job instead of
-          # re-reading the raw workflow_dispatch input here.
-          VERSION="${{ needs.release.outputs.version }}"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "Released version: $VERSION"
+          echo "Published $registry_path:$VERSION and $registry_path:latest as $version_digest"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
