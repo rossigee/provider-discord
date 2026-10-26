@@ -44,7 +44,12 @@ jobs:
             echo "Invalid release version: $VERSION" >&2
             exit 1
           fi
-          echo "✅ Valid version: $VERSION"
+          git fetch origin master
+          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/master)" ]]; then
+            echo "Release tag must point at the current origin/master commit" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Sync Package Metadata
         run: |
@@ -65,18 +70,6 @@ jobs:
             -e "s|^\( *package:\).*|\1 ${CONTROLLER_IMAGE}|" \
             package/crossplane.yaml
           grep -nE "image:|package:" package/crossplane.yaml
-
-      - name: Setup Go
-        uses: actions/setup-go@v7
-        with:
-          go-version: '1.27.1'
-          cache: true
-          git fetch origin master
-          if [[ "$(git rev-parse HEAD)" != "$(git rev-parse origin/master)" ]]; then
-            echo "Release tag must point at the current origin/master commit" >&2
-            exit 1
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
