@@ -290,14 +290,14 @@ func TestCreate(t *testing.T) {
 					return nil, errors.New("API error")
 				}
 				m.CreateWebhookFunc = func(ctx context.Context, channelID string, req *discordclient.CreateWebhookRequest) (*discordclient.Webhook, error) {
-					return &discordclient.Webhook{
-						ID:        "newwebhook123",
-						ChannelID: channelID,
-						Name:      req.Name,
-					}, nil
+					t.Fatal("CreateWebhook should not be called when the existing webhooks cannot be listed")
+					return nil, nil
 				}
 			},
-			expectError: false,
+			// The controller fails closed: it will not create a webhook when it
+			// cannot list the channel's webhooks, because that is what the
+			// duplicate-creation loop came from.
+			expectError: true,
 		},
 		{
 			name: "adopt existing webhook instead of creating duplicate",
