@@ -88,7 +88,7 @@ kind: Provider
 metadata:
   name: provider-discord
 spec:
-  package: ghcr.io/rossigee/provider-discord:v0.16.1
+  package: ghcr.io/rossigee/provider-discord:v0.16.6
   packagePullPolicy: IfNotPresent
   revisionActivationPolicy: Automatic
   revisionHistoryLimit: 3
