@@ -75,11 +75,11 @@ This document contains operational runbooks for managing and troubleshooting the
 3. **If Image Pull Issues**
    ```bash
    # Check image availability
-   docker pull ghcr.io/rossigee/provider-discord:v0.16.1
+   docker pull ghcr.io/rossigee/provider-discord:v0.16.6
 
    # Update deployment if needed
    kubectl set image deployment/provider-discord -n crossplane-system \
-     provider=ghcr.io/rossigee/provider-discord:v0.16.1
+     provider=ghcr.io/rossigee/provider-discord:v0.16.6
    ```
 
 4. **Force Pod Restart**

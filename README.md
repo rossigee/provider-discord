@@ -13,7 +13,7 @@ monitoring.
 
 ## Container Registry
 
-- **Primary**: `ghcr.io/rossigee/provider-discord:v0.16.1`
+- **Primary**: `ghcr.io/rossigee/provider-discord:v0.16.6`
 
 ## Overview
 

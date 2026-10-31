@@ -46,7 +46,7 @@ metadata:
          metadata:
            name: provider-discord
          spec:
-           package: ghcr.io/rossigee/provider-discord:v0.16.1
+           package: ghcr.io/rossigee/provider-discord:v0.16.6
          ```
 
       2. **Create Bot Token Secret**:
@@ -195,6 +195,6 @@ spec:
         verbs:
           - "*"
   controller:
-    image: ghcr.io/rossigee/provider-discord:v0.16.1
+    image: ghcr.io/rossigee/provider-discord:v0.16.6
   crossplane:
     version: ">=v2.5.0"

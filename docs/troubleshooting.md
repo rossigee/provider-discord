@@ -89,7 +89,7 @@ kubectl apply -f https://raw.githubusercontent.com/rossigee/provider-discord/mas
 
 # Check image pull policy and registry access
 spec:
-  package: ghcr.io/rossigee/provider-discord:v0.16.1
+  package: ghcr.io/rossigee/provider-discord:v0.16.6
   packagePullPolicy: IfNotPresent
 
 ```
