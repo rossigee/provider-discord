@@ -454,7 +454,7 @@ func TestReconcile_PersistsStatus(t *testing.T) {
 	}
 
 	dedup := &deduplicationv1beta1.Deduplication{}
-	if err := fakeClient.Get(context.Background(), types.NamespacedName{Name: "test-pc-report"}, dedup); err != nil {
+	if err := fakeClient.Get(context.Background(), types.NamespacedName{Name: "test-pc-report", Namespace: "crossplane-system"}, dedup); err != nil {
 		t.Fatalf("failed to fetch Deduplication CRD: %v", err)
 	}
 

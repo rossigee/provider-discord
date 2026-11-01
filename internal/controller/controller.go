@@ -112,7 +112,7 @@ func setupRBAC(c client.Client, l logging.Logger) error {
 	rules := []rbacv1.PolicyRule{
 		{APIGroups: []string{"application.discord.m.crossplane.io"}, Resources: []string{"applications", "applications/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{APIGroups: []string{"channel.discord.m.crossplane.io"}, Resources: []string{"channels", "channels/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
-		{APIGroups: []string{"deduplication.discord.m.crossplane.io"}, Resources: []string{"deduplications", "deduplications/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
+		{APIGroups: []string{"dedupe.discord.m.crossplane.io"}, Resources: []string{"deduplications", "deduplications/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{APIGroups: []string{"guild.discord.m.crossplane.io"}, Resources: []string{"guilds", "guilds/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{APIGroups: []string{"integration.discord.m.crossplane.io"}, Resources: []string{"integrations", "integrations/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{APIGroups: []string{"invite.discord.m.crossplane.io"}, Resources: []string{"invites", "invites/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
@@ -122,7 +122,7 @@ func setupRBAC(c client.Client, l logging.Logger) error {
 		{APIGroups: []string{"webhook.discord.m.crossplane.io"}, Resources: []string{"webhooks", "webhooks/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{APIGroups: []string{"discord.m.crossplane.io"}, Resources: []string{"providerconfigs", "providerconfigs/status", "providerconfigusages", "providerconfigusages/status"}, Verbs: []string{"get", "list", "watch", "update", "patch", "create"}},
 		{
-			APIGroups: []string{"application.discord.m.crossplane.io", "channel.discord.m.crossplane.io", "deduplication.discord.m.crossplane.io", "guild.discord.m.crossplane.io", "integration.discord.m.crossplane.io", "invite.discord.m.crossplane.io", "member.discord.m.crossplane.io", "role.discord.m.crossplane.io", "user.discord.m.crossplane.io", "webhook.discord.m.crossplane.io", "discord.m.crossplane.io"},
+			APIGroups: []string{"application.discord.m.crossplane.io", "channel.discord.m.crossplane.io", "dedupe.discord.m.crossplane.io","guild.discord.m.crossplane.io", "integration.discord.m.crossplane.io", "invite.discord.m.crossplane.io", "member.discord.m.crossplane.io", "role.discord.m.crossplane.io", "user.discord.m.crossplane.io", "webhook.discord.m.crossplane.io", "discord.m.crossplane.io"},
 			Resources: []string{"*/finalizers"},
 			Verbs:     []string{"update"},
 		},

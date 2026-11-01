@@ -29,7 +29,7 @@ The Discord channel deduplication feature provides an automated way to identify 
    - Emits Kubernetes Events for audit trail
 
 3. **Deduplication CRD** (`apis/deduplication/v1beta1/types.go`)
-   - Cluster-scoped resource tracking deduplication operations
+   - Namespaced resource tracking deduplication operations, in the namespace of the ProviderConfig's credentials Secret
    - Records per-guild results and summary statistics
    - Queryable history of all deduplication runs
 

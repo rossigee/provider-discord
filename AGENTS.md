@@ -46,7 +46,7 @@
 ### API Groups
 - `<resource>.discord.m.crossplane.io/v1beta1` - Per-resource API groups (e.g. `guild.discord.m.crossplane.io/v1beta1`), all namespaced
 - `discord.m.crossplane.io/v1beta1` - `ProviderConfig` (cluster-scoped)
-- `deduplication.discord.m.crossplane.io/v1beta1` - Deduplication operations (cluster-scoped)
+- `dedupe.discord.m.crossplane.io/v1beta1` - Deduplication operations (namespaced)
 - Resources follow Crossplane patterns with:
   - Spec/Status structure
   - Managed resource lifecycle

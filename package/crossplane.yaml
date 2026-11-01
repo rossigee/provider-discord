@@ -182,7 +182,7 @@ spec:
         verbs:
           - "*"
       - apiGroups:
-          - deduplication.discord.m.crossplane.io
+          - dedupe.discord.m.crossplane.io
         resources:
           - deduplications
           - deduplications/status

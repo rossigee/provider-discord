@@ -6,6 +6,12 @@ Quick reference for the Discord channel deduplication feature.
 
 An automated feature to identify and remove duplicate Discord channels managed by provider-discord. Converts the manual `discord-channel-dedupe` tool into a Kubernetes-native provider capability with full audit trail and safety mechanisms.
 
+## API
+
+`Deduplication` is `dedupe.discord.m.crossplane.io/v1beta1` and namespaced. Each run is created in the namespace of the ProviderConfig's `credentials.secretRef`. List records across namespaces with `kubectl get deduplication --all-namespaces --context <context>`.
+
+Migrating from `deduplication.discord.m.crossplane.io` (cluster-scoped): deleting the old CRD deletes its records. Export the records you need first with `kubectl get deduplication.deduplication.discord.m.crossplane.io --all-namespaces --context <context> -o yaml`, then delete the old CRD.
+
 ## Quick Start
 
 ### Step 1: Analyze (Safe)

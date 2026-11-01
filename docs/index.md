@@ -22,7 +22,7 @@ A Crossplane v2 provider for managing Discord resources. All managed resources a
 | [Application](resources/application.md) | `application.discord.m.crossplane.io/v1beta1` | Bot application configuration |
 | [Integration](resources/integration.md) | `integration.discord.m.crossplane.io/v1beta1` | Third-party integrations |
 | [Invite](resources/invite.md) | `invite.discord.m.crossplane.io/v1beta1` | Server invitations |
-| Deduplication | `deduplication.discord.m.crossplane.io/v1beta1` | Channel deduplication operations (cluster-scoped) |
+| Deduplication | `dedupe.discord.m.crossplane.io/v1beta1` | Channel deduplication operations (namespaced) |
 | ProviderConfig | `discord.m.crossplane.io/v1beta1` | Provider credentials (cluster-scoped) |
 
 ## API Coverage Gaps

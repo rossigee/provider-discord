@@ -257,7 +257,7 @@ type RoleDuplicateGroupInfo struct {
 // +kubebuilder:printcolumn:name="DUPLICATES-FOUND",type="integer",JSONPath=".status.summary.totalDuplicateChannelsFound"
 // +kubebuilder:printcolumn:name="DELETED",type="integer",JSONPath=".status.summary.channelsDeleted"
 // +kubebuilder:printcolumn:name="AGE",type="date",JSONPath=".metadata.creationTimestamp"
-// +kubebuilder:resource:scope=Cluster,categories={crossplane,provider,discord}
+// +kubebuilder:resource:scope=Namespaced,categories={crossplane,provider,discord}
 // +kubebuilder:storageversion
 type Deduplication struct {
 	metav1.TypeMeta   `json:",inline"`

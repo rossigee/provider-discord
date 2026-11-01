@@ -65,7 +65,7 @@ All resources are namespaced `v1beta1` (`.m.` group) for Crossplane v2 multi-ten
 | Application | `application.discord.m.crossplane.io/v1beta1` | Discord bot application configuration |
 | Integration | `integration.discord.m.crossplane.io/v1beta1` | Third-party service integrations (Twitch, YouTube, etc.) |
 | Invite | `invite.discord.m.crossplane.io/v1beta1` | Server invitations with expiration control |
-| Deduplication | `deduplication.discord.m.crossplane.io/v1beta1` | Channel deduplication operations (cluster-scoped) |
+| Deduplication | `dedupe.discord.m.crossplane.io/v1beta1` | Channel deduplication operations (namespaced) |
 | ProviderConfig | `discord.m.crossplane.io/v1beta1` | Provider authentication and configuration |
 
 See [docs/index.md](docs/index.md) for the full reference and [API coverage gaps](docs/index.md#api-coverage-gaps).
