@@ -489,7 +489,7 @@ helm uninstall crossplane-provider-discord -n crossplane-system
 # Delete CRDs
 kubectl delete crd \
   providerconfigs.discord.m.crossplane.io \
-  deduplicatons.deduplication.discord.m.crossplane.io
+  deduplications.dedupe.discord.m.crossplane.io
 
 # Restart cluster
 kind delete cluster --name test-cluster

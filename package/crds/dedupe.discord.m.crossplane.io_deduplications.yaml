@@ -4,9 +4,9 @@ kind: CustomResourceDefinition
 metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.22.0
-  name: deduplications.deduplication.discord.m.crossplane.io
+  name: deduplications.dedupe.discord.m.crossplane.io
 spec:
-  group: deduplication.discord.m.crossplane.io
+  group: dedupe.discord.m.crossplane.io
   names:
     categories:
     - crossplane
@@ -16,7 +16,7 @@ spec:
     listKind: DeduplicationList
     plural: deduplications
     singular: deduplication
-  scope: Cluster
+  scope: Namespaced
   versions:
   - additionalPrinterColumns:
     - jsonPath: .status.phase

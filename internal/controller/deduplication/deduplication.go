@@ -148,9 +148,11 @@ func (r *ProviderConfigReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// Step 2: Create Deduplication CRD with phase="analyzing" BEFORE any Discord mutations.
 	// The name is deterministic ({pc-name}-{mode}) so CreateOrUpdate correctly updates
 	// the same object on every reconcile instead of leaking a new one each second.
+	// Deduplication is namespaced, so it lives in the namespace of the credentials
+	// Secret the ProviderConfig already points at (ProviderConfig itself is cluster-scoped).
 	dedupName := fmt.Sprintf("%s-%s", req.Name, mode)
 	dedupCRD := &deduplicationv1beta1.Deduplication{
-		ObjectMeta: metav1.ObjectMeta{Name: dedupName},
+		ObjectMeta: metav1.ObjectMeta{Name: dedupName, Namespace: pc.Spec.Credentials.SecretRef.Namespace},
 	}
 	startTime := time.Now()
 	// Deduplication has a status subresource: the API server ignores .Status changes

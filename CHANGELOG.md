@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Breaking
+
+- The `Deduplication` resource moves from `deduplication.discord.m.crossplane.io`
+  to `dedupe.discord.m.crossplane.io/v1beta1` and is now namespaced. Records are
+  created in the namespace of the ProviderConfig's credentials Secret. Remove the
+  old CRD only after no `Deduplication` records are needed; deleting the CRD
+  deletes them.
+
 ## v0.16.1 (2026-09-19)
 
 ### Security
