@@ -118,10 +118,10 @@ View detailed results in the Deduplication CRD:
 ```bash
 
 # List all deduplication operations
-kubectl get deduplication
+kubectl get deduplication --all-namespaces
 
 # View detailed results
-kubectl get deduplication <name> -o yaml
+kubectl get deduplication -n <namespace> <name> -o yaml
 
 ```
 
@@ -187,10 +187,10 @@ Monitor the deletion:
 ```bash
 
 # Watch deduplication progress
-kubectl get deduplication --watch
+kubectl get deduplication --all-namespaces --watch
 
 # Check final state
-kubectl get deduplication <name> -o yaml
+kubectl get deduplication -n <namespace> <name> -o yaml
 
 ```
 
@@ -365,7 +365,7 @@ Check the Deduplication CRD status for per-guild errors:
 
 ```bash
 
-kubectl get deduplication <name> -o yaml | grep -A 10 "errors:"
+kubectl get deduplication -n <namespace> <name> -o yaml | grep -A 10 "errors:"
 
 ```
 
@@ -383,11 +383,11 @@ Common errors:
 ```bash
 
 # List all deduplication runs
-kubectl get deduplication --sort-by=.metadata.creationTimestamp
+kubectl get deduplication --all-namespaces --sort-by=.metadata.creationTimestamp
 
 # Filter by status
-kubectl get deduplication --field-selector=status.phase=completed
-kubectl get deduplication --field-selector=status.phase=failed
+kubectl get deduplication --all-namespaces --field-selector=status.phase=completed
+kubectl get deduplication --all-namespaces --field-selector=status.phase=failed
 
 ```
 
@@ -398,11 +398,11 @@ kubectl get deduplication --field-selector=status.phase=failed
 ```bash
 
 # Total duplicates found across all runs
-kubectl get deduplication -o json | jq '.items[] | .status.summary' | \
+kubectl get deduplication --all-namespaces -o json | jq '.items[] | .status.summary' | \
   jq -s 'map(.totalDuplicateChannelsFound) | add'
 
 # Total channels deleted
-kubectl get deduplication -o json | jq '.items[] | .status.summary' | \
+kubectl get deduplication --all-namespaces -o json | jq '.items[] | .status.summary' | \
   jq -s 'map(.channelsDeleted) | add'
 
 ```

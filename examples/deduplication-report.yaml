@@ -13,8 +13,8 @@
 #    kubectl describe providerconfig default
 #
 # 3. Get detailed results from the Deduplication CRD:
-#    kubectl get deduplication
-#    kubectl describe deduplication <name>
+#    kubectl get deduplication --all-namespaces
+#    kubectl describe deduplication -n <namespace> <name>
 #
 
 apiVersion: discord.m.crossplane.io/v1beta1
@@ -36,11 +36,11 @@ spec:
 #
 # After running the above, you can inspect the Deduplication CRD:
 #
-#   $ kubectl get deduplication
+#   $ kubectl get deduplication --all-namespaces
 #   NAME                     PHASE       MODE    DUPLICATES-FOUND   DELETED   AGE
 #   default-1735689123       completed   report  6                  0         5m
 #
-#   $ kubectl describe deduplication default-1735689123
+#   $ kubectl describe deduplication -n <namespace> default-1735689123
 #
 #   Status:
 #     Phase:  completed

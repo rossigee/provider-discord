@@ -301,8 +301,8 @@ make reviewable
 kubectl apply -f examples/deduplication-report.yaml
 
 # Check results
-kubectl get deduplication
-kubectl describe deduplication <name>
+kubectl get deduplication --all-namespaces
+kubectl describe deduplication -n <namespace> <name>
 
 # Test action mode
 kubectl patch providerconfig default \

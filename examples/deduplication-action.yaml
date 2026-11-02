@@ -17,7 +17,7 @@
 # 1. First run REPORT mode to see what would be deleted:
 #    kubectl annotate providerconfig default \
 #      discord.crossplane.io/deduplication=report --overwrite
-#    kubectl get deduplication <name> -o yaml
+#    kubectl get deduplication -n <namespace> <name> -o yaml
 #
 # 2. VERIFY the results - ensure you're OK with deletions
 #
@@ -26,7 +26,7 @@
 #      discord.crossplane.io/deduplication=action --overwrite
 #
 # 4. Monitor the deletion:
-#    kubectl get deduplication --watch
+#    kubectl get deduplication --all-namespaces --watch
 #
 # 5. Verify in Discord that channels were deleted as expected
 #
@@ -65,11 +65,11 @@ spec:
 #
 # After applying the action mode annotation, you can inspect results:
 #
-#   $ kubectl get deduplication
+#   $ kubectl get deduplication --all-namespaces
 #   NAME                     PHASE       MODE     DUPLICATES-FOUND   DELETED   AGE
 #   default-1735689456       completed   action   6                  6         3m
 #
-#   $ kubectl describe deduplication default-1735689456
+#   $ kubectl describe deduplication -n <namespace> default-1735689456
 #
 #   Status:
 #     Phase:  completed
@@ -117,4 +117,4 @@ spec:
 # 4. Run in REPORT mode again to verify state is clean:
 #    kubectl annotate providerconfig default \
 #      discord.crossplane.io/deduplication=report --overwrite
-#    kubectl get deduplication <new-name> -o yaml
+#    kubectl get deduplication -n <namespace> <new-name> -o yaml

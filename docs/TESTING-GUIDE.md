@@ -184,8 +184,8 @@ kubectl annotate providerconfig test \
   discord.crossplane.io/deduplication=report --overwrite
 
 # Step 6: Monitor results
-kubectl get deduplication -w
-kubectl describe deduplication <name>
+kubectl get deduplication --all-namespaces -w
+kubectl describe deduplication -n <namespace> <name>
 
 # Step 7: Verify in Discord
 # Log in and check server for reported duplicates
@@ -195,7 +195,7 @@ kubectl annotate providerconfig test \
   discord.crossplane.io/deduplication=action --overwrite
 
 # Step 9: Verify deletion
-kubectl describe deduplication <name>
+kubectl describe deduplication -n <namespace> <name>
 # Check Discord for deleted channels
 
 ```
@@ -312,7 +312,7 @@ make reviewable
 
 kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=report --overwrite
-kubectl get deduplication -o yaml | grep totalDuplicateChannelsFound
+kubectl get deduplication --all-namespaces -o yaml | grep totalDuplicateChannelsFound
 # Should be: 0
 
 ```
@@ -328,12 +328,12 @@ kubectl get deduplication -o yaml | grep totalDuplicateChannelsFound
 
 kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=report --overwrite
-kubectl describe deduplication <name> | grep -A5 "Duplicate Groups"
+kubectl describe deduplication -n <namespace> <name> | grep -A5 "Duplicate Groups"
 # Should show: Count: 2, ChannelsDeleted: 1
 
 kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=action --overwrite
-kubectl describe deduplication <name> | grep channelsDeleted
+kubectl describe deduplication -n <namespace> <name> | grep channelsDeleted
 # Should show: 1
 
 ```
@@ -349,7 +349,7 @@ kubectl describe deduplication <name> | grep channelsDeleted
 
 kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=report --overwrite
-kubectl get deduplication -o yaml | jq '.status.summary'
+kubectl get deduplication --all-namespaces -o yaml | jq '.status.summary'
 # Verify:
 # - totalGuildsAnalyzed: correct count
 # - totalDuplicateChannelsFound: sum of all duplicates
@@ -370,19 +370,19 @@ kubectl get deduplication -o yaml | jq '.status.summary'
 kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=report --overwrite
 sleep 5
-kubectl get deduplication | wc -l  # Should have one entry
+kubectl get deduplication --all-namespaces | wc -l  # Should have one entry
 
 # Try applying report again
 kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=report --overwrite --force
 sleep 2
-kubectl get deduplication | wc -l  # Should still have one entry (not re-run)
+kubectl get deduplication --all-namespaces | wc -l  # Should still have one entry (not re-run)
 
 # Transition to action
 kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=action --overwrite
 sleep 5
-kubectl get deduplication | wc -l  # Should have new entry (action mode)
+kubectl get deduplication --all-namespaces | wc -l  # Should have new entry (action mode)
 
 ```
 
@@ -397,7 +397,7 @@ kubectl get deduplication | wc -l  # Should have new entry (action mode)
 
 kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=report --overwrite
-kubectl describe deduplication <name> | grep -i error
+kubectl describe deduplication -n <namespace> <name> | grep -i error
 # Should show permission error for affected guild
 
 ```
@@ -427,13 +427,13 @@ kubectl logs -n crossplane-system -l app=provider-discord -f
 ```bash
 
 # View full CRD status
-kubectl get deduplication <name> -o yaml
+kubectl get deduplication -n <namespace> <name> -o yaml
 
 # Watch for changes
-kubectl get deduplication <name> -w
+kubectl get deduplication -n <namespace> <name> -w
 
 # Check events
-kubectl describe deduplication <name>
+kubectl describe deduplication -n <namespace> <name>
 
 ```
 
@@ -466,7 +466,7 @@ curl -H "Authorization: Bot $DISCORD_BOT_TOKEN" \
 ```bash
 
 # Delete all deduplication records
-kubectl delete deduplication --all
+kubectl delete deduplication --all-namespaces --all
 
 # Remove ProviderConfig annotations
 kubectl patch providerconfig default \
