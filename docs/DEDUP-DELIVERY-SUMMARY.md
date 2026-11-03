@@ -275,14 +275,14 @@ kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=report --overwrite
 
 # Step 2: Review
-kubectl get deduplication <name> -o yaml
+kubectl get deduplication -n <namespace> <name> -o yaml
 
 # Step 3: Delete (if satisfied)
 kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=action --overwrite
 
 # Step 4: Verify
-kubectl describe deduplication <name>
+kubectl describe deduplication -n <namespace> <name>
 
 ```
 

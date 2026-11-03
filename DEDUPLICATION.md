@@ -28,8 +28,8 @@ kubectl annotate providerconfig default \
 
 ```bash
 
-kubectl get deduplication
-kubectl describe deduplication <name>
+kubectl get deduplication --all-namespaces
+kubectl describe deduplication -n <namespace> <name>
 
 ```
 
@@ -48,7 +48,7 @@ kubectl annotate providerconfig default \
 
 ```bash
 
-kubectl describe deduplication <name>
+kubectl describe deduplication -n <namespace> <name>
 # Check Discord for deleted channels
 
 ```
@@ -168,10 +168,10 @@ kubectl annotate providerconfig default \
 ```bash
 
 # List all deduplication operations
-kubectl get deduplication
+kubectl get deduplication --all-namespaces
 
 # View detailed results
-kubectl get deduplication <name> -o yaml
+kubectl get deduplication -n <namespace> <name> -o yaml
 
 # Check events on ProviderConfig
 kubectl describe providerconfig default
@@ -254,7 +254,7 @@ If `deleteOrphanedResources: false`:
 
 1. Guild may actually have no duplicates
 2. Bot may lack permissions
-3. Check Deduplication CRD for errors: `kubectl describe deduplication <name>`
+3. Check Deduplication CRD for errors: `kubectl describe deduplication -n <namespace> <name>`
 
 ## Documentation
 

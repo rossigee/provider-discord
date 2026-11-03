@@ -14,11 +14,11 @@ kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=report --overwrite
 
 # Step 2: Wait for analysis to complete (usually <1 minute)
-kubectl get deduplication -w
+kubectl get deduplication --all-namespaces -w
 
 # Step 3: Review results
-kubectl get deduplication -o wide
-kubectl describe deduplication <name>
+kubectl get deduplication --all-namespaces -o wide
+kubectl describe deduplication -n <namespace> <name>
 
 # Step 4: Check events
 kubectl describe providerconfig default
@@ -38,7 +38,7 @@ kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=action --overwrite
 
 # Step 2: Monitor deletion
-kubectl get deduplication -w
+kubectl get deduplication --all-namespaces -w
 
 # Step 3: Verify in Discord
 # Log in and check affected servers
@@ -70,10 +70,10 @@ kubectl wait --for=condition=completed deduplication/default-* \
   --timeout=5m 2>/dev/null || true
 
 # 3. Export results for record-keeping
-kubectl get deduplication -o json > dedup-report-$(date +%Y%m%d).json
+kubectl get deduplication --all-namespaces -o json > dedup-report-$(date +%Y%m%d).json
 
 # 4. Summarize findings
-kubectl get deduplication -o json | jq '.items[] | select(.status.phase=="completed") | {
+kubectl get deduplication --all-namespaces -o json | jq '.items[] | select(.status.phase=="completed") | {
   name: .metadata.name,
   guilds: .status.summary.totalGuildsAnalyzed,
   duplicates: .status.summary.totalDuplicateChannelsFound,
@@ -105,14 +105,15 @@ kubectl get deduplication -o json | jq '.items[] | select(.status.phase=="comple
 
 # STEP 1: Confirm we have a clean analysis
 echo "Recent deduplication analyses:"
-kubectl get deduplication --sort-by=.metadata.creationTimestamp | tail -5
+kubectl get deduplication --all-namespaces --sort-by=.metadata.creationTimestamp | tail -5
 
 echo "Select the MOST RECENT analysis with mode: report"
+read -p "Enter deduplication namespace: " dedup_ns
 read -p "Enter deduplication name: " dedup_name
 
 # STEP 2: Review the report one more time
 echo "=== FINAL REVIEW BEFORE ACTION ==="
-kubectl get deduplication/$dedup_name -o yaml | grep -A 100 "results:" | head -50
+kubectl get deduplication/$dedup_name -n $dedup_ns -o yaml | grep -A 100 "results:" | head -50
 
 # STEP 3: Get confirmation
 read -p "Confirm deletion? Type 'DELETE' to proceed: " confirm
@@ -127,15 +128,15 @@ kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=action --overwrite
 
 # STEP 5: Monitor progress
-kubectl get deduplication --sort-by=.metadata.creationTimestamp -w
+kubectl get deduplication --all-namespaces --sort-by=.metadata.creationTimestamp -w
 
 # STEP 6: Verify completion
-kubectl get deduplication -o json | \
+kubectl get deduplication --all-namespaces -o json | \
   jq '.items[-1] | select(.status.phase=="completed") | .status.summary'
 
 # STEP 7: Document results
 echo "Deduplication completed. Results:"
-kubectl get deduplication -o json | \
+kubectl get deduplication --all-namespaces -o json | \
   jq '.items[-1] | {
     phase: .status.phase,
     guilds: .status.summary.totalGuildsAnalyzed,
@@ -173,10 +174,10 @@ done
 echo "=== FAILURE ASSESSMENT ==="
 
 # List failed deduplication operations
-kubectl get deduplication --field-selector=status.phase=failed
+kubectl get deduplication --all-namespaces --field-selector=status.phase=failed
 
 # Check for errors in recent operation
-kubectl get deduplication -o json | \
+kubectl get deduplication --all-namespaces -o json | \
   jq '.items[-1] | select(.status.phase != "completed")'
 
 # STEP 2: Check Discord audit log
@@ -317,13 +318,13 @@ kubectl get secret discord-token \
 ```bash
 
 # Check phase
-kubectl get deduplication -w
+kubectl get deduplication --all-namespaces -w
 
 # Monitor resource usage
 kubectl top pod -n crossplane-system | grep provider-discord
 
 # Check for stuck operations
-kubectl get deduplication | grep analyzing
+kubectl get deduplication --all-namespaces | grep analyzing
 
 ```
 
@@ -400,17 +401,17 @@ kubectl annotate providerconfig default \
 ```bash
 
 # Total deduplication operations
-kubectl get deduplication | wc -l
+kubectl get deduplication --all-namespaces | wc -l
 
 # Success rate
-kubectl get deduplication -o json | \
+kubectl get deduplication --all-namespaces -o json | \
   jq '[.items[] | select(.status.phase=="completed")] | length'
 
 # Failed operations
-kubectl get deduplication --field-selector=status.phase=failed
+kubectl get deduplication --all-namespaces --field-selector=status.phase=failed
 
 # Total channels deleted
-kubectl get deduplication -o json | \
+kubectl get deduplication --all-namespaces -o json | \
   jq '[.items[] | .status.summary.channelsDeleted] | add'
 
 ```

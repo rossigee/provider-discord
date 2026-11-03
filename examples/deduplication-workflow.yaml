@@ -44,10 +44,10 @@ spec:
 # STEP 3: Inspect the results
 #
 # List all deduplication operations:
-#   kubectl get deduplication
+#   kubectl get deduplication --all-namespaces
 #
 # Get detailed results:
-#   kubectl get deduplication <name> -o yaml
+#   kubectl get deduplication -n <namespace> <name> -o yaml
 #
 # Check events on the ProviderConfig:
 #   kubectl describe providerconfig default
@@ -68,11 +68,11 @@ spec:
 # 4. Any errors that occurred during analysis
 #
 # Example review commands:
-#   $ kubectl get deduplication
+#   $ kubectl get deduplication --all-namespaces
 #   NAME                  PHASE       MODE    DUPLICATES-FOUND   AGE
 #   default-1735689123    completed   report  6                  10m
 #
-#   $ kubectl get deduplication default-1735689123 -o yaml | grep -A 50 "results:"
+#   $ kubectl get deduplication -n <namespace> default-1735689123 -o yaml | grep -A 50 "results:"
 #
 # If this looks correct, proceed to STEP 5
 # If this looks wrong, troubleshoot and re-run STEP 2
@@ -107,10 +107,10 @@ spec:
 # STEP 6: Monitor the deletion
 #
 # Watch the deduplication progress:
-#   kubectl get deduplication --watch
+#   kubectl get deduplication --all-namespaces --watch
 #
 # Or check final results:
-#   kubectl get deduplication -l <filter> -o wide
+#   kubectl get deduplication --all-namespaces -l <filter> -o wide
 #
 # The output will show:
 # - Phase: "completed"
@@ -197,14 +197,14 @@ spec:
 # MONITORING AND AUDITING
 #
 # Track all deduplication operations:
-#   kubectl get deduplication --sort-by=.metadata.creationTimestamp
+#   kubectl get deduplication --all-namespaces --sort-by=.metadata.creationTimestamp
 #
 # Get total statistics across all runs:
-#   kubectl get deduplication -o json | \
+#   kubectl get deduplication --all-namespaces -o json | \
 #     jq '.items[] | select(.status.phase=="completed") | .status.summary'
 #
 # Alert on failures:
-#   kubectl get deduplication --field-selector=status.phase=failed
+#   kubectl get deduplication --all-namespaces --field-selector=status.phase=failed
 #
 # View detailed audit trail:
 #   kubectl describe providerconfig default | grep -A 20 Events:

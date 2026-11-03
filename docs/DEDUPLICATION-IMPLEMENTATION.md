@@ -144,7 +144,7 @@ kubectl annotate providerconfig default \
 # Results show: guilds analyzed, duplicates found, channels to delete
 
 # User inspects results
-kubectl get deduplication <name> -o yaml
+kubectl get deduplication -n <namespace> <name> -o yaml
 kubectl describe providerconfig default  # see events
 
 ```
@@ -286,10 +286,10 @@ kubectl annotate providerconfig default \
   discord.crossplane.io/deduplication=report --overwrite
 
 # 7. Verify Deduplication CRD is created
-kubectl get deduplication
+kubectl get deduplication --all-namespaces
 
 # 8. Review results thoroughly
-kubectl describe deduplication <name>
+kubectl describe deduplication -n <namespace> <name>
 
 # 9. Only after verification, test action mode
 # (in isolated Discord server for safety!)
@@ -381,7 +381,7 @@ The implementation maintains security best practices:
    ```bash
    kubectl annotate providerconfig default \
      discord.crossplane.io/deduplication=report --overwrite
-   kubectl get deduplication -w
+   kubectl get deduplication --all-namespaces -w
    ```
 
 ## 📞 Questions & Support
