@@ -1083,3 +1083,56 @@ func TestUpdateGlobalRateLimitFromHeaders(t *testing.T) {
 		})
 	}
 }
+
+// TestGlobalFlagged429EngagesSharedWindow guards the rate-limit rework:
+// only a 429 explicitly flagged global by Discord (X-RateLimit-Global: true)
+// may pause every client. makeRequestOnce must consult the headers on 429
+// responses too, since that is where the global flag appears.
+func TestGlobalFlagged429EngagesSharedWindow(t *testing.T) {
+	resetGlobalRateLimit()
+	t.Cleanup(resetGlobalRateLimit)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("X-RateLimit-Global", "true")
+		w.Header().Set("X-RateLimit-Reset-After", "30")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"retry_after": 30, "global": true, "message": "Rate limited"}`))
+	}))
+	defer server.Close()
+
+	client := NewDiscordClient("test-token")
+	client.baseURL = server.URL
+
+	if _, err := client.makeRequestOnce(context.Background(), "GET", "/guilds/123456789", nil); err == nil {
+		t.Fatal("expected 429 error, got nil")
+	}
+	if isLimited, _ := GetGlobalRateLimitInfo(); !isLimited {
+		t.Error("429 flagged X-RateLimit-Global must engage the shared pause window")
+	}
+}
+
+// TestPerRoute429DoesNotEngageSharedWindow asserts the other half: an
+// unflagged (per-route) 429 retries its own request but must never pause
+// unrelated reconcilers behind it.
+func TestPerRoute429DoesNotEngageSharedWindow(t *testing.T) {
+	resetGlobalRateLimit()
+	t.Cleanup(resetGlobalRateLimit)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte(`{"retry_after": 0.01, "global": false, "message": "Rate limited"}`))
+	}))
+	defer server.Close()
+
+	client := NewDiscordClient("test-token")
+	client.baseURL = server.URL
+	useFastRetryPolicy(t, client)
+
+	if _, err := client.GetGuild(context.Background(), "123456789"); err == nil {
+		t.Fatal("expected error after exhausting per-route 429 retries, got nil")
+	}
+	if isLimited, _ := GetGlobalRateLimitInfo(); isLimited {
+		t.Error("per-route 429 must not pause all clients via the global window")
+	}
+}

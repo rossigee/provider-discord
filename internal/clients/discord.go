@@ -423,21 +423,13 @@ func (c *DiscordClient) makeRequest(ctx context.Context, method, endpoint string
 			}
 		}
 
-		// Update global rate limit window to block all clients during this backoff period
-		globalRateLimitMutex.Lock()
-		newLimit := time.Now().Add(waitDuration)
-		if newLimit.After(globalRateLimitUntil) {
-			globalRateLimitUntil = newLimit
-			// Update the global rate limit metric
-			if globalMetricsRecorder != nil {
-				globalMetricsRecorder.UpdateGlobalRateLimit(newLimit)
-			}
-			c.logger.Info("Global rate limit active - will retry after",
-				"retry_after_seconds", waitDuration.Round(time.Second),
-				"retry_at", newLimit.Format(time.RFC3339),
-				"wait_duration", waitDuration)
-		}
-		globalRateLimitMutex.Unlock()
+		// Do NOT pause all clients here. A blanket pause on any 429 blocked
+		// every reconciler whenever one route throttled, multiplying
+		// "context cancelled during global rate limit wait" failures across
+		// unrelated managed resources. Discord's explicit global limit
+		// (X-RateLimit-Global: true) is handled by
+		// updateGlobalRateLimitFromHeaders in makeRequestOnce; this loop only
+		// backs off the request that actually received the 429.
 
 		if attempt < c.maxRetries {
 			c.logger.Info("Rate limited by Discord API, will retry",
@@ -488,7 +480,7 @@ func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint st
 	}
 
 	url := c.baseURL + endpoint
-	c.logger.Info("Making Discord API request",
+	c.logger.V(1).Info("Making Discord API request",
 		"method", method,
 		"url", url)
 
@@ -516,7 +508,7 @@ func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint st
 		return nil, errors.Wrap(err, "failed to perform request")
 	}
 
-	c.logger.Info("Discord API response",
+	c.logger.V(1).Info("Discord API response",
 		"method", method,
 		"url", url,
 		"status", resp.StatusCode)
@@ -532,9 +524,13 @@ func (c *DiscordClient) makeRequestOnce(ctx context.Context, method, endpoint st
 		c.recordRateLimitMetrics(resourceType, endpoint, resp.Header)
 	}
 
-	// Update global rate limit state from successful response headers
-	// This allows proactive rate limiting without waiting for 429
-	if resp.StatusCode < 400 {
+	// Update global rate limit state from response headers. The update is a
+	// no-op unless Discord explicitly flags the limit global
+	// (X-RateLimit-Global: true), so calling it on 429 lets genuine global
+	// 429s engage the shared window without letting per-route 429s block
+	// unrelated reconcilers. Other error statuses carry meaningless rate
+	// limit headers and are excluded.
+	if resp.StatusCode < 400 || resp.StatusCode == http.StatusTooManyRequests {
 		c.updateGlobalRateLimitFromHeaders(resp.Header)
 	}
 
@@ -1771,7 +1767,7 @@ func (c *DiscordClient) recordRateLimitMetrics(resourceType, endpoint string, he
 			c.metricsRecorder.RecordRateLimit(resourceType, endpoint, remainingInt, resetTime)
 
 			// Log rate limit information for debugging
-			c.logger.Info("Discord rate limit info",
+			c.logger.V(1).Info("Discord rate limit info",
 				"resourceType", resourceType,
 				"endpoint", endpoint,
 				"remaining", remainingInt,

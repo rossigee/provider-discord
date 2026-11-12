@@ -213,7 +213,8 @@ func (m *MetricsRecorder) RecordRateLimit(resourceType, endpoint string, remaini
 	discordRateLimitRemaining.WithLabelValues(resourceType, endpoint).Set(float64(remaining))
 	discordRateLimitResetTime.WithLabelValues(resourceType, endpoint).Set(float64(resetTime.Unix()))
 
-	m.logger.Info("Recorded rate limit hit",
+	// Per-response header bookkeeping, not an actual 429 hit: verbose only.
+	m.logger.V(1).Info("Recorded rate limit info",
 		"resource_type", resourceType,
 		"endpoint", endpoint,
 		"remaining", remaining,
