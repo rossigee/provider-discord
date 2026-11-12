@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## v0.16.7 (2026-11-12)
+
+### Changed
+- Built with Go 1.27.4 (previously 1.27.3).
+
 ### Breaking
 
 - The `Deduplication` resource moves from `deduplication.discord.m.crossplane.io`
