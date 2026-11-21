@@ -22,6 +22,7 @@ import (
 )
 
 // WebhookParameters are the configurable fields of a Webhook.
+// +kubebuilder:validation:XValidation:rule="has(self.channelId) || has(self.channelRef)",message="one of channelId or channelRef must be set"
 type WebhookParameters struct {
 	// Name is the name of the Discord webhook.
 	// +kubebuilder:validation:Required
@@ -30,8 +31,15 @@ type WebhookParameters struct {
 	Name string `json:"name"`
 
 	// ChannelID is the ID of the channel this webhook will post to.
-	// +kubebuilder:validation:Required
-	ChannelID string `json:"channelId"`
+	// Set either directly or resolved from ChannelRef on each reconcile.
+	// +optional
+	ChannelID string `json:"channelId,omitempty"`
+
+	// ChannelRef references the Channel managed resource this webhook posts to.
+	// The channel's current Discord ID is resolved into ChannelID on every
+	// reconcile, so the webhook follows the channel if it is recreated.
+	// +optional
+	ChannelRef *xpv1.Reference `json:"channelRef,omitempty"`
 
 	// Avatar is the avatar image data for the webhook (base64 encoded image).
 	// +optional
