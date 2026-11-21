@@ -73,18 +73,58 @@ spec:
                       encoded image).
                     type: string
                   channelId:
-                    description: ChannelID is the ID of the channel this webhook will
-                      post to.
+                    description: |-
+                      ChannelID is the ID of the channel this webhook will post to.
+                      Set either directly or resolved from ChannelRef on each reconcile.
                     type: string
+                  channelRef:
+                    description: |-
+                      ChannelRef references the Channel managed resource this webhook posts to.
+                      The channel's current Discord ID is resolved into ChannelID on every
+                      reconcile, so the webhook follows the channel if it is recreated.
+                    properties:
+                      name:
+                        description: Name of the referenced object.
+                        type: string
+                      policy:
+                        description: Policies for referencing.
+                        properties:
+                          resolution:
+                            default: Required
+                            description: |-
+                              Resolution specifies whether resolution of this reference is required.
+                              The default is 'Required', which means the reconcile will fail if the
+                              reference cannot be resolved. 'Optional' means this reference will be
+                              a no-op if it cannot be resolved.
+                            enum:
+                            - Required
+                            - Optional
+                            type: string
+                          resolve:
+                            description: |-
+                              Resolve specifies when this reference should be resolved. The default
+                              is 'IfNotPresent', which will attempt to resolve the reference only when
+                              the corresponding field is not present. Use 'Always' to resolve the
+                              reference on every reconcile.
+                            enum:
+                            - Always
+                            - IfNotPresent
+                            type: string
+                        type: object
+                    required:
+                    - name
+                    type: object
                   name:
                     description: Name is the name of the Discord webhook.
                     maxLength: 80
                     minLength: 1
                     type: string
                 required:
-                - channelId
                 - name
                 type: object
+                x-kubernetes-validations:
+                - message: one of channelId or channelRef must be set
+                  rule: has(self.channelId) || has(self.channelRef)
               managementPolicies:
                 default:
                 - '*'

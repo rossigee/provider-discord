@@ -30,18 +30,24 @@ import (
 	"github.com/crossplane/crossplane-runtime/v2/pkg/resource"
 	xpv1 "github.com/crossplane/crossplane/apis/v2/core/v2"
 	"github.com/pkg/errors"
+	channelv1beta1 "github.com/rossigee/provider-discord/apis/channel/v1beta1"
 	webhookv1beta1 "github.com/rossigee/provider-discord/apis/webhook/v1beta1"
 	"github.com/rossigee/provider-discord/internal/clients"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
-	errNotWebhook   = "managed resource is not a Webhook custom resource"
-	errTrackPCUsage = "cannot track ProviderConfig usage"
-	errGetPC        = "cannot get ProviderConfig"
-	errGetCreds     = "cannot get credentials"
+	errNotWebhook       = "managed resource is not a Webhook custom resource"
+	errTrackPCUsage     = "cannot track ProviderConfig usage"
+	errGetPC            = "cannot get ProviderConfig"
+	errGetCreds         = "cannot get credentials"
+	errGetChannel       = "cannot get referenced Channel"
+	errChannelNotReady  = "referenced Channel is not Ready"
+	errChannelNoDiscord = "referenced Channel has no Discord ID yet"
 )
 
 // isDiscordPermissionDenied reports whether a Discord API error is a 403 Forbidden response.
@@ -74,6 +80,7 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 			kube:         mgr.GetClient(),
 			newServiceFn: clients.NewDiscordClient,
 		}),
+		managed.WithReferenceResolver(&channelReferenceResolver{kube: mgr.GetClient()}),
 		managed.WithLogger(o.Logger.WithValues("controller", name)),
 		managed.WithPollInterval(o.PollInterval),
 		managed.WithManagementPolicies(),
@@ -85,6 +92,46 @@ func Setup(mgr ctrl.Manager, o controller.Options) error {
 		WithEventFilter(resource.DesiredStateChanged()).
 		For(&webhookv1beta1.Webhook{}).
 		Complete(ratelimiter.NewReconciler(name, r, o.GlobalRateLimiter))
+}
+
+// channelReferenceResolver resolves spec.forProvider.channelRef into
+// spec.forProvider.channelId using the referenced Channel's current Discord ID.
+// It runs on every reconcile before Observe/Create, so a recreated channel is
+// followed automatically. It always re-resolves and deliberately ignores
+// channelRef.policy.resolve, because an IfNotPresent policy would keep a stale
+// channelId after the Channel is recreated. If the referenced Channel is
+// missing, not Ready, or has no Discord ID, resolution fails and no Discord
+// call is made, so a webhook is never created against a stale or unknown channel.
+type channelReferenceResolver struct {
+	kube client.Client
+}
+
+// ResolveReferences sets ChannelID from the referenced Channel's external-name.
+func (r *channelReferenceResolver) ResolveReferences(ctx context.Context, mg resource.Managed) error {
+	cr, ok := mg.(*webhookv1beta1.Webhook)
+	if !ok {
+		return errors.New(errNotWebhook)
+	}
+	if cr.Spec.ForProvider.ChannelRef == nil {
+		return nil
+	}
+
+	ch := &channelv1beta1.Channel{}
+	if err := r.kube.Get(ctx, types.NamespacedName{Name: cr.Spec.ForProvider.ChannelRef.Name, Namespace: cr.GetNamespace()}, ch); err != nil {
+		return errors.Wrap(err, errGetChannel)
+	}
+
+	if ch.GetCondition(xpv1.TypeReady).Status != corev1.ConditionTrue {
+		return errors.New(errChannelNotReady)
+	}
+
+	id := meta.GetExternalName(ch)
+	if !isValidDiscordID(id) {
+		return errors.New(errChannelNoDiscord)
+	}
+
+	cr.Spec.ForProvider.ChannelID = id
+	return nil
 }
 
 // A connector is expected to produce an ExternalClient when its Connect method
