@@ -137,6 +137,7 @@ func (c *external) findChannelByName(ctx context.Context, guildID, name string) 
 // existing Discord channel found by name, rather than creating a new one.
 func adoptChannel(cr *channelv1beta1.Channel, channel *clients.Channel) managed.ExternalObservation {
 	meta.SetExternalName(cr, channel.ID)
+	cr.SetConditions(xpv1.Available())
 
 	now := &metav1.Time{Time: time.Now()}
 	cr.Status.AtProvider = channelv1beta1.ChannelObservation{
@@ -443,6 +444,10 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 		}
 	}
 
+	// The channel was found by its ID, so it is ready. Without this, Ready stays
+	// at whatever Create last set and an observed channel never reports Available.
+	cr.SetConditions(xpv1.Available())
+
 	return managed.ExternalObservation{
 		ResourceExists:          true,
 		ResourceUpToDate:        !needsUpdate,
@@ -639,6 +644,8 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 			}
 		}
 	}
+
+	cr.SetConditions(xpv1.Available())
 
 	return managed.ExternalUpdate{}, nil
 }
