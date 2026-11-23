@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## v0.17.1 (2026-11-23)
+
+### Fixed
+
+- Set the `Ready` condition to `Available` in `Webhook` `Observe()` and `Update()`, so a webhook that exists externally (or is observed rather than created in-process) reports `Ready=True` instead of staying `Ready=False (Creating)` forever. Mirrors the v0.17.0 fix for `Channel`, which `Webhook` missed.
+
 ## v0.16.7 (2026-11-12)
 
 ### Changed
