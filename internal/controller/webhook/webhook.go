@@ -239,6 +239,11 @@ func (c *external) Observe(ctx context.Context, mg resource.Managed) (managed.Ex
 	needsUpdate := cr.Spec.ForProvider.Name != webhook.Name ||
 		(cr.Spec.ForProvider.Avatar != nil && (webhook.Avatar == nil || *cr.Spec.ForProvider.Avatar != *webhook.Avatar))
 
+	// The webhook was found by its ID, so it is ready. Without this, Ready stays
+	// at whatever Create last set and an observed webhook never reports
+	// Available (crossplane-runtime does not set Ready on observe).
+	cr.SetConditions(xpv1.Available())
+
 	return managed.ExternalObservation{
 		ResourceExists:    true,
 		ResourceUpToDate:  !needsUpdate,
@@ -370,6 +375,8 @@ func (c *external) Update(ctx context.Context, mg resource.Managed) (managed.Ext
 		}
 		return managed.ExternalUpdate{}, errors.Wrap(err, "failed to update webhook")
 	}
+
+	cr.SetConditions(xpv1.Available())
 
 	return managed.ExternalUpdate{}, nil
 }
